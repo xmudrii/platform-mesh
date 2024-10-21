@@ -1,19 +1,39 @@
----
 name: Epic
-about: For tracking a large feature, including how to demo it.
-title: ''
-labels: epic
-assignees: ''
+description: For tracking a large feature, including how to demo it.
+title: "epic: "
+labels:
+  - epic
+body:
+  - type: textarea
+    id: objective
+    attributes:
+      label: Demo Objective
+      description: Please describe the objective of your demo.
+      placeholder: |
+        - [ ] User should be able to ...
+        - [ ] ...
+    validations:
+      required: true
 
----
+  - type: textarea
+    id: steps
+    attributes:
+      label: Demo Steps
+      description: Please describe the steps for the demo.
+      placeholder: |
+        1. Admin does X
+        1. User does Y
+        1. Everyone is happy :)
 
-**Description**
-What is the goal of this epic?
-
-**Scope**
-List all deliverables that are part of this epic. 
-
-- [ ] ...
-- [ ] Tests
-- [ ] Technical documentation
-- [ ] End user documentation
+  - type: textarea
+    id: stories
+    attributes:
+      label: Stories
+      placeholder: |
+        - [ ] (Example) Add new API group
+        - [ ] (Example) Add Widget API type
+        - [ ] (Example) Add WidgetController
+        - [ ] (Example) **stretch-goal:** Add Widgets to `kubectl kcp` plugin
+        - Out-of-scope (prototype x): Send Widgets to space
+    validations:
+      required: false
