@@ -44,8 +44,6 @@ The MSP Control Plane provides the actual Kubernetes cluster where workloads are
 
 ### Micro Frontend Platform Integration
 
-![MFP Integration](../assets/apeirora-poc-design-resources.png)
-
 The MFP architecture consists of:
 
 1. **OpenMFP Cluster**
@@ -61,6 +59,9 @@ The MFP architecture consists of:
 ## Example Service: HTTPBin
 
 The POC uses HTTPBin as an example service to demonstrate:
+
+![HTTPBin Integration](../assets/apeirora-poc-design-resources.png)
+
 
 1. **Resource Definition**
    - Defined in KCP example workspace
