@@ -34,7 +34,7 @@ The account model that operates is platform specific. The account model is mostl
 
 ### Option 1: Custom Resource Definition (CRD) for Account Model
 
-This option involves creating a new CRD in that can be used to define the account model from an external persepctive but can be used in kcp, with accounts managed as custom resources. 
+This option involves creating a new CRD in that can be used to define the account model from an external perspective but can be used in kcp, with accounts managed as custom resources. 
 This option implements accounts as CRDs with a strict 1:1 mapping to KCP workspaces, using initializers for atomic creation and setup. 
 The account CRD should be the minimum frame, not to grow. There need to be other ways to extend partner/customer specific account implementation for platform.
 The account model itself is living outside KCP and can be managed external from it, but kcp needs to work with that model to achive account models goals. 
