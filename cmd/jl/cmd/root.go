@@ -26,24 +26,15 @@ var inputFile string
 var raw bool
 var showNoJson bool
 var spaceLines bool
+var noColors bool
 var selector []string
 var numberOfLines int
 
 func init() {
-	viewCmd.Flags().StringVarP(&skip, "skip", "s", "", "comma separated list of keys to skip")
-	viewCmd.Flags().StringVarP(&focus, "focus", "f", "", "comma separated list of keys to put into focus")
-	viewCmd.Flags().StringVarP(&inputFile, "input", "i", "", "use file as input")
-	viewCmd.Flags().BoolVarP(&raw, "raw", "r", false, "skip json keys")
-	viewCmd.Flags().StringSliceVar(&selector, "select", []string{}, "filter logs by selector key=value")
-	viewCmd.Flags().BoolVar(&showNoJson, "show-no-json", false, "also display log lines that are no json")
-	viewCmd.Flags().BoolVar(&spaceLines, "space-lines", false, "adds an extra line between each log line")
-	viewCmd.Flags().IntVarP(&numberOfLines, "number-of-lines", "n", 0, "number of lines to display")
-}
-
-var viewCmd = &cobra.Command{
-	Use:   "jl",
-	Short: "jl: is a log display tool to display json based log streams or files beautifully",
-	Example: `
+	rootCmd = &cobra.Command{
+		Use:   "jl",
+		Short: "jl: is a log display tool to display json based log streams or files beautifully",
+		Example: `
 # Show kubernetes log streams
 kubectl logs my-pod -n my-namespace --follow | jl
 
@@ -59,16 +50,32 @@ jl -i data/input.log -f message,reconcile_id
 # Show logs stored in a file but focus only on the message property, display only rows that match the select expressions
 jl -i data/input.log -rf message,level --select=reconcile_id=some-reconcile-id --select=level=info
 `,
-	Run: ViewLog,
+		Run: ViewLog,
+	}
+
+	initialiseFlags()
+}
+func initialiseFlags() {
+	rootCmd.Flags().StringVarP(&skip, "skip", "s", "", "comma separated list of keys to skip")
+	rootCmd.Flags().StringVarP(&focus, "focus", "f", "", "comma separated list of keys to put into focus")
+	rootCmd.Flags().StringVarP(&inputFile, "input", "i", "", "use file as input")
+	rootCmd.Flags().BoolVarP(&raw, "raw", "r", false, "skip json keys")
+	rootCmd.Flags().StringSliceVar(&selector, "select", []string{}, "filter logs by selector key=value")
+	rootCmd.Flags().BoolVar(&showNoJson, "show-no-json", false, "also display log lines that are no json")
+	rootCmd.Flags().BoolVar(&spaceLines, "space-lines", false, "adds an extra line between each log line")
+	rootCmd.Flags().BoolVar(&noColors, "no-colors", false, "disable colors")
+	rootCmd.Flags().IntVarP(&numberOfLines, "number-of-lines", "n", 0, "number of lines to display")
 }
 
+var rootCmd *cobra.Command
+
 func Execute() { // coverage-ignore
-	cobra.CheckErr(viewCmd.Execute())
+	cobra.CheckErr(rootCmd.Execute())
 }
 
 func ViewLog(_ *cobra.Command, _ []string) { // coverage-ignore
 	scanner := bufio.NewScanner(os.Stdin)
-
+	fmt.Println()
 	if len(inputFile) > 0 {
 		file, err := os.Open(inputFile)
 		if err != nil {
@@ -85,7 +92,7 @@ func ViewLog(_ *cobra.Command, _ []string) { // coverage-ignore
 	printedLines := 0
 	for scanner.Scan() {
 		if numberOfLines > 0 && printedLines >= numberOfLines {
-			os.Exit(0)
+			return
 		}
 		txt := scanner.Text()
 		var result interface{}
@@ -94,6 +101,7 @@ func ViewLog(_ *cobra.Command, _ []string) { // coverage-ignore
 			if showNoJson {
 				// Print normal log
 				fmt.Println(txt)
+				printedLines++
 			}
 			continue
 		}
@@ -104,7 +112,7 @@ func ViewLog(_ *cobra.Command, _ []string) { // coverage-ignore
 		printedLines++
 	}
 
-	if err := scanner.Err(); err != nil {
+	if err := scanner.Err(); err != nil { // coverage-ignore
 		util.PrintErrOut("Error reading input:", err)
 		os.Exit(1)
 	}
@@ -135,8 +143,14 @@ func printLine(sortedKeys []string, data map[string]interface{}) {
 		}
 
 		if val, ok := data[key].(string); ok {
-			keyStr := fmt.Sprintf("%s%s%s", keyColor, key, Reset)
-			valStr := fmt.Sprintf("%s%v%s", textColor, val, Reset)
+			var keyStr, valStr string
+			if noColors {
+				keyStr = key
+				valStr = val
+			} else {
+				keyStr = fmt.Sprintf("%s%s%s", keyColor, key, Reset)
+				valStr = fmt.Sprintf("%s%v%s", textColor, val, Reset)
+			}
 
 			if raw {
 				line += fmt.Sprintf("%s ", valStr)

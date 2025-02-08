@@ -26,7 +26,7 @@ func ContainString(slice []string, item string) bool {
 
 func PrintErrOut(msg string, err error) {
 	_, printErr := fmt.Fprintln(os.Stderr, msg, err)
-	if printErr != nil {
+	if printErr != nil { // coverage-ignore
 		// Fallback is to print to stdout instead
 		fmt.Println(msg, err)
 	}
