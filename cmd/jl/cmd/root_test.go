@@ -82,6 +82,18 @@ message: starting manager, time: 2025-02-07T13:03:14Z
 			ExpectErr: false,
 			want:      "\ncaller: /workspace/cmd/common.go:45, level: info, message: Logging on log level: info, service: extension-manager-operator, time: 2025-02-07T13:03:14Z\ncaller: /workspace/cmd/operator.go:128, level: info, message: starting manager, service: extension-manager-operator, time: 2025-02-07T13:03:14Z\nI0207 13:03:14.507644       1 leaderelection.go:257] attempting to acquire leader lease openmfp-system/eengiex4.openmfp.io...\nE0207 13:03:14.507832       1 leaderelection.go:436] error retrieving resource lock openmfp-system/eengiex4.openmfp.io: Get \"https://10.96.0.1:443/apis/coordination.k8s.io/v1/namespaces/openmfp-system/leases/eengiex4.openmfp.io?timeout=5s\": dial tcp 10.96.0.1:443: connect: connection refused\n",
 		},
+		{
+			name:      "1line,json,no focus,do not skip first key",
+			args:      []string{"jl", "-n1", "-r", "--no-colors", "--input", "../data/input2.log"},
+			want:      "\nfalse\n",
+			ExpectErr: false,
+		},
+		{
+			name:      "1line,json,space-lines,no focus,do not skip first key",
+			args:      []string{"jl", "-n1", "--space-lines", "true", "--input", "../data/input2.log"},
+			want:      "\n\x1b[94mallowed\x1b[0m: \x1b[0mfalse\x1b[0m\n\n",
+			ExpectErr: false,
+		},
 	}
 
 	for _, tt := range cases {

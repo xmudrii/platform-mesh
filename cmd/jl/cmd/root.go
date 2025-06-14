@@ -157,6 +157,21 @@ func printLine(sortedKeys []string, data map[string]interface{}) {
 			} else {
 				line += fmt.Sprintf("%s: %s, ", keyStr, valStr)
 			}
+		} else if valB, ok := data[key].(bool); ok {
+			var keyStr, valStr string
+			if noColors {
+				keyStr = key
+				valStr = fmt.Sprintf("%t", valB)
+			} else {
+				keyStr = fmt.Sprintf("%s%s%s", keyColor, key, Reset)
+				valStr = fmt.Sprintf("%s%t%s", textColor, valB, Reset)
+			}
+
+			if raw {
+				line += fmt.Sprintf("%s ", valStr)
+			} else {
+				line += fmt.Sprintf("%s: %s, ", keyStr, valStr)
+			}
 		}
 	}
 	line = strings.Trim(line, ", ")
