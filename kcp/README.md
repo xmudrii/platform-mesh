@@ -1,255 +1,65 @@
 # kcp Production Quickstart Guide
 
-This document describes how to setup a production-grade kcp environment. Throughout
+kcp is a Kubernetes-like control plane that enables multi-tenant and
+multi-cluster scenarios. It is designed to be run in production environments,
+but setting it up requires several components to work together.
+
+Every configuration we will describe here will have 2 shards. This is the recommended
+way so you can adjust for multi-shard operations from the start, including the root shard.
+
+In general we will cover a few different configuration modes:
+
+1. 1 Cluster & 1 Region. Front-proxy public with self signed certificates, shards - private.
+
+  This is the most simple configuration. In this mode, you have a single kcp cluster deployed in a single kubernetes cluster.
+  Only the front-proxy is publicly accessible, and shards are private. This means it's a closed system, where only the front-proxy
+  is accessible from outside. In this mode every controller should be running within the same cluster as kcp
+  to be able to access shards. This has a caveat that the certificate of the front-proxy is internally signed, so you need to
+  add it to your local trust store to be able to access it. 
+
+2. 1 Cluster & 1 Region. With external certificates. Front-proxy public, shards - semi-private.
+
+  In this mode, you have a single kcp cluster deployed in a single kubernetes cluster.
+  The front-proxy and shards are all in the same cluster and publicly accessible.
+  This means all components have public IPs and DNS name, but only the front-proxy has
+  public certificates. The shards have internally signed certificates, but are publicly accessible.
+
+  This allows for external integrations, like running controllers outside of the kcp
+  deployment. And due to everything being public, it is easy to get started with.
+
+3. (TBD) n Clusters & n Regions. Public.
+
+  In this mode, you have a single kcp cluster deployed across multiple kubernetes clusters.
+  The front-proxy has instances in different clusters for HA replication and shards are 
+  in different clusters and publicly accessible. This requires distributed deployment configuration
+  management, like GitOps to orchestrate the deployments, certificates, etc.
+
+4. (TBD) n Clusters & n Regions. Private. (Using VPN or Direct Connect or Service Mesh)
+
+  In this mode it's similar to the previous one, but only the front-proxy is publicly accessible.
+  This means shards should be operating in private networks, and the front-proxy should be able to
+  access them. This requires a more complex networking setup, but is more secure. 
+  The caveat is that if external integrations are needed, they need to be able to access the private 
+  network as well to be able to operate within the shards network.
+
+This document describes how to set up a production-grade kcp environment. Throughout
 this guide, we will install kcp and every dependency into the namespace `columbo`.
 
-## Day 1
+## Shared components
 
-### 1 – Etcd Druid
+Follow the instructions in [shared components](0-shared.md) to set up shared components.
 
-Since kcp requires etcd, we first have to setup Etcd Druid to create and manage
-etcd clusters. Installation involves cloning the etcd-druid repository and using
-its scripting to set everything up.
+## Scenario 1: 1 Cluster & 1 Region. Front-proxy public, shards - private.
 
-```shell
-# setup your kubeconfig for the target cluster
-export KUBECONFIG=<path to your kubeconfig file>
+Follow the instructions in [1-cluster-1-region-frontproxy-public-shards-private](1-notes.md) to set up this scenario.
 
-# clone etcd-druid
-git clone https://github.com/gardener/etcd-druid
+## Scenario 2: 1 Cluster & 1 Region. Public.
 
-# ensure etcd-druid's scripting can find the kubeconfig
-mkdir -p etcd-druid/hack/kind
-cp "$KUBECONFIG" etcd-druid/hack/kind/kubeconfig
+Follow the instructions in [1-cluster-1-region-public](2-notes.md) to set up this scenario.
 
-# deploy etcd-druid
-make -C etcd-druid deploy
-```
+# FAQ:
 
-### 2 – cert-manager
-
-To secure the traffic between kcp and etcd, TLS certificates are used. These can
-be provisioned using cert-manager, which is thankfully very easy to install:
-
-```shell
-helm repo add jetstack https://charts.jetstack.io
-helm repo update
-
-helm upgrade \
-  --install \
-  --namespace cert-manager \
-  --create-namespace \
-  --version v1.18.2 \
-  --set crds.enabled=true \
-  --atomic \
-  cert-manager jetstack/cert-manager
-```
-
-### 3 – Prepare etcd PKI
-
-Before setting up the actual etcd cluster, we need to provision the certificates
-that it should use. This is not done by Etcd Druid itself, but there are Helm
-charts that can automate the creation of the necessary `Certificate` objects.
-
-Before proceeding, create a new `etcd-certs-values.yaml` to configure what
-etcd clusters the certificates are meant for:
-
-```yaml
-# This should be identical to the name of the Etcd object we're creating later.
-etcdName: etcd-test
-
-# 3 is the default; if you plan on using more members in you etcd cluster,
-# increase this (usually the max member count is 5 for etcd clusters).
-replicas: 3
-```
-
-With this, we can now install the Helm chart and let it create the certificates:
-
-```shell
-helm repo add hajowieland https://charts.wieland.tech
-helm repo update
-
-helm upgrade \
-  --install \
-  --namespace columbo \
-  --create-namespace \
-  --values etcd-certs-values.yaml \
-  my-etcd-certs hajowieland/etcd-druid-certs
-```
-
-You can check the progress by running `kubectl -n columbo get certs`. Once all
-certificates are ready, you can proceed with the next step.
-
-### 4 – Setup etcd
-
-Now it's finally time to bootstrap our etcd cluster. This needs to be done for
-every kcp shard (incl. the root shard) individually (i.e. kcp shards must not
-use the same etcd cluster among them).
-
-A simple example etcd with TLS can be provisioned by creating this YAML file
-first and then applying it:
-
-```yaml
-apiVersion: druid.gardener.cloud/v1alpha1
-kind: Etcd
-metadata:
-  name: etcd-test
-  namespace: columbo
-  labels:
-    app: etcd-statefulset
-    role: test
-spec:
-  replicas: 3
-
-  etcd:
-    metrics: basic
-    defragmentationSchedule: "0 */24 * * *"
-    resources:
-      limits: { cpu: 500m, memory: 1Gi }
-      requests: { cpu: 100m, memory: 200Mi }
-    clientPort: 2379
-    serverPort: 2380
-    quota: 8Gi
-
-    # configure the certificates we just created
-
-    clientUrlTls:
-      tlsCASecretRef:     { name: "etcd-test-etcd-ca-tls" }
-      serverTLSSecretRef: { name: "etcd-test-etcd-server-tls" }
-      clientTLSSecretRef: { name: "etcd-test-etcd-client-tls" }
-
-    peerUrlTls:
-      tlsCASecretRef:     { name: "etcd-test-etcd-peer-ca-tls" }
-      serverTLSSecretRef: { name: "etcd-test-etcd-peer-tls" }
-      clientTLSSecretRef: { name: "etcd-test-etcd-peer-tls" }
-
-  backup:
-    port: 8080
-    fullSnapshotSchedule: "0 */24 * * *"
-    resources:
-      limits: { cpu: 200m, memory: 1Gi }
-      requests: { cpu: 23m, memory: 128Mi }
-    garbageCollectionPolicy: Exponential
-    garbageCollectionPeriod: 43200s
-    deltaSnapshotPeriod: 300s
-    deltaSnapshotMemoryLimit: 1Gi
-    compression:
-      enabled: false
-      policy: "gzip"
-    leaderElection:
-      reelectionPeriod: 5s
-      etcdConnectionTimeout: 5s
-
-    # configure the certificates we just created
-
-    tls:
-      tlsCASecretRef:     { name: "etcd-test-etcd-backup-restore-ca-tls" }
-      serverTLSSecretRef: { name: "etcd-test-etcd-backup-restore-server-tls" }
-      clientTLSSecretRef: { name: "etcd-test-etcd-backup-restore-client-tls" }
-
-  sharedConfig:
-    autoCompactionMode: periodic
-    autoCompactionRetention: "30m"
-
-  annotations:
-    app: etcd-statefulset
-    role: test
-  labels:
-    app: etcd-statefulset
-    role: test
-```
-
-Apply it using `kubectl`:
-
-```shell
-kubectl apply --filename etcd.yaml
-```
-
-You can watch the progress of the rollout by running `watch kubectl -n columbo get etcd`.
-
-### 5 – Setup kcp-operator
-
-The kcp project offers a Kubernetes operator to manage kcp setups.
-
-```shell
-helm repo add kcp https://kcp-dev.github.io/helm-chartsc
-helm repo update
-
-helm upgrade \
-  --install \
-  --namespace kcp-operator \
-  --create-namespace \
-  kcp-operator kcp/kcp-operator
-```
-
-Installing the Helm chart will make the operator resources, like `RootShard`, `FrontProxy`
-and `Kubeconfig` available in your cluster.
-
-### 6 – Setup kcp
-
-Now it's finally time to put all the pieces together and create a kcp environment.
-To ensure no part of the system incorrectly assumes just a single kcp shard, it's
-recommended to always start with a sharded setup.
-
-First we create a new Issuer that will be responsible for signing all certificates
-used by kcp:
-
-```yaml
-apiVersion: cert-manager.io/v1
-kind: Issuer
-metadata:
-  name: selfsigned
-  namespace: columbo
-spec:
-  selfSigned: {}
-```
-
-Just `kubectl apply` the file above.
-
-Next we can bootstrap our kcp root shard. `kubectl apply` this manifest:
-
-```yaml
-apiVersion: operator.kcp.io/v1alpha1
-kind: RootShard
-metadata:
-  name: rooty
-  namespace: columbo
-spec:
-  external:
-    # replace the hostname with the external DNS name for your kcp instance
-    hostname: example.operator.kcp.io
-    port: 6443
-  certificates:
-    # this references the issuer created above
-    issuerRef:
-      group: cert-manager.io
-      kind: Issuer
-      name: selfsigned
-  cache:
-    embedded:
-      # kcp comes with a cache server accessible to all shards,
-      # in this case it is fine to enable the embedded instance
-      enabled: true
-  etcd:
-    endpoints:
-      - https://etcd-test-client.columbo.svc.cluster.local:2379
-    tlsConfig:
-      secretRef:
-        name: etcd-test-etcd-client-tls
-```
-
-Every kcp setup needs at least one front-proxy that can also be applied the
-same way:
-
-```yaml
-apiVersion: operator.kcp.io/v1alpha1
-kind: FrontProxy
-metadata:
-  name: main-proxy
-  namespace: collumbo
-spec:
-  rootShard:
-    ref:
-      name: rooty
-  externalHostname: example.operator.kcp.io
-```
+1. I got error `(92) HTTP/2 stream 1 was not closed cleanly: INTERNAL_ERROR (err 2)`
+ 
+  This most likely means you are trying to access a URL which is not served by front-proxy & kcp.
+  This error is a "red herring" and is not related to TLS or certificates. Check your URL.
