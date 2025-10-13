@@ -103,13 +103,13 @@ helm repo add kcp https://kcp-dev.github.io/helm-charts
 
 # remove --image and --image.repository once we fix base url issue.
 # Once this is merged and publiced: https://github.com/kcp-dev/kcp-operator/pull/101
-helm upgrade --install kcp-operator kcp/kcp-operator --create-namespace --namespace kcp-operator --set image.tag=v23 --set image.repository=ghcr.io/mjudeikis/kcp-operator
+helm upgrade --install kcp-operator kcp/kcp-operator --create-namespace --namespace kcp-operator --set image.tag=v36 --set image.repository=ghcr.io/mjudeikis/kcp-operator
 
 # hack: update CRDs for BaseURL support.
-kubectl apply -f https://raw.githubusercontent.com/kcp-dev/kcp-operator/36f9924412c7c81a567024f0da685505d94fbdd4/config/crd/bases/operator.kcp.io_frontproxies.yaml
-kubectl apply -f https://raw.githubusercontent.com/kcp-dev/kcp-operator/36f9924412c7c81a567024f0da685505d94fbdd4/config/crd/bases/operator.kcp.io_kubeconfigs.yaml
-kubectl apply -f https://raw.githubusercontent.com/kcp-dev/kcp-operator/36f9924412c7c81a567024f0da685505d94fbdd4/config/crd/bases/operator.kcp.io_rootshards.yaml
-kubectl apply -f https://raw.githubusercontent.com/kcp-dev/kcp-operator/36f9924412c7c81a567024f0da685505d94fbdd4/config/crd/bases/operator.kcp.io_shards.yaml
+kubectl apply -f https://raw.githubusercontent.com/kcp-dev/kcp-operator/2b2d13960d3c660d2a7ebaa74469a1e98146aec5/config/crd/bases/operator.kcp.io_frontproxies.yaml
+kubectl apply -f https://raw.githubusercontent.com/kcp-dev/kcp-operator/2b2d13960d3c660d2a7ebaa74469a1e98146aec5/config/crd/bases/operator.kcp.io_kubeconfigs.yaml
+kubectl apply -f https://raw.githubusercontent.com/kcp-dev/kcp-operator/2b2d13960d3c660d2a7ebaa74469a1e98146aec5/config/crd/bases/operator.kcp.io_rootshards.yaml
+kubectl apply -f https://raw.githubusercontent.com/kcp-dev/kcp-operator/2b2d13960d3c660d2a7ebaa74469a1e98146aec5/config/crd/bases/operator.kcp.io_shards.yaml
 ```
 
 

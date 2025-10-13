@@ -79,6 +79,7 @@ kubectl config set-credentials oidc \
   --exec-arg=--oidc-issuer-url="https://auth.genericcontrolplane.io" \
   --exec-arg=--oidc-client-id="platform-mesh" \
   --exec-arg=--oidc-extra-scope="email" \
+  --exec-arg=--oidc-redirect-url=http://127.0.0.1:8000/ \
   --exec-arg=--oidc-client-secret=Z2Fyc2lha2FsYmlzdmFuZGVuekWplCg==
 
 kubectl config set-context --current --user=oidc

@@ -27,6 +27,23 @@ In general we will cover a few different configuration modes:
   This allows for external integrations, like running controllers outside of the kcp
   deployment. And due to everything being public, it is easy to get started with.
 
+  Imortant note: In this scenario, we are using incluster certificate issuer, so certificate is loaded
+  to the front-proxy and we use Certificate Bundle to extend trust to the shards.
+
+  In the follow-up scenario, we will use external certificate, and have 2 front-proxy instances, to accomodate
+  dual setup.
+
+
+3. 1 Cluster & 1 Region. double FrontProxy with external certificates. Public.
+
+  In this mode, you have a single kcp cluster deployed in a single kubernetes cluster.
+  The front-proxy has 2 instances, one for public access and one for private access.
+  This allows for better security, as only the public front-proxy is exposed to the internet,
+  while the private front-proxy is still exposed, but should not be used by external users.
+
+  This allows to have service, like CloudFlare, owning the public front-proxy certificate, 
+  while the private front-proxy can have a different certificate, managed internally.
+
 3. (TBD) n Clusters & n Regions. Public.
 
   In this mode, you have a single kcp cluster deployed across multiple kubernetes clusters.
@@ -56,6 +73,10 @@ Follow the instructions in [1-cluster-1-region-frontproxy-public-shards-private]
 ## Scenario 2: 1 Cluster & 1 Region. Public.
 
 Follow the instructions in [1-cluster-1-region-public](2-notes.md) to set up this scenario.
+
+## Scenario 3: 1 Cluster & 1 Region. double FrontProxy with external certificates. Public.
+
+Follow the instructions in [1-cluster-1-region-two-front-proxies-public](3-notes.md) to set up this scenario.
 
 # FAQ:
 

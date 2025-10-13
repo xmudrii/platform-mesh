@@ -2,26 +2,16 @@ apiVersion: operator.kcp.io/v1alpha1
 kind: FrontProxy
 metadata:
   name: frontproxy
-  namespace: kcp-vespucci
+  namespace: kcp-comer
 spec:
-  externalHostname: api.vespucci.genericcontrolplane.io
+  external:
+    hostname: api.comer.genericcontrolplane.io
+    port: 443
+  caBundleSecretRef:
+      name: google-we1-ca
   rootShard:
     ref:
       name: root
-  caBundleSecretRef:
-      name: letsencrypt-ca
-  certificateTemplates:
-    server:
-      metadata:
-        annotations:
-          cert-manager.io/cluster-issuer: "faros-letsencrypt-prod"
-      spec:
-        issuerRef:
-          name: faros-letsencrypt-prod
-          kind: ClusterIssuer
-          group: cert-manager.io
-        dnsNames:
-        - api.vespucci.genericcontrolplane.io
   auth:
     serviceAccount:
       enabled: true

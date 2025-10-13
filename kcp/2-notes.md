@@ -8,6 +8,22 @@ The main difference with this setup from `kcp-columbus` is that here we will use
 external certificates for the kcp front-proxy and shards. One could add external certificates to the
 `kcp-columbus` setup as well, but for simplicity we will use self-signed certificates there.
 
+Because we are using LetsEncrypt, we need to ensure that we have CertAuthority data for kubeconfigs.
+Most of the tools, like browsers, OS trusts the LetsEncrypt CA, but kubectl is explicit and needs 
+the CA data in the kubeconfig file. 
+
+Download the CA data from here: https://letsencrypt.org/certs/isrgrootx1.pem.txt:
+
+```bash
+curl -L -o isrgrootx1.pem https://letsencrypt.org/certs/isrgrootx1.pem
+```
+
+Create secret with CA data:
+
+```yaml
+kubectl create secret generic letsencrypt-ca --from-file=tls.crt=isrgrootx1.pem -n kcp-vespucci
+```
+
 
 1. Create certificates for etcd
 
@@ -61,7 +77,7 @@ kubectl apply -f kcp/assets/kcp-vespucci/kubeconfig-kcp-admin.yaml
 
 ```bash
 kubectl get secret -n kcp-vespucci kcp-admin-frontproxy -o jsonpath='{.data.kubeconfig}' | base64 -d > kcp-admin-kubeconfig-vespucci.yaml
-KUBECONFIG=kcp-admin-kubeconfig-vespucci.yaml kubectl get shards                                                                                                                                    10:20:41
+KUBECONFIG=kcp-admin-kubeconfig-vespucci.yaml kubectl get shards
 NAME    REGION   URL                                                  EXTERNAL URL                                       AGE
 alpha            https://alpha.vespucci.genericcontrolplane.io:6443   https://api.vespucci.genericcontrolplane.io:6443   2d19h
 root             https://root.vespucci.genericcontrolplane.io:6443    https://api.vespucci.genericcontrolplane.io:6443   2d20h

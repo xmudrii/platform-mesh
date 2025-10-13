@@ -2,11 +2,8 @@ apiVersion: operator.kcp.io/v1alpha1
 kind: RootShard
 metadata:
   name: root
-  namespace: kcp-vespucci
+  namespace: kcp-comer
 spec:
-  image:
-    tag: 45f6e5a9e
-    repository: ghcr.io/mjudeikis/kcp
   auth:
     serviceAccount:
       enabled: true
@@ -18,11 +15,11 @@ spec:
       usernamePrefix: "oidc:"
       groupsPrefix: "oidc:"
       clientSecret: Z2Fyc2lha2FsYmlzdmFuZGVuekWplCg==
-  caBundleSecretRef:
-      name: letsencrypt-ca
   external:
-    hostname: api.vespucci.genericcontrolplane.io
-    port: 6443
+    hostname: api.comer.genericcontrolplane.io
+    port: 443
+    privateHostname: api-internal.comer.genericcontrolplane.io
+    privatePort: 6443
   certificates:
     # this references the issuer created above
     issuerRef:
@@ -34,18 +31,18 @@ spec:
       # kcp comes with a cache server accessible to all shards,
       # in this case it is fine to enable the embedded instance
       enabled: true
-  shardBaseURL: https://root.vespucci.genericcontrolplane.io:6443
+  etcd:
+    endpoints:
+      - https://root-client.kcp-comer.svc.cluster.local:2379
+    tlsConfig:
+      secretRef:
+        name: etcd-ca-tls
+  shardBaseURL: https://root.comer.genericcontrolplane.io:6443
   certificateTemplates:
     server:
       spec:
         dnsNames:
-        - root.vespucci.genericcontrolplane.io
-  etcd:
-    endpoints:
-      - https://root-client.kcp-vespucci.svc.cluster.local:2379
-    tlsConfig:
-      secretRef:
-        name: etcd-ca-tls
+        - root.comer.genericcontrolplane.io
   serviceTemplate:
     spec:
       type: LoadBalancer
