@@ -1,37 +1,51 @@
-# Shared components
+# Shared Components Setup
 
-For any scenarios to work, there are some shared components that need to be
-deployed. These components are required for kcp to operate in any of the
-deployment modes, like `etcd`, `cert-manager`, `kcp-operator`, `oidc`, etc.
-This section describes how to deploy these shared components.
+This guide covers the installation of shared components required for all kcp deployment scenarios. These components provide the foundation for kcp operations including database storage, certificate management, and authentication.
 
+## Prerequisites
 
-If you find files with names containing a `.template` suffix, it means that you need to
-customize them for your own setup. Please copy them to a new file without the
-`.template` suffix and edit them as needed.
+- A Kubernetes cluster with sufficient resources
+- `kubectl` configured to access your cluster  
+- `helm` CLI tool installed
+- DNS management capability (manual or automated)
+- (Optional) CloudFlare account for DNS01 challenges
 
-For all certificates we are going to use `cert-manager` and `letsencrypt` as the issuer.
-All DNS names are managed externally, by creating ServiceType LoadBalancer and
-adding records to your DNS provider. One could automate this using `external-dns`,
-but this is out of scope for these documents. 
+## Template Files
 
-Due to this we use the externalissuer configuration with api 
-challenge. One could use an ingress controller and automate this.
+Files with `.template` suffix require customization for your environment. Copy them without the `.template` suffix and modify the values:
 
-```yaml
-    solvers:
-    - dns01:
-        cloudflare:
-          email: email@example.com
-          apiKeySecretRef:
-            name: cloudflare-api-key-secret
-            key: api-key
+```bash
+cp kcp/assets/cert-manager/cloudflare-secret.yaml.template \
+   kcp/assets/cert-manager/cloudflare-secret.yaml
+# Edit the copied file with your actual values
 ```
 
-1. ETCD
+## Certificate Management Strategy
 
-You can run any etcd compatible cluster. For production-grade setup, we
-recommend using [etcd-druid](TBC)
+We use `cert-manager` with Let's Encrypt for certificate issuance. DNS management is handled through Kubernetes LoadBalancer services with manual DNS record creation.
+
+**Note**: For production environments, consider automating DNS management with `external-dns`.
+
+### DNS01 Challenge Configuration
+For CloudFlare DNS integration, the issuer uses this configuration:
+
+```yaml
+solvers:
+- dns01:
+    cloudflare:
+      email: your-email@example.com
+      apiKeySecretRef:
+        name: cloudflare-api-key-secret
+        key: api-key
+```
+
+For other DNS providers, adjust the solver configuration accordingly.
+
+## 1. ETCD Database
+
+kcp requires an etcd cluster for persistent storage. For production deployments, we recommend using [etcd-druid](https://github.com/gardener/etcd-druid) which provides automated etcd cluster management.
+
+### Install etcd-druid Operator
 
 ```bash
 helm install etcd-druid oci://europe-docker.pkg.dev/gardener-project/releases/charts/gardener/etcd-druid \
@@ -40,17 +54,21 @@ helm install etcd-druid oci://europe-docker.pkg.dev/gardener-project/releases/ch
   --version v0.32.0
 ```
 
-HACK: The etcd-druid chart does not install CRDs, so we need to install them manually:
-see: https://github.com/gardener/etcd-druid/issues/1185
+### Install Required CRDs
+
+**Known Issue**: The etcd-druid chart doesn't install CRDs automatically. Install them manually:
+([Issue #1185](https://github.com/gardener/etcd-druid/issues/1185))
 
 ```bash
 kubectl apply -f https://gist.githubusercontent.com/mjudeikis/94382cc47c6a8611a2a1b85e20ec8380/raw/953478d8605bcb3419de2a6958147a5fca932b20/etcdcopybackupstasks.druid.gardener.cloud
 kubectl apply -f https://gist.githubusercontent.com/mjudeikis/94382cc47c6a8611a2a1b85e20ec8380/raw/953478d8605bcb3419de2a6958147a5fca932b20/etcds.druid.gardener.cloud
 ```
 
-2. Cert-manager
+## 2. Certificate Manager
 
-We need cert-manager for both etcd and kcp. Install it using the following commands:
+cert-manager handles certificate lifecycle for both etcd and kcp components. It integrates with Let's Encrypt for automatic certificate issuance and renewal.
+
+### Install cert-manager
 
 ```bash
 helm repo add jetstack https://charts.jetstack.io
@@ -66,105 +84,166 @@ helm upgrade \
   cert-manager jetstack/cert-manager
 ```
 
-Add ClusterIssuer for letsencrypt:
+### Configure Let's Encrypt Issuer
 
-```yaml
+Apply the cluster issuer for Let's Encrypt certificate provisioning:
+
+```bash
 kubectl apply -f kcp/assets/cert-manager/cluster-issuer.yaml
 ```
 
-We use direct integration with Cloudflare for DNS01 challenge. If you use different DNS provider, you need to change the issuer configuration accordingly.
+### Configure DNS Provider (CloudFlare Example)
 
-Follow [cloud-flare-dns01](https://cert-manager.io/docs/configuration/acme/dns01/cloudflare/#api-keys) for more details.
+For DNS01 challenges, configure your DNS provider credentials. For CloudFlare:
 
-Create secret with Cloudflare API key:
+1. **Create API Secret**: Edit and apply the CloudFlare API secret:
+   ```bash
+   kubectl apply -f kcp/assets/cert-manager/cloudflare-secret.yaml
+   ```
 
-```yaml
-kubectl apply -f kcp/assets/cert-manager/cloudflare-secret.yaml
-```
+2. **Reference Documentation**: See [CloudFlare DNS01 Configuration](https://cert-manager.io/docs/configuration/acme/dns01/cloudflare/#api-keys) for detailed setup instructions.
 
-3. Prepare etcd PKI
+**Note**: For other DNS providers, modify the cluster-issuer.yaml configuration accordingly.
 
-Before setting up the actual etcd cluster, we need to provision the certificates
-that it should use. This is not done by Etcd Druid itself, but we are going to use Cert-Manager:
+## 3. ETCD PKI Setup
 
-These issuers will live in the `cert-manager` namespace. One can change the namespace if 
-needed by re-configuring cert-manager.
+etcd requires PKI certificates for secure communication. Since etcd-druid doesn't handle certificate provisioning automatically, we use cert-manager to create the necessary certificate issuers.
 
-Check issue for more details: https://github.com/gardener/etcd-druid/issues/1187
+### Configure ETCD Certificate Issuer
 
-```yaml
+Create the certificate issuer in the cert-manager namespace:
+
+```bash
 kubectl apply -f kcp/assets/etcd-druid/certificate-etcd-issuer.yaml
 ```
 
-4. Install kcp-operator:
+**Note**: These issuers are created in the `cert-manager` namespace by default. You can modify the namespace by reconfiguring cert-manager if needed.
+
+**Related Issue**: See [etcd-druid #1187](https://github.com/gardener/etcd-druid/issues/1187) for details about manual PKI setup requirements.
+
+## 4. KCP Operator
+
+The kcp-operator manages the lifecycle of kcp components including shards, front-proxies, and kubeconfigs.
+
+### Install kcp-operator
 
 ```bash
 helm repo add kcp https://kcp-dev.github.io/helm-charts
 
-# remove --image and --image.repository once we fix base url issue.
-# Once this is merged and publiced: https://github.com/kcp-dev/kcp-operator/pull/101
-helm upgrade --install kcp-operator kcp/kcp-operator --create-namespace --namespace kcp-operator --set image.tag=v36 --set image.repository=ghcr.io/mjudeikis/kcp-operator
+# Note: Using custom image until BaseURL support is merged
+# Reference: https://github.com/kcp-dev/kcp-operator/pull/113
+helm upgrade --install kcp-operator kcp/kcp-operator \
+  --create-namespace \
+  --namespace kcp-operator \
+  --set image.tag=v36 \
+  --set image.repository=ghcr.io/mjudeikis/kcp-operator
+```
 
-# hack: update CRDs for BaseURL support.
+### Update CRDs for BaseURL Support
+
+Apply updated CRDs that include BaseURL functionality:
+
+```bash
 kubectl apply -f https://raw.githubusercontent.com/kcp-dev/kcp-operator/2b2d13960d3c660d2a7ebaa74469a1e98146aec5/config/crd/bases/operator.kcp.io_frontproxies.yaml
 kubectl apply -f https://raw.githubusercontent.com/kcp-dev/kcp-operator/2b2d13960d3c660d2a7ebaa74469a1e98146aec5/config/crd/bases/operator.kcp.io_kubeconfigs.yaml
 kubectl apply -f https://raw.githubusercontent.com/kcp-dev/kcp-operator/2b2d13960d3c660d2a7ebaa74469a1e98146aec5/config/crd/bases/operator.kcp.io_rootshards.yaml
 kubectl apply -f https://raw.githubusercontent.com/kcp-dev/kcp-operator/2b2d13960d3c660d2a7ebaa74469a1e98146aec5/config/crd/bases/operator.kcp.io_shards.yaml
 ```
 
+**Note**: These CRD updates will no longer be necessary once PR #113 is merged and published.
 
-5. OIDC Provider
 
-If you have an existing OIDC provider, you can skip this step. We are going to use dex as the OIDC provider
-for simplicity. And we will use postgres as the backend for dex. 
+## 5. OIDC Provider (Optional)
 
-5.1. Install postgres operator
+If you have an existing OIDC provider, you can skip this section. This guide uses Dex as the OIDC provider with PostgreSQL as the backend database.
+
+### 5.1. Install PostgreSQL Operator
+
+Create the OIDC namespace and install CloudNative PostgreSQL operator:
 
 ```bash
 kubectl create namespace oidc
-```
 
-```bash
 kubectl apply --server-side -f \
   https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.26/releases/cnpg-1.26.0.yaml
 ```
 
-Create a cluster and database for dex:
+### 5.2. Deploy PostgreSQL Database
 
-```yaml
+Create a PostgreSQL cluster and database for Dex:
+
+```bash
 kubectl apply -f kcp/assets/oidc-dex/postgres-cluster.yaml
 kubectl apply -f kcp/assets/oidc-dex/postgres-database.yaml
 ```
 
-Create certificate request for dex to allow cert-manager to issue certificates:
+### 5.3. Configure Dex Certificates
 
-```yaml
+Request a certificate for Dex from cert-manager:
+
+```bash
 kubectl apply -f kcp/assets/oidc-dex/certificate-dns.yaml
 ```
 
-Wait until certificate is issued and install dex itself:
+### 5.4. Install Dex OIDC Provider
+
+Wait for the certificate to be issued, then install Dex:
 
 ```bash
+# Check certificate status
+kubectl get certificate -n oidc
+
+# Install Dex
 helm repo add dex https://charts.dexidp.io
 
-helm upgrade -i \
-    --create-namespace \
-    --namespace oidc \
-    dex dex/dex \
-    -f kcp/assets/oidc-dex/values.yaml  
+helm upgrade -i dex dex/dex \
+  --create-namespace \
+  --namespace oidc \
+  -f kcp/assets/oidc-dex/values.yaml
 ```
 
-5. DNS
+**Note**: Ensure you customize `kcp/assets/oidc-dex/values.yaml` with your specific OIDC configuration before installation.
 
-For this to work we will require custom domains for `front-proxy` and 2 shards.
-For simplicity we are using the most simple and most reliable option: 
-   
-  External DNS + Service type LoadBalancer.
+## 6. DNS Configuration
 
-We configure the external DNS provider with 3 domains:
+kcp requires custom domain names for the front-proxy and shard endpoints. This setup uses Kubernetes LoadBalancer services with manual DNS record management.
+
+### DNS Requirements
+
+Each kcp deployment scenario requires domain names for:
+- **Front-proxy**: Main API endpoint for client access
+- **Shard endpoints**: Direct access to individual kcp shards (for some scenarios)
+
+### DNS Setup Approach
+
+We use **LoadBalancer Services + Manual DNS Records** for simplicity and reliability:
+
+1. **Deploy kcp components** with LoadBalancer services
+2. **Get LoadBalancer IPs** from Kubernetes
+3. **Create DNS A records** pointing to these IPs
+
+### Example Domain Structure
+
+For a deployment in the `columbus` scenario:
 ```
-# front-proxy domain
-api.columbus.genericcontrolplane.io
+# Front-proxy domain
+api.columbus.genericcontrolplane.io -> LoadBalancer IP
 
-At this point our cluster is ready to host kcp and we can proceed to the next step of
-installing kcp itself.
+# Shard domains (if public access needed)
+root.columbus.genericcontrolplane.io -> Root shard LoadBalancer IP  
+alpha.columbus.genericcontrolplane.io -> Alpha shard LoadBalancer IP
+```
+
+### DNS Automation (Optional)
+
+For production environments, consider automating DNS management with:
+- [external-dns](https://github.com/kubernetes-sigs/external-dns) controller
+- Cloud provider DNS integration
+- GitOps-based DNS record management
+
+## Next Steps
+
+Your cluster is now ready to host kcp. Proceed to your chosen deployment scenario:
+- [Scenario 1: Self-Signed Certificates](kcp-columbus-self-signed.md)
+- [Scenario 2: External Certificates](kcp-vespucci-external-certs.md)  
+- [Scenario 3: Dual Front-Proxy](kcp-comer-dual-frontproxy.md)
