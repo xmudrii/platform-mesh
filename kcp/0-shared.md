@@ -130,28 +130,10 @@ The kcp-operator manages the lifecycle of kcp components including shards, front
 ```bash
 helm repo add kcp https://kcp-dev.github.io/helm-charts
 
-# Note: Using custom image until BaseURL support is merged
-# Reference: https://github.com/kcp-dev/kcp-operator/pull/113
 helm upgrade --install kcp-operator kcp/kcp-operator \
   --create-namespace \
-  --namespace kcp-operator \
-  --set image.tag=v36 \
-  --set image.repository=ghcr.io/mjudeikis/kcp-operator
+  --namespace kcp-operator
 ```
-
-### Update CRDs for BaseURL Support
-
-Apply updated CRDs that include BaseURL functionality:
-
-```bash
-kubectl apply -f https://raw.githubusercontent.com/kcp-dev/kcp-operator/2b2d13960d3c660d2a7ebaa74469a1e98146aec5/config/crd/bases/operator.kcp.io_frontproxies.yaml
-kubectl apply -f https://raw.githubusercontent.com/kcp-dev/kcp-operator/2b2d13960d3c660d2a7ebaa74469a1e98146aec5/config/crd/bases/operator.kcp.io_kubeconfigs.yaml
-kubectl apply -f https://raw.githubusercontent.com/kcp-dev/kcp-operator/2b2d13960d3c660d2a7ebaa74469a1e98146aec5/config/crd/bases/operator.kcp.io_rootshards.yaml
-kubectl apply -f https://raw.githubusercontent.com/kcp-dev/kcp-operator/2b2d13960d3c660d2a7ebaa74469a1e98146aec5/config/crd/bases/operator.kcp.io_shards.yaml
-```
-
-**Note**: These CRD updates will no longer be necessary once PR #113 is merged and published.
-
 
 ## 5. OIDC Provider (Optional)
 
