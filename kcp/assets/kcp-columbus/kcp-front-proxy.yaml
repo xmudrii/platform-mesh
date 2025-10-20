@@ -4,7 +4,9 @@ metadata:
   name: frontproxy
   namespace: kcp-columbus
 spec:
-  externalHostname: api.columbus.genericcontrolplane.io
+  external:
+    hostname: api.columbus.genericcontrolplane.io
+    port: 6443
   rootShard:
     ref:
       name: root

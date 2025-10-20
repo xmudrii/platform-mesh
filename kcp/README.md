@@ -1,116 +1,205 @@
 # kcp Production Quickstart Guide
 
-kcp is a Kubernetes-like control plane that enables multi-tenant and
-multi-cluster scenarios. It is designed to be run in production environments,
-but setting it up requires several components to work together.
+kcp is a Kubernetes-like control plane that enables multi-tenant and multi-cluster scenarios. This guide shows how to set up a production-grade kcp environment with self-signed certificates as the base configuration.
 
-Every configuration described here uses 2 shards (root and alpha). This is the recommended
-approach so you can adapt to multi-shard operations from the start.
+All configurations use 2 shards (root and alpha), which is the recommended approach for multi-shard operations from the start.
 
-## Certificate Management Scenarios
+## KCP Component Communication
 
-We cover three different certificate management approaches, each with specific use cases:
+To fully understand different deployment modes, you need to understand the communication patterns for kcp components. In general, shards do not communicate directly with each other; all communication is proxied via the front-proxy or cache server.
 
-### Scenario 1: Self-Signed Certificates (kcp-columbus namespace)
-**Best for**: Development, testing, or closed internal environments
+- **Front-proxy**: The main API endpoint for clients to access kcp. This is the main entry point for all external consumer clients.
+   This is configured in both shards and front-proxy. In general, shards do not communicate directly with the front-proxy, with the exception of 2 cases:
+    - When a new workspace is scheduled, the shard contacts the front-proxy to randomly pick a shard for the new workspace.
+    - When an `xEndpointSlice` URL is updated, the update happens via the front-proxy, as this is the only write operation where a shard might need to update an object on another shard. This is configured in deployments by setting `--externalHostname` or `spec.external.hostname` in front-proxy or shard configurations.
 
-- **Certificate Strategy**: All certificates are self-signed using an internal CA
-- **Access Pattern**: Only front-proxy is publicly accessible, shards are private
-- **Use Case**: Closed system where controllers run within the same cluster as kcp
-- **Trade-off**: Requires adding the internal CA to client trust stores
+- **Shards**: Individual kcp shards that host workspaces. Shards can be exposed publicly or kept private.
+   When deploying shards, you can configure the shard URL by setting `spec.shardBaseURL` in the shard spec, or by setting the `--shard-base-url` flag in the shard deployment.
+   This URL will be used to expose the main shard API server endpoint. This is the endpoint that the front-proxy will use to communicate with the shard.
+
+- **Virtual workspaces**: kcp supports the ability to run virtual workspaces outside shards. However, these guides will not cover this configuration. For now, the recommendation is to run virtual workspaces inside shards. Virtual workspaces have a separate flag to set the base URL: `--virtual-workspace-base-url`. It defaults to `spec.shardBaseURL`.
+
+Once you have `kcp` deployed, you can check these values in the shard object in the root workspace:
+
+```bash
+kubectl get shards 
+NAME    REGION   URL                                               EXTERNAL URL                                   AGE
+alpha            https://alpha.comer.genericcontrolplane.io:6443   https://api.comer.genericcontrolplane.io:443   6d20h
+root             https://root.comer.genericcontrolplane.io:6443    https://api.comer.genericcontrolplane.io:443   6d20h
+```
+
+In the shard spec, we can see the different URL options configured:
+
+```bash
+kubectl get shards -o yaml | grep spec -A 3
+  spec:
+    baseURL: https://alpha.comer.genericcontrolplane.io:6443
+    externalURL: https://api.comer.genericcontrolplane.io:443
+    virtualWorkspaceURL: https://alpha.comer.genericcontrolplane.io:6443
+--
+  spec:
+    baseURL: https://root.comer.genericcontrolplane.io:6443
+    externalURL: https://api.comer.genericcontrolplane.io:443
+    virtualWorkspaceURL: https://root.comer.genericcontrolplane.io:6443
+```
+
+**Important**: The `virtualWorkspaceURL` is used to construct `VirtualWorkspace` endpoints. If you are running virtual workspace clients outside the cluster, you need to make sure this URL is accessible from outside.
+
+Example:
+
+```bash
+KUBECONFIG=kcp-admin-kubeconfig-comer-internal.yaml kubectl get apiexportendpointslice tenancy.kcp.io -o yaml | grep endpoints -A 2
+endpoints:
+  - url: https://root.comer.genericcontrolplane.io:6443/services/apiexport/root/tenancy.kcp.io
+  - url: https://alpha.comer.genericcontrolplane.io:6443/services/apiexport/alpha/tenancy.kcp.io
+```
+
+Any external client, like `api-syncagent`, will need to be able to access these URLs.
+
+The basic defaulting logic is as follows:
+
+```
+if shard.Spec.ExternalURL == "" {
+    shard.Spec.ExternalURL = shard.Spec.BaseURL
+}
+
+if shard.Spec.VirtualWorkspaceURL == "" {
+    shard.Spec.VirtualWorkspaceURL = shard.Spec.BaseURL
+}
+```
+
+### High-level Diagram
+
+![High level diagram of kcp components communication](assets/images/high-level.svg)
+
+
+## Base Configuration: Self-Signed Certificates
+
+This guide covers the **kcp-columbus** deployment using self-signed certificates. This is:
+- **Best for**: Development, testing, or closed internal environments  
+- **Certificate approach**: All certificates are self-signed using an internal CA
+- **Access pattern**: Only front-proxy is publicly accessible, shards are private
 - **Network**: Simple single-cluster deployment
 
-### Scenario 2: External Certificates with In-Cluster Issuer (kcp-vespucci namespace)  
-**Best for**: Production environments with external controller access
+## Alternative Certificate Management
 
-- **Certificate Strategy**: Front-proxy uses external certificates (Let's Encrypt), shards use internal certificates
-- **Access Pattern**: Front-proxy and shards are publicly accessible
-- **Use Case**: External integrations where controllers run outside the kcp cluster
-- **Trade-off**: Mixed certificate trust model - external for front-proxy, internal for shards
-- **Network**: Public access to all components with proper DNS setup
+For production environments requiring different certificate strategies, see these variations:
 
-### Scenario 3: Dual Front-Proxy with Edge Re-encryption (kcp-comer namespace)
-**Best for**: Production with CDN/edge services and certificate authority restrictions
-
-- **Certificate Strategy**: Two front-proxy instances - public (CloudFlare-managed) and internal (self-signed)
-- **Access Pattern**: Public front-proxy for external access, internal for direct cluster communication
-- **Use Case**: When certificate authentication doesn't work with TLS termination at the edge
-- **Trade-off**: More complex setup but better security and CDN integration
-- **Network**: Edge re-encryption setup with CloudFlare or similar services
-
-### Future Scenarios (Not Yet Implemented)
-
-4. **Multi-Cluster & Multi-Region Public**: Distributed kcp across multiple Kubernetes clusters with public access
-5. **Multi-Cluster & Multi-Region Private**: Distributed kcp with VPN/Service Mesh connectivity
+- **[External Certificates (kcp-vespucci)](kcp-vespucci-external-certs.md)**: Uses Let's Encrypt for front-proxy with public shard access
+- **[Dual Front-Proxy (kcp-comer)](kcp-comer-dual-frontproxy.md)**: CDN integration with edge re-encryption using CloudFlare
 
 ## Prerequisites
 
-Before setting up any scenario, you must first deploy the shared components that all configurations depend on.
+Before starting, you must install shared components that all kcp deployments depend on:
 
-## Setup Instructions
-
-### Step 1: Install Shared Components
-Follow the instructions in [shared components](0-shared.md) to set up:
+**[Install Shared Components](0-shared.md)** - Sets up:
 - etcd-druid operator for database storage
 - cert-manager for certificate management  
 - kcp-operator for kcp lifecycle management
 - OIDC provider (dex) for authentication
 - DNS configuration
 
-### Step 2: Choose and Deploy Your Scenario
+## Deployment Steps (kcp-columbus)
 
-#### Scenario 1: Self-Signed Certificates
-Follow the instructions in [kcp-columbus (self-signed certificates)](kcp-columbus-self-signed.md) for a development or internal environment setup.
+### 1. Create Namespace and ETCD Certificates
 
-#### Scenario 2: External Certificates  
-Follow the instructions in [kcp-vespucci (external certificates)](kcp-vespucci-external-certs.md) for production with external controller access.
+```bash
+kubectl create namespace kcp-columbus
+kubectl apply -f kcp/assets/kcp-columbus/certificate-etcd.yaml
+```
 
-#### Scenario 3: Dual Front-Proxy with Edge Re-encryption
-Follow the instructions in [kcp-comer (dual front-proxy)](kcp-comer-dual-frontproxy.md) for production with CDN integration.
+### 2. Deploy ETCD Clusters
 
-## Decision Matrix
+```bash
+kubectl apply -f kcp/assets/kcp-columbus/etcd-druid-root.yaml
+kubectl apply -f kcp/assets/kcp-columbus/etcd-druid-alpha.yaml
+```
 
-| Requirement | Scenario 1<br>(Columbus) | Scenario 2<br>(Vespucci) | Scenario 3<br>(Comer) |
-|-------------|---------------------------|---------------------------|-------------------------|
-| **Environment** | Dev/Test/Internal | Production | Production + CDN |
-| **External Controllers** | No | Yes | Yes |
-| **Certificate Trust** | Manual CA trust | Automatic (Let's Encrypt) | Mixed (Edge + Internal) |
-| **CDN Integration** | No | Limited | Full Support |
-| **Setup Complexity** | Simple | Moderate | Complex |
-| **Security Level** | Medium | High | Highest |
+### 3. Configure KCP System Certificates
+
+```bash
+kubectl apply -f kcp/assets/kcp-columbus/certificate-kcp.yaml
+```
+
+### 4. Deploy KCP Components
+
+```bash
+kubectl apply -f kcp/assets/kcp-columbus/kcp-root-shard.yaml
+kubectl apply -f kcp/assets/kcp-columbus/kcp-alpha-shard.yaml
+kubectl apply -f kcp/assets/kcp-columbus/kcp-front-proxy.yaml
+```
+
+### 5. Configure DNS for Front-Proxy
+
+1. **Get the LoadBalancer IP**:
+   ```bash
+   kubectl get svc -n kcp-columbus frontproxy-front-proxy
+   ```
+
+2. **Create DNS A record** pointing `api.columbus.genericcontrolplane.io` to the LoadBalancer IP
+
+3. **Verify certificate issuance**:
+   ```bash
+   kubectl get certificate -n kcp-columbus root-frontproxy-server -o yaml
+   ```
+
+### 6. Create and Test Admin Access
+
+```bash
+kubectl apply -f kcp/assets/kcp-columbus/kubeconfig-kcp-admin.yaml
+
+kubectl get secret -n kcp-columbus kcp-admin-frontproxy \
+  -o jsonpath='{.data.kubeconfig}' | base64 -d > kcp-admin-kubeconfig-columbus.yaml
+
+KUBECONFIG=kcp-admin-kubeconfig-columbus.yaml kubectl get shards
+```
+
+Expected output:
+```
+NAME    REGION   URL                                                           EXTERNAL URL                                       AGE
+alpha            https://alpha-shard-kcp.kcp-columbus.svc.cluster.local:6443   https://api.columbus.genericcontrolplane.io:6443   14m
+root             https://root-kcp.kcp-columbus.svc.cluster.local:6443          https://api.columbus.genericcontrolplane.io:6443   14m
+```
+
+## Optional: OIDC Authentication
+
+If you deployed the OIDC provider (Dex), you can configure OIDC authentication:
+
+### Install kubectl OIDC Plugin
+
+```bash
+# macOS
+brew install int128/kubelogin/kubelogin
+
+# For other platforms, see: https://github.com/int128/kubelogin
+```
+
+### Configure OIDC Credentials
+
+```bash
+kubectl config set-credentials oidc \
+  --exec-api-version=client.authentication.k8s.io/v1beta1 \
+  --exec-command=kubectl \
+  --exec-arg=oidc-login \
+  --exec-arg=get-token \
+  --exec-arg=--oidc-issuer-url="https://auth.genericcontrolplane.io" \
+  --exec-arg=--oidc-client-id="platform-mesh" \
+  --exec-arg=--oidc-extra-scope="email" \
+  --exec-arg=--oidc-client-secret=<YOUR_CLIENT_SECRET>
+
+kubectl config set-context --current --user=oidc
+```
+
+## Certificate Trust Requirements
+
+Since this setup uses self-signed certificates, external users will need to:
+1. Add the internal CA certificate to their local trust store, OR
+2. Configure kubectl to skip certificate validation (not recommended for production)
 
 ## Troubleshooting
 
-### Common Errors
+**Certificate Trust Issues**: If clients cannot connect due to certificate validation errors, ensure the self-signed CA certificate is added to the client's trust store.
 
-#### HTTP/2 Stream Error
-**Error**: `(92) HTTP/2 stream 1 was not closed cleanly: INTERNAL_ERROR (err 2)`
+**DNS Resolution**: Verify that `api.columbus.genericcontrolplane.io` resolves to the correct LoadBalancer IP.
 
-**Cause**: You are trying to access a URL that is not served by the front-proxy or kcp.
-
-**Solution**: Verify the URL is correct. This error is not related to TLS or certificates.
-
-#### Certificate Trust Issues
-**Error**: Certificate verification failures when using kubectl
-
-**Solutions**:
-- **Scenario 1 (Columbus)**: Add the internal CA to your system's trust store
-- **Scenario 2 (Vespucci)**: Ensure Let's Encrypt root CA is in your kubeconfig
-- **Scenario 3 (Comer)**: Use OIDC authentication instead of certificate-based auth
-
-#### DNS Resolution Problems
-**Error**: Cannot resolve kcp domain names
-
-**Solution**: Verify DNS records point to the correct LoadBalancer IPs:
-```bash
-kubectl get svc -n <namespace> frontproxy-front-proxy
-nslookup <your-kcp-domain>
-```
-
-#### OIDC Authentication Failures  
-**Error**: Authentication redirects fail or return errors
-
-**Solutions**:
-1. Verify OIDC provider is running and accessible
-2. Check that the client secret matches in both kcp and OIDC provider configurations
-3. Ensure redirect URLs are properly configured
+**HTTP/2 Stream Error** `(92) HTTP/2 stream 1 was not closed cleanly: INTERNAL_ERROR (err 2)`: You are accessing a URL not served by the front-proxy. Verify the URL is correct.
