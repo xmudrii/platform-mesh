@@ -7,11 +7,11 @@ roles:
       - id: member
         displayName: Member
         description: Limited access to resources within the account. Can view and interact with resources but cannot administrate them.
-  - groupResource: Namespace
+  - groupResource: apps/Deployment
     roles:
       - id: owner
         displayName: Owner
-        description: Full access to all resources within the account.
+        description: Full access to deployment resources.
       - id: member
         displayName: Member
-        description: Limited access to resources within the account. Can view and interact with resources but cannot administrate them.
+        description: Limited access to deployment resources.
