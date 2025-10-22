@@ -5,7 +5,7 @@ metadata:
   namespace: kcp-comer
 spec:
   external:
-    hostname: api.comer.genericcontrolplane.io
+    hostname: api.comer.example.com
     port: 443
   caBundleSecretRef:
       name: google-we1-ca
@@ -16,7 +16,7 @@ spec:
     serviceAccount:
       enabled: true
     oidc:
-      issuerURL: https://auth.genericcontrolplane.io
+      issuerURL: https://auth.example.com
       clientID: platform-mesh
       groupsClaim: groups
       usernameClaim: email

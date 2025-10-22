@@ -4,14 +4,14 @@ kcp is a Kubernetes-like control plane that enables multi-tenant and multi-clust
 
 All configurations use 2 shards (root and alpha), which is the recommended approach for multi-shard operations from the start.
 
-## KCP Component Communication
+## kcp Component Communication
 
 To fully understand different deployment modes, you need to understand the communication patterns for kcp components. In general, shards do not communicate directly with each other; all communication is proxied via the front-proxy or cache server.
 
 - **Front-proxy**: The main API endpoint for clients to access kcp. This is the main entry point for all external consumer clients.
    This is configured in both shards and front-proxy. In general, shards do not communicate directly with the front-proxy, with the exception of 2 cases:
     - When a new workspace is scheduled, the shard contacts the front-proxy to randomly pick a shard for the new workspace.
-    - When an `xEndpointSlice` URL is updated, the update happens via the front-proxy, as this is the only write operation where a shard might need to update an object on another shard. This is configured in deployments by setting `--externalHostname` or `spec.external.hostname` in front-proxy or shard configurations.
+    - When an `APIExportEndpointSlice` or `CachedResourceEndpointSlice` URL is updated, the update happens via the front-proxy, as this is the only write operation where a shard might need to update an object on another shard. This is configured in deployments by setting `--externalHostname` or `spec.external.hostname` in front-proxy or shard configurations.
 
 - **Shards**: Individual kcp shards that host workspaces. Shards can be exposed publicly or kept private.
    When deploying shards, you can configure the shard URL by setting `spec.shardBaseURL` in the shard spec, or by setting the `--shard-base-url` flag in the shard deployment.
@@ -24,8 +24,8 @@ Once you have `kcp` deployed, you can check these values in the shard object in 
 ```bash
 kubectl get shards 
 NAME    REGION   URL                                               EXTERNAL URL                                   AGE
-alpha            https://alpha.comer.genericcontrolplane.io:6443   https://api.comer.genericcontrolplane.io:443   6d20h
-root             https://root.comer.genericcontrolplane.io:6443    https://api.comer.genericcontrolplane.io:443   6d20h
+alpha            https://alpha.comer.example.com:6443   https://api.comer.example.com:443   6d20h
+root             https://root.comer.example.com:6443    https://api.comer.example.com:443   6d20h
 ```
 
 In the shard spec, we can see the different URL options configured:
@@ -33,14 +33,14 @@ In the shard spec, we can see the different URL options configured:
 ```bash
 kubectl get shards -o yaml | grep spec -A 3
   spec:
-    baseURL: https://alpha.comer.genericcontrolplane.io:6443
-    externalURL: https://api.comer.genericcontrolplane.io:443
-    virtualWorkspaceURL: https://alpha.comer.genericcontrolplane.io:6443
+    baseURL: https://alpha.comer.example.com:6443
+    externalURL: https://api.comer.example.com:443
+    virtualWorkspaceURL: https://alpha.comer.example.com:6443
 --
   spec:
-    baseURL: https://root.comer.genericcontrolplane.io:6443
-    externalURL: https://api.comer.genericcontrolplane.io:443
-    virtualWorkspaceURL: https://root.comer.genericcontrolplane.io:6443
+    baseURL: https://root.comer.example.com:6443
+    externalURL: https://api.comer.example.com:443
+    virtualWorkspaceURL: https://root.comer.example.com:6443
 ```
 
 **Important**: The `virtualWorkspaceURL` is used to construct `VirtualWorkspace` endpoints. If you are running virtual workspace clients outside the cluster, you need to make sure this URL is accessible from outside.
@@ -50,15 +50,15 @@ Example:
 ```bash
 KUBECONFIG=kcp-admin-kubeconfig-comer-internal.yaml kubectl get apiexportendpointslice tenancy.kcp.io -o yaml | grep endpoints -A 2
 endpoints:
-  - url: https://root.comer.genericcontrolplane.io:6443/services/apiexport/root/tenancy.kcp.io
-  - url: https://alpha.comer.genericcontrolplane.io:6443/services/apiexport/alpha/tenancy.kcp.io
+  - url: https://root.comer.example.com:6443/services/apiexport/root/tenancy.kcp.io
+  - url: https://alpha.comer.example.com:6443/services/apiexport/alpha/tenancy.kcp.io
 ```
 
 Any external client, like `api-syncagent`, will need to be able to access these URLs.
 
 The basic defaulting logic is as follows:
 
-```
+```go
 if shard.Spec.ExternalURL == "" {
     shard.Spec.ExternalURL = shard.Spec.BaseURL
 }
@@ -75,7 +75,7 @@ if shard.Spec.VirtualWorkspaceURL == "" {
 
 ## Base Configuration: Self-Signed Certificates
 
-This guide covers the **kcp-columbus** deployment using self-signed certificates. This is:
+This guide covers the **kcp-dekker** deployment using self-signed certificates. This is:
 - **Best for**: Development, testing, or closed internal environments  
 - **Certificate approach**: All certificates are self-signed using an internal CA
 - **Access pattern**: Only front-proxy is publicly accessible, shards are private
@@ -92,73 +92,74 @@ For production environments requiring different certificate strategies, see thes
 
 Before starting, you must install shared components that all kcp deployments depend on:
 
-**[Install Shared Components](0-shared.md)** - Sets up:
-- etcd-druid operator for database storage
+- etcd-druid operator for database storage  
 - cert-manager for certificate management  
-- kcp-operator for kcp lifecycle management
-- OIDC provider (dex) for authentication
-- DNS configuration
+- kcp-operator for kcp lifecycle management  
+- OIDC provider (dex) for authentication  
+- DNS configuration  
 
-## Deployment Steps (kcp-columbus)
+Follow the [shard component installation guide](0-shared.md) for detailed instructions on each component.  
 
-### 1. Create Namespace and ETCD Certificates
+## Deployment Steps (kcp-dekker)
+
+### 1. Create Namespace and etcd Certificates
 
 ```bash
-kubectl create namespace kcp-columbus
-kubectl apply -f kcp/assets/kcp-columbus/certificate-etcd.yaml
+kubectl create namespace kcp-dekker
+kubectl apply -f kcp/assets/kcp-dekker/certificate-etcd.yaml
 ```
 
-### 2. Deploy ETCD Clusters
+### 2. Deploy etcd Clusters
 
 ```bash
-kubectl apply -f kcp/assets/kcp-columbus/etcd-druid-root.yaml
-kubectl apply -f kcp/assets/kcp-columbus/etcd-druid-alpha.yaml
+kubectl apply -f kcp/assets/kcp-dekker/etcd-druid-root.yaml
+kubectl apply -f kcp/assets/kcp-dekker/etcd-druid-alpha.yaml
 ```
 
 ### 3. Configure KCP System Certificates
 
 ```bash
-kubectl apply -f kcp/assets/kcp-columbus/certificate-kcp.yaml
+kubectl apply -f kcp/assets/kcp-dekker/certificate-kcp.yaml
 ```
 
 ### 4. Deploy KCP Components
 
 ```bash
-kubectl apply -f kcp/assets/kcp-columbus/kcp-root-shard.yaml
-kubectl apply -f kcp/assets/kcp-columbus/kcp-alpha-shard.yaml
-kubectl apply -f kcp/assets/kcp-columbus/kcp-front-proxy.yaml
+kubectl apply -f kcp/assets/kcp-dekker/kcp-root-shard.yaml
+kubectl apply -f kcp/assets/kcp-dekker/kcp-alpha-shard.yaml
+kubectl apply -f kcp/assets/kcp-dekker/kcp-front-proxy.yaml
 ```
 
 ### 5. Configure DNS for Front-Proxy
 
 1. **Get the LoadBalancer IP**:
    ```bash
-   kubectl get svc -n kcp-columbus frontproxy-front-proxy
+   kubectl get svc -n kcp-dekker frontproxy-front-proxy
    ```
 
-2. **Create DNS A record** pointing `api.columbus.genericcontrolplane.io` to the LoadBalancer IP
+2. **Create DNS A record** pointing `api.dekker.example.com` to the LoadBalancer IP
 
 3. **Verify certificate issuance**:
    ```bash
-   kubectl get certificate -n kcp-columbus root-frontproxy-server -o yaml
+   kubectl get certificate -n kcp-dekker root-frontproxy-server -o yaml
    ```
 
 ### 6. Create and Test Admin Access
 
 ```bash
-kubectl apply -f kcp/assets/kcp-columbus/kubeconfig-kcp-admin.yaml
+kubectl apply -f kcp/assets/kcp-dekker/kubeconfig-kcp-admin.yaml
 
-kubectl get secret -n kcp-columbus kcp-admin-frontproxy \
-  -o jsonpath='{.data.kubeconfig}' | base64 -d > kcp-admin-kubeconfig-columbus.yaml
+kubectl get secret -n kcp-dekker kcp-admin-frontproxy \
+  -o jsonpath='{.data.kubeconfig}' | base64 -d > kcp-admin-kubeconfig-dekker.yaml
 
-KUBECONFIG=kcp-admin-kubeconfig-columbus.yaml kubectl get shards
+KUBECONFIG=kcp-admin-kubeconfig-dekker.yaml kubectl get shards
 ```
 
 Expected output:
 ```
 NAME    REGION   URL                                                           EXTERNAL URL                                       AGE
-alpha            https://alpha-shard-kcp.kcp-columbus.svc.cluster.local:6443   https://api.columbus.genericcontrolplane.io:6443   14m
-root             https://root-kcp.kcp-columbus.svc.cluster.local:6443          https://api.columbus.genericcontrolplane.io:6443   14m
+alpha            https://alpha-shard-kcp.kcp-dekker.svc.cluster.local:6443   https://api.dekker.example.com:6443   14m
+root             https://root-kcp.kcp-dekker.svc.cluster.local:6443          https://api.dekker.example.com:6443   14m
 ```
 
 ## Optional: OIDC Authentication
@@ -182,7 +183,7 @@ kubectl config set-credentials oidc \
   --exec-command=kubectl \
   --exec-arg=oidc-login \
   --exec-arg=get-token \
-  --exec-arg=--oidc-issuer-url="https://auth.genericcontrolplane.io" \
+  --exec-arg=--oidc-issuer-url="https://auth.example.com" \
   --exec-arg=--oidc-client-id="platform-mesh" \
   --exec-arg=--oidc-extra-scope="email" \
   --exec-arg=--oidc-client-secret=<YOUR_CLIENT_SECRET>
@@ -200,6 +201,6 @@ Since this setup uses self-signed certificates, external users will need to:
 
 **Certificate Trust Issues**: If clients cannot connect due to certificate validation errors, ensure the self-signed CA certificate is added to the client's trust store.
 
-**DNS Resolution**: Verify that `api.columbus.genericcontrolplane.io` resolves to the correct LoadBalancer IP.
+**DNS Resolution**: Verify that `api.dekker.example.com` resolves to the correct LoadBalancer IP.
 
 **HTTP/2 Stream Error** `(92) HTTP/2 stream 1 was not closed cleanly: INTERNAL_ERROR (err 2)`: You are accessing a URL not served by the front-proxy. Verify the URL is correct.

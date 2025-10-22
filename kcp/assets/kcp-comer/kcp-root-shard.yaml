@@ -8,7 +8,7 @@ spec:
     serviceAccount:
       enabled: true
     oidc:
-      issuerURL: https://auth.genericcontrolplane.io
+      issuerURL: https://auth.example.com
       clientID: platform-mesh
       groupsClaim: groups
       usernameClaim: email
@@ -16,9 +16,9 @@ spec:
       groupsPrefix: "oidc:"
       clientSecret: Z2Fyc2lha2FsYmlzdmFuZGVuekWplCg==
   external:
-    hostname: api.comer.genericcontrolplane.io
+    hostname: api.comer.example.com
     port: 443
-    privateHostname: api-internal.comer.genericcontrolplane.io
+    privateHostname: api-internal.comer.example.com
     privatePort: 6443
   certificates:
     # this references the issuer created above
@@ -37,12 +37,12 @@ spec:
     tlsConfig:
       secretRef:
         name: etcd-ca-tls
-  shardBaseURL: https://root.comer.genericcontrolplane.io:6443
+  shardBaseURL: https://root.comer.example.com:6443
   certificateTemplates:
     server:
       spec:
         dnsNames:
-        - root.comer.genericcontrolplane.io
+        - root.comer.example.com
   serviceTemplate:
     spec:
       type: LoadBalancer

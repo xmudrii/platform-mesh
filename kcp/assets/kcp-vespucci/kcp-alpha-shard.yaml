@@ -11,7 +11,7 @@ spec:
     serviceAccount:
       enabled: true
     oidc:
-      issuerURL: https://auth.genericcontrolplane.io
+      issuerURL: https://auth.example.com
       clientID: platform-mesh
       groupsClaim: groups
       usernameClaim: email
@@ -26,12 +26,12 @@ spec:
     tlsConfig:
       secretRef:
         name: etcd-ca-tls
-  shardBaseURL: https://alpha.vespucci.genericcontrolplane.io:6443
+  shardBaseURL: https://alpha.vespucci.example.com:6443
   certificateTemplates:
     server:
       spec:
         dnsNames:
-        - alpha.vespucci.genericcontrolplane.io
+        - alpha.vespucci.example.com
   rootShard:
     ref:
       name: root

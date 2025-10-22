@@ -1,10 +1,10 @@
 ---
-# Root ETCD CA certificate for all etcd components across all kcp deployment.
+# Root etcd CA certificate for all etcd components across all kcp deployment.
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: etcd-ca
-  namespace: kcp-columbus
+  namespace: kcp-dekker
 spec:
   secretName: etcd-ca-tls
   isCA: true
@@ -18,7 +18,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: etcd-peer-ca
-  namespace: kcp-columbus
+  namespace: kcp-dekker
 spec:
   secretName: etcd-peer-ca-tls
   isCA: true
@@ -32,7 +32,7 @@ apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   name: etcd-peer-ca
-  namespace: kcp-columbus
+  namespace: kcp-dekker
 spec:
   ca:
     secretName: etcd-peer-ca-tls
@@ -42,29 +42,29 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: etcd-server-tls
-  namespace: kcp-columbus
+  namespace: kcp-dekker
 spec:
   secretName: etcd-server-tls
   commonName: etcd-server
   dnsNames:
   - root-local
   - root-client
-  - root-client.kcp-columbus
-  - root-client.kcp-columbus.svc
-  - root-client.kcp-columbus.svc.cluster.local
+  - root-client.kcp-dekker
+  - root-client.kcp-dekker.svc
+  - root-client.kcp-dekker.svc.cluster.local
   - "*.root-peer"
-  - "*.root-peer.kcp-columbus"
-  - "*.root-peer.kcp-columbus.svc"
-  - "*.root-peer.kcp-columbus.svc.cluster.local"
+  - "*.root-peer.kcp-dekker"
+  - "*.root-peer.kcp-dekker.svc"
+  - "*.root-peer.kcp-dekker.svc.cluster.local"
   - alpha-local
   - alpha-client
-  - alpha-client.kcp-columbus
-  - alpha-client.kcp-columbus.svc
-  - alpha-client.kcp-columbus.svc.cluster.local
+  - alpha-client.kcp-dekker
+  - alpha-client.kcp-dekker.svc
+  - alpha-client.kcp-dekker.svc.cluster.local
   - "*.alpha-peer"
-  - "*.alpha-peer.kcp-columbus"
-  - "*.alpha-peer.kcp-columbus.svc"
-  - "*.alpha-peer.kcp-columbus.svc.cluster.local"
+  - "*.alpha-peer.kcp-dekker"
+  - "*.alpha-peer.kcp-dekker.svc"
+  - "*.alpha-peer.kcp-dekker.svc.cluster.local"
   issuerRef:
     name: etcd-ca
     kind: ClusterIssuer
@@ -74,7 +74,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: etcd-client-tls
-  namespace: kcp-columbus
+  namespace: kcp-dekker
 spec:
   secretName: etcd-client-tls
   commonName: etcd-client
@@ -87,27 +87,27 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: etcd-peer-tls
-  namespace: kcp-columbus
+  namespace: kcp-dekker
 spec:
   secretName: etcd-peer-tls
   commonName: etcd-peer
   dnsNames:
   - root-peer
-  - root-peer.kcp-columbus
-  - root-peer.kcp-columbus.svc
-  - root-peer.kcp-columbus.svc.cluster.local
+  - root-peer.kcp-dekker
+  - root-peer.kcp-dekker.svc
+  - root-peer.kcp-dekker.svc.cluster.local
   - "*.root-peer"
-  - "*.root-peer.kcp-columbus"
-  - "*.root-peer.kcp-columbus.svc"
-  - "*.root-peer.kcp-columbus.svc.cluster.local"
+  - "*.root-peer.kcp-dekker"
+  - "*.root-peer.kcp-dekker.svc"
+  - "*.root-peer.kcp-dekker.svc.cluster.local"
   - alpha-peer
-  - alpha-peer.kcp-columbus
-  - alpha-peer.kcp-columbus.svc
-  - alpha-peer.kcp-columbus.svc.cluster.local
+  - alpha-peer.kcp-dekker
+  - alpha-peer.kcp-dekker.svc
+  - alpha-peer.kcp-dekker.svc.cluster.local
   - "*.alpha-peer"
-  - "*.alpha-peer.kcp-columbus"
-  - "*.alpha-peer.kcp-columbus.svc"
-  - "*.alpha-peer.kcp-columbus.svc.cluster.local"
+  - "*.alpha-peer.kcp-dekker"
+  - "*.alpha-peer.kcp-dekker.svc"
+  - "*.alpha-peer.kcp-dekker.svc.cluster.local"
   issuerRef:
     name: etcd-peer-ca
     kind: Issuer
@@ -117,7 +117,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: etcd-backup-restore-server-tls
-  namespace: kcp-columbus
+  namespace: kcp-dekker
 spec:
   secretName: etcd-backup-restore-server-tls
   commonName: etcd-backup-restore-server
@@ -135,7 +135,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: etcd-backup-restore-client-tls
-  namespace: kcp-columbus
+  namespace: kcp-dekker
 spec:
   secretName: etcd-backup-restore-client-tls
   commonName: etcd-backup-restore-client

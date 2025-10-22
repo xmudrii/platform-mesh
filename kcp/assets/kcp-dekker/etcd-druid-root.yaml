@@ -1,11 +1,11 @@
 apiVersion: druid.gardener.cloud/v1alpha1
 kind: Etcd
 metadata:
-  name: alpha
-  namespace: kcp-columbus
+  name: root
+  namespace: kcp-dekker
   labels:
     app: etcd-statefulset
-    role: alpha
+    role: root
 spec:
   replicas: 3
 
@@ -61,7 +61,7 @@ spec:
 
   annotations:
     app: etcd-statefulset
-    role: alpha
+    role: root
   labels:
     app: etcd-statefulset
-    role: alpha
+    role: root

@@ -22,7 +22,7 @@ cp kcp/assets/cert-manager/cloudflare-secret.yaml.template \
 
 ## Certificate Management Strategy
 
-We use `cert-manager` with Let's Encrypt for certificate issuance. DNS management is handled through Kubernetes LoadBalancer services with manual DNS record creation.
+We use `cert-manager` with Let's Encrypt for certificate issuance. DNS management is manual, where external IP is allocated through Kubernetes LoadBalancer services and added to external DNS manually.
 
 **Note**: For production environments, consider automating DNS management with `external-dns`.
 
@@ -41,7 +41,7 @@ solvers:
 
 For other DNS providers, adjust the solver configuration accordingly.
 
-## 1. ETCD Database
+## 1. etcd Database
 
 kcp requires an etcd cluster for persistent storage. For production deployments, we recommend using [etcd-druid](https://github.com/gardener/etcd-druid) which provides automated etcd cluster management.
 
@@ -105,11 +105,11 @@ For DNS01 challenges, configure your DNS provider credentials. For CloudFlare:
 
 **Note**: For other DNS providers, modify the cluster-issuer.yaml configuration accordingly.
 
-## 3. ETCD PKI Setup
+## 3. etcd PKI Setup
 
 etcd requires PKI certificates for secure communication. Since etcd-druid doesn't handle certificate provisioning automatically, we use cert-manager to create the necessary certificate issuers.
 
-### Configure ETCD Certificate Issuer
+### Configure etcd Certificate Issuer
 
 Create the certificate issuer in the cert-manager namespace:
 
@@ -130,9 +130,10 @@ The kcp-operator manages the lifecycle of kcp components including shards, front
 ```bash
 helm repo add kcp https://kcp-dev.github.io/helm-charts
 
-helm upgrade --install kcp-operator kcp/kcp-operator \
+helm upgrade --install \
   --create-namespace \
-  --namespace kcp-operator
+  --namespace kcp-operator \
+  kcp-operator kcp/kcp-operator
 ```
 
 ## 5. OIDC Provider (Optional)
@@ -206,14 +207,14 @@ We use **LoadBalancer Services + Manual DNS Records** for simplicity and reliabi
 
 ### Example Domain Structure
 
-For a deployment in the `columbus` scenario:
+For a deployment in the `dekker` scenario:
 ```
 # Front-proxy domain
-api.columbus.genericcontrolplane.io -> LoadBalancer IP
+api.dekker.example.com -> LoadBalancer IP
 
 # Shard domains (if public access needed)
-root.columbus.genericcontrolplane.io -> Root shard LoadBalancer IP  
-alpha.columbus.genericcontrolplane.io -> Alpha shard LoadBalancer IP
+root.dekker.example.com -> Root shard LoadBalancer IP  
+alpha.dekker.example.com -> Alpha shard LoadBalancer IP
 ```
 
 ### DNS Automation (Optional)
@@ -226,6 +227,6 @@ For production environments, consider automating DNS management with:
 ## Next Steps
 
 Your cluster is now ready to host kcp. Proceed to your chosen deployment scenario:
-- [Scenario 1: Self-Signed Certificates](kcp-columbus-self-signed.md)
+- [Scenario 1: Self-Signed Certificates](kcp-dekker-self-signed.md)
 - [Scenario 2: External Certificates](kcp-vespucci-external-certs.md)  
 - [Scenario 3: Dual Front-Proxy](kcp-comer-dual-frontproxy.md)

@@ -1,6 +1,6 @@
 config:
   # The issuer URL is still the public HTTPS URL.
-  issuer: https://auth.genericcontrolplane.io
+  issuer: https://auth.example.com
 
   logger:
     level: "debug"
@@ -31,12 +31,12 @@ config:
       config:
         clientID: xxxxxxx
         clientSecret: xxxxxxxxxx
-        redirectURI: https://auth.genericcontrolplane.io/callback
+        redirectURI: https://auth.example.com/callback
         org: platform-mesh
   staticClients:
     - id: platform-mesh
       redirectURIs:
-      - https://auth.genericcontrolplane.io/callback
+      - https://auth.example.com/callback
       - http://localhost:8000
       name: 'PlatformMeshApp'
       secret: Z2Fyc2lha2FsYmlzdmFuZGVuekWplCg==

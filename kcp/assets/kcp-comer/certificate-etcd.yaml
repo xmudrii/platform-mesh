@@ -1,5 +1,5 @@
 ---
-# Root ETCD CA certificate for all etcd components across all kcp deployment.
+# Root etcd CA certificate for all etcd components across all kcp deployment.
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:

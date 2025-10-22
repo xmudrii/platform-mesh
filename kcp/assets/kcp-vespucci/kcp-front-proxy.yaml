@@ -4,7 +4,7 @@ metadata:
   name: frontproxy
   namespace: kcp-vespucci
 spec:
-  externalHostname: api.vespucci.genericcontrolplane.io
+  externalHostname: api.vespucci.example.com
   rootShard:
     ref:
       name: root
@@ -14,19 +14,19 @@ spec:
     server:
       metadata:
         annotations:
-          cert-manager.io/cluster-issuer: "faros-letsencrypt-prod"
+          cert-manager.io/cluster-issuer: "kcp-comerletsencrypt-prod"
       spec:
         issuerRef:
-          name: faros-letsencrypt-prod
+          name: kcp-comerletsencrypt-prod
           kind: ClusterIssuer
           group: cert-manager.io
         dnsNames:
-        - api.vespucci.genericcontrolplane.io
+        - api.vespucci.example.com
   auth:
     serviceAccount:
       enabled: true
     oidc:
-      issuerURL: https://auth.genericcontrolplane.io
+      issuerURL: https://auth.example.com
       clientID: platform-mesh
       groupsClaim: groups
       usernameClaim: email

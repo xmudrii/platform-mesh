@@ -12,7 +12,7 @@ This variation of the [base Columbus setup](README.md) uses Let's Encrypt certif
 
 | Aspect | Base (Columbus) | This Variation (Vespucci) |
 |--------|-----------------|---------------------------|
-| **Namespace** | `kcp-columbus` | `kcp-vespucci` |
+| **Namespace** | `kcp-dekker` | `kcp-vespucci` |
 | **Front-proxy Certs** | Self-signed | Let's Encrypt (automatic) |
 | **Shard Access** | Private cluster-only | Publicly accessible |
 | **Certificate Trust** | Manual CA trust required | Automatic for front-proxy |
@@ -24,7 +24,7 @@ Complete the [base setup prerequisites](README.md#prerequisites) first.
 
 ## Setup Changes from Base
 
-Follow the same deployment steps as the [base setup](README.md#deployment-steps-kcp-columbus), but with these modifications:
+Follow the same deployment steps as the [base setup](README.md#deployment-steps-kcp-dekker), but with these modifications:
 
 ### Modified Steps
 
@@ -33,7 +33,7 @@ Follow the same deployment steps as the [base setup](README.md#deployment-steps-
 kubectl create namespace kcp-vespucci
 ```
 
-**Step 1-5**: Replace `kcp-columbus` with `kcp-vespucci` in all asset file paths:
+**Step 1-5**: Replace `kcp-dekker` with `kcp-vespucci` in all asset file paths:
 ```bash
 kubectl apply -f kcp/assets/kcp-vespucci/certificate-etcd.yaml
 kubectl apply -f kcp/assets/kcp-vespucci/etcd-druid-root.yaml
@@ -44,7 +44,7 @@ kubectl apply -f kcp/assets/kcp-vespucci/kcp-alpha-shard.yaml
 kubectl apply -f kcp/assets/kcp-vespucci/kcp-front-proxy.yaml
 ```
 
-**DNS Configuration**: Use `api.vespucci.genericcontrolplane.io` instead of the Columbus domain.
+**DNS Configuration**: Use `api.vespucci.example.com` instead of the Columbus domain.
 
 ### Additional Setup Required
 
@@ -68,8 +68,8 @@ KUBECONFIG=kcp-admin-kubeconfig-vespucci.yaml kubectl get shards
 Expected output shows publicly accessible shard URLs:
 ```
 NAME    REGION   URL                                                  EXTERNAL URL                                       AGE
-alpha            https://alpha.vespucci.genericcontrolplane.io:6443   https://api.vespucci.genericcontrolplane.io:6443   2d19h
-root             https://root.vespucci.genericcontrolplane.io:6443    https://api.vespucci.genericcontrolplane.io:6443   2d20h
+alpha            https://alpha.vespucci.example.com:6443   https://api.vespucci.example.com:6443   2d19h
+root             https://root.vespucci.example.com:6443    https://api.vespucci.example.com:6443   2d20h
 ```
 
 ## What You Gain with This Variation
@@ -85,6 +85,6 @@ OIDC setup is identical to the [base setup](README.md#optional-oidc-authenticati
 
 ## Troubleshooting
 
-**Certificate Issuance**: If Let's Encrypt certificates fail to issue, verify DNS propagation and CloudFlare API credentials are correct.
+**Certificate Issuance**: If Let's Encrypt certificates fail to be issued, verify DNS propagation and CloudFlare API credentials are correct.
 
 **Mixed Certificate Trust**: External controllers may need CA bundle configuration to trust both external (Let's Encrypt) and internal certificates when accessing shards directly.

@@ -2,13 +2,13 @@ apiVersion: operator.kcp.io/v1alpha1
 kind: RootShard
 metadata:
   name: root
-  namespace: kcp-columbus
+  namespace: kcp-dekker
 spec:
   auth:
     serviceAccount:
       enabled: true
     oidc:
-      issuerURL: https://auth.genericcontrolplane.io
+      issuerURL: https://auth.example.com
       clientID: platform-mesh
       groupsClaim: groups
       usernameClaim: email
@@ -16,7 +16,7 @@ spec:
       groupsPrefix: "oidc:"
       clientSecret: Z2Fyc2lha2FsYmlzdmFuZGVuekWplCg==
   external:
-    hostname: api.columbus.genericcontrolplane.io
+    hostname: api.dekker.example.com
     port: 6443
   certificates:
     # this references the issuer created above
@@ -31,7 +31,7 @@ spec:
       enabled: true
   etcd:
     endpoints:
-      - https://root-client.kcp-columbus.svc.cluster.local:2379
+      - https://root-client.kcp-dekker.svc.cluster.local:2379
     tlsConfig:
       secretRef:
         name: etcd-ca-tls

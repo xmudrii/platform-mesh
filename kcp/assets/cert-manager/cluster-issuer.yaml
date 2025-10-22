@@ -2,12 +2,10 @@
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: faros-letsencrypt-prod
+  name: letsencrypt-prod
 spec:
   acme:
     # You must replace this email address with your own.
-    # Let's Encrypt will use this to contact you about expiring
-    # certificates, and issues related to your account.
     email: email@example.com
     server: https://acme-v02.api.letsencrypt.org/directory
     privateKeySecretRef:

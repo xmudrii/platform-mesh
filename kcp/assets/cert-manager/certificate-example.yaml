@@ -10,9 +10,9 @@ spec:
   
   # Reference to the ClusterIssuer
   issuerRef:
-    name: faros-letsencrypt-prod
+    name: kcp-comerletsencrypt-prod
     kind: ClusterIssuer
   
   # Domains for the certificate
   dnsNames:
-  - auth.genericcontrolplane.io
+  - auth.example.com

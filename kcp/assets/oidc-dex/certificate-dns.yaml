@@ -7,11 +7,11 @@ metadata:
 spec:
   secretName: dex-tls
   issuerRef:
-    name: faros-letsencrypt-prod
+    name: kcp-comerletsencrypt-prod
     kind: ClusterIssuer
     group: cert-manager.io
   dnsNames:
-  - auth.genericcontrolplane.io
+  - auth.example.com
   usages:
   - digital signature
   - key encipherment

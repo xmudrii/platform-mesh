@@ -11,7 +11,7 @@ spec:
     serviceAccount:
       enabled: true
     oidc:
-      issuerURL: https://auth.genericcontrolplane.io
+      issuerURL: https://auth.example.com
       clientID: platform-mesh
       groupsClaim: groups
       usernameClaim: email
@@ -21,7 +21,7 @@ spec:
   caBundleSecretRef:
       name: letsencrypt-ca
   external:
-    hostname: api.vespucci.genericcontrolplane.io
+    hostname: api.vespucci.example.com
     port: 6443
   certificates:
     # this references the issuer created above
@@ -34,12 +34,12 @@ spec:
       # kcp comes with a cache server accessible to all shards,
       # in this case it is fine to enable the embedded instance
       enabled: true
-  shardBaseURL: https://root.vespucci.genericcontrolplane.io:6443
+  shardBaseURL: https://root.vespucci.example.com:6443
   certificateTemplates:
     server:
       spec:
         dnsNames:
-        - root.vespucci.genericcontrolplane.io
+        - root.vespucci.example.com
   etcd:
     endpoints:
       - https://root-client.kcp-vespucci.svc.cluster.local:2379

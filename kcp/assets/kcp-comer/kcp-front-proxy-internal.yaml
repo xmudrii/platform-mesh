@@ -5,7 +5,7 @@ metadata:
   namespace: kcp-comer
 spec:
   external:
-    hostname: api-internal.comer.genericcontrolplane.io
+    hostname: api-internal.comer.example.com
     port: 6443
   rootShard:
     ref:
@@ -14,7 +14,7 @@ spec:
     serviceAccount:
       enabled: true
     oidc:
-      issuerURL: https://auth.genericcontrolplane.io
+      issuerURL: https://auth.example.com
       clientID: platform-mesh
       groupsClaim: groups
       usernameClaim: email

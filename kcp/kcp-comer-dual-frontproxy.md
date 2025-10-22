@@ -13,7 +13,7 @@ This advanced variation of the [base Columbus setup](README.md) deploys dual fro
 
 | Aspect | Base (Columbus) | This Variation (Comer) |
 |--------|-----------------|------------------------|
-| **Namespace** | `kcp-columbus` | `kcp-comer` |
+| **Namespace** | `kcp-dekker` | `kcp-comer` |
 | **Front-proxy Count** | Single | Dual (public + internal) |
 | **CDN Integration** | None | Full CloudFlare support |
 | **Certificate Chain** | Simple self-signed | Edge + internal certificates |
@@ -26,7 +26,7 @@ Complete the [base setup prerequisites](README.md#prerequisites) first.
 
 ## Setup Changes from Base
 
-Follow the same deployment steps as the [base setup](README.md#deployment-steps-kcp-columbus), but with these modifications:
+Follow the same deployment steps as the [base setup](README.md#deployment-steps-kcp-dekker), but with these modifications:
 
 ### Additional Preparation Required
 
@@ -42,7 +42,7 @@ kubectl create secret generic google-we1-ca --from-file=tls.crt=google-we1.pem -
 
 ### Modified Steps
 
-**Step 1-3**: Replace `kcp-columbus` with `kcp-comer` in all asset file paths:
+**Step 1-3**: Replace `kcp-dekker` with `kcp-comer` in all asset file paths:
 ```bash
 kubectl apply -f kcp/assets/kcp-comer/certificate-etcd.yaml
 kubectl apply -f kcp/assets/kcp-comer/etcd-druid-root.yaml
@@ -67,7 +67,7 @@ kubectl get svc -n kcp-comer root-shard
 kubectl get svc -n kcp-comer alpha-shard
 ```
 
-Create DNS A records for all services using their LoadBalancer IPs.
+Create DNS A records (or CNAME if Loadbalancer is DNS based) for all services using their LoadBalancer IPs.
 
 ### Additional Steps Required
 
@@ -108,8 +108,8 @@ KUBECONFIG=kcp-admin-kubeconfig-comer.yaml kubectl get shards
 Expected output shows edge-proxied URLs:
 ```
 NAME    REGION   URL                                               EXTERNAL URL                                   AGE
-alpha            https://alpha.comer.genericcontrolplane.io:6443   https://api.comer.genericcontrolplane.io:443   16m
-root             https://root.comer.genericcontrolplane.io:6443    https://api.comer.genericcontrolplane.io:443   16m
+alpha            https://alpha.comer.example.com:6443   https://api.comer.example.com:443   16m
+root             https://root.comer.example.com:6443    https://api.comer.example.com:443   16m
 ```
 
 ### Internal Access Still Works with Certificates
