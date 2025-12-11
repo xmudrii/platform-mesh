@@ -1,28 +1,26 @@
 # qbrtool - Quarterly Board Report Tool
 
-A Go CLI tool for exporting and analyzing GitHub Project Board items. Designed for generating quarterly reports with support for archived items, CVE tracking, OSS contributions, and more.
+A Go CLI tool for exporting and analyzing GitHub Project Board items. Supports dynamic schema discovery, custom field filtering, and pipeline-based workflows for generating quarterly reports.
 
 ## Features
 
-- **Export to JSON or CSV** - Export project board items with filtering options
-- **Quarter filtering** - Filter items closed within a calendar quarter (Q1-Q4)
-- **Item type filtering** - Filter by issue, PR, draft, or epic
-- **Archived items support** - Retrieve archived items via search API workaround
-- **Analysis capabilities**:
-  - CVE detection (pattern: `CVE-YYYY-NNNNN`)
-  - OSS contributions to specific organizations
-  - Monitoring/observability related items
-  - Lifecycle management items
-  - Security related items
+- **Schema Discovery** - Discover project fields and available values dynamically
+- **Dynamic Filtering** - Filter by any project field (Status, Type, Priority, etc.)
+- **Full Data Export** - Export items with all custom field values, assignees, milestones
+- **Cross-Org Support** - Track contributions from external organizations
+- **Pipeline Workflows** - Chain commands for live data processing
+- **Built-in Analyzers** - CVE, OSS, security, monitoring, lifecycle detection
+- **Group-By Analysis** - Dynamically group items by any field
+- **Multiple Formats** - JSON, CSV, and Markdown output
 
-## Installation
+## Quick Start
 
 ### Prerequisites
 
 - Go 1.21 or later
 - GitHub CLI (`gh`) for authentication (recommended)
 
-### Build from source
+### Installation
 
 ```bash
 git clone https://github.com/platform-mesh/qbrtool.git
@@ -30,277 +28,342 @@ cd qbrtool
 make build
 ```
 
-The binary will be available at `./bin/qbrtool`.
-
-### Install to GOPATH
+### Authentication
 
 ```bash
-make install
-```
-
-## Authentication
-
-The tool requires a GitHub personal access token with the following scopes:
-- `read:project` - Read access to projects
-- `repo` - Read access to repositories (for searching issues/PRs)
-
-### Option 1: Using GitHub CLI (Recommended)
-
-If you have the GitHub CLI (`gh`) installed and authenticated:
-
-```bash
-# Use gh to get a token and pass it to qbrtool
+# Using GitHub CLI (recommended)
 export GITHUB_TOKEN=$(gh auth token)
 
-# Or run directly with the token
-GITHUB_TOKEN=$(gh auth token) ./bin/qbrtool export --quarter Q3-2025
-```
-
-You can add this to your shell profile (`.bashrc`, `.zshrc`, etc.):
-
-```bash
-# Add to ~/.zshrc or ~/.bashrc
-export GITHUB_TOKEN=$(gh auth token)
-```
-
-### Option 2: Personal Access Token
-
-1. Go to GitHub Settings > Developer settings > Personal access tokens > Fine-grained tokens
-2. Create a new token with:
-   - Repository access: All repositories (or select specific ones)
-   - Permissions:
-     - Repository permissions: Read access to issues and pull requests
-     - Organization permissions: Read access to projects
-3. Export the token:
-
-```bash
+# Or use a personal access token
 export GITHUB_TOKEN=github_pat_xxxxxxxxxxxx
 ```
 
-### Option 3: Pass token directly
+### Basic Pipeline
 
 ```bash
-./bin/qbrtool export --token github_pat_xxxxxxxxxxxx --quarter Q3-2025
+# Export items and generate a quarterly report
+qbrtool export --full --quarter Q4-2025 | qbrtool analyze --analysis all --format md
 ```
 
-## Usage
+---
 
-### Export Command
+## Workflow
 
-Export project board items to JSON or CSV format.
+The recommended workflow is: **Discover → Export → Analyze**
+
+### Step 1: Discover Project Schema
+
+Before exporting, discover what fields are available in your project.
+
+#### Quick View (List Fields)
 
 ```bash
-# Export items closed in Q3-2025 (July-September)
-./bin/qbrtool export --quarter Q3-2025 -f q3-2025.json
-
-# Export as CSV for easy reading
-./bin/qbrtool export --quarter Q3-2025 --format csv -f q3-2025.csv
-
-# Include archived items (uses search API workaround)
-./bin/qbrtool export --quarter Q3-2025 --include-archived -f q3-2025.json
-
-# Export only issues
-./bin/qbrtool export --quarter Q3-2025 --type issue -f issues.json
-
-# Export only PRs
-./bin/qbrtool export --quarter Q3-2025 --type pr -f prs.json
-
-# Export epics only
-./bin/qbrtool export --quarter Q3-2025 --type epic -f epics.json
-
-# Export from a different project
-./bin/qbrtool export --org my-org --project 5 --quarter Q3-2025
-
-# Export to stdout (for piping)
-./bin/qbrtool export --quarter Q3-2025 --include-archived
+qbrtool export --list-fields
 ```
 
-#### Export Flags
+Output:
+```
+Available fields for platform-mesh/1 (Platform Mesh & Kube Projects - Backlog):
+
+  Title (title)
+  Status (single_select): Backlog, In Progress, Blocked/Waiting, In-Review, Done, Ongoing, Demo'd
+  Priority (single_select): P0, P1, P2
+  IssueType (single_select): Epic, Task
+  Domain (single_select): Platform Mesh, KCP
+  Milestone (milestone)
+  ...
+
+Built-in fields (always available for filtering):
+  state: open, closed, merged
+  type: issue, pr, draft
+  repo: repository name
+  author: username
+  milestone: milestone title
+
+Usage examples:
+  qbrtool export --org platform-mesh --project 1 --full --field "Status=Done"
+```
+
+#### Full Schema Export
+
+For detailed schema information (IDs, colors, iterations):
+
+```bash
+qbrtool schema -f schema.json
+```
+
+### Step 2: Export Items
+
+Export project items with filtering options. Use `--full` to include all custom field values.
+
+#### Basic Export (Minimal Data)
+
+```bash
+qbrtool export --quarter Q4-2025
+```
+
+#### Full Export (All Field Values)
+
+```bash
+qbrtool export --full --quarter Q4-2025
+```
+
+#### Filter by Custom Fields
+
+```bash
+# Filter by status
+qbrtool export --full --field "Status=Done"
+
+# Filter by type
+qbrtool export --full --field "IssueType=Epic"
+
+# Multiple filters (AND logic)
+qbrtool export --full --field "Status=Done" --field "Priority=P0"
+
+# Filter operators
+qbrtool export --full --field "Status!=Backlog"        # Not equal
+qbrtool export --full --field "Title~security"         # Contains
+qbrtool export --full --field "Status=Done,In-Review"  # Match any
+```
+
+#### Filter by Organization
+
+```bash
+# Only items from your org
+qbrtool export --full --org-filter internal
+
+# Only external contributions
+qbrtool export --full --org-filter external
+
+# Specific organizations
+qbrtool export --full --filter-orgs kcp-dev,kube-bind
+```
+
+#### Include Archived Items
+
+```bash
+qbrtool export --full --quarter Q4-2025 --include-archived
+```
+
+### Step 3: Analyze
+
+Run analyzers on exported data. Pipe directly from export for live data.
+
+#### Built-in Analyzers
+
+```bash
+# All analyzers
+qbrtool export --full | qbrtool analyze --analysis all
+
+# Specific analyzers
+qbrtool export --full | qbrtool analyze --analysis cve
+qbrtool export --full | qbrtool analyze --analysis oss
+qbrtool export --full | qbrtool analyze --analysis security
+qbrtool export --full | qbrtool analyze --analysis monitoring
+qbrtool export --full | qbrtool analyze --analysis lifecycle
+```
+
+#### Group-By Analysis
+
+Group items by any field value:
+
+```bash
+# Group by status
+qbrtool export --full | qbrtool analyze --group-by Status
+
+# Group by issue type
+qbrtool export --full | qbrtool analyze --group-by IssueType
+
+# Group by repository
+qbrtool export --full | qbrtool analyze --group-by repo
+
+# Multiple groupings
+qbrtool export --full | qbrtool analyze --group-by Status --group-by IssueType
+```
+
+#### Generate Reports
+
+```bash
+# Markdown report
+qbrtool export --full --quarter Q4-2025 | qbrtool analyze --analysis all --format md
+
+# Save to file
+qbrtool export --full --quarter Q4-2025 | qbrtool analyze --analysis all --format md -f report.md
+```
+
+---
+
+## Pipeline Examples
+
+### Quarterly Report (Recommended)
+
+```bash
+# Complete quarterly report with all analyzers and grouping
+qbrtool export --full --quarter Q4-2025 --include-archived | \
+  qbrtool analyze --analysis all --group-by IssueType --format md -f Q4-report.md
+```
+
+### Epic Summary
+
+```bash
+# Export only epics, analyze by status
+qbrtool export --full --field "IssueType=Epic" | \
+  qbrtool analyze --group-by Status --format md
+```
+
+### External Contributions Report
+
+```bash
+# Track contributions from external orgs
+qbrtool export --full --org-filter external | \
+  qbrtool analyze --analysis oss --group-by repo --format md
+```
+
+### Security Review
+
+```bash
+# CVE and security items
+qbrtool export --full --quarter Q4-2025 | \
+  qbrtool analyze --analysis cve --analysis security --format md
+```
+
+### P0 Items by Domain
+
+```bash
+# High-priority items grouped by domain
+qbrtool export --full --field "Priority=P0" | \
+  qbrtool analyze --group-by Domain --format md
+```
+
+---
+
+## Command Reference
+
+### schema
+
+Dump the complete project schema to JSON.
+
+```bash
+qbrtool schema [flags]
+```
 
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
-| `--org` | `-o` | GitHub organization name | `platform-mesh` |
+| `--org` | `-o` | GitHub organization | `platform-mesh` |
 | `--project` | `-p` | Project number | `1` |
-| `--quarter` | `-q` | Show items closed in quarter (e.g., Q3-2025) | - |
-| `--type` | `-t` | Item types: issue, pr, draft, epic | all |
-| `--include-archived` | - | Include archived items | `false` |
-| `--output-file` | `-f` | Output file path | stdout |
-| `--format` | `-F` | Output format: json, csv | `json` |
+| `--output-file` | `-f` | Output file | stdout |
 
-### Analyze Command
+### export
 
-Analyze exported items for specific categories. Supports JSON and Markdown output formats.
+Export project board items.
 
 ```bash
-# Run all analyzers
-./bin/qbrtool analyze -i q3-2025.json --analysis all
-
-# Generate markdown report for quarterly review
-./bin/qbrtool analyze -i q3-2025.json --analysis all --format md -f report.md
-
-# Find CVEs
-./bin/qbrtool analyze -i q3-2025.json --analysis cve
-
-# Find OSS contributions
-./bin/qbrtool analyze -i q3-2025.json --analysis oss
-
-# Find monitoring-related items
-./bin/qbrtool analyze -i q3-2025.json --analysis monitoring
-
-# Find lifecycle management items
-./bin/qbrtool analyze -i q3-2025.json --analysis lifecycle
-
-# Find security-related items
-./bin/qbrtool analyze -i q3-2025.json --analysis security
-
-# Custom OSS organizations
-./bin/qbrtool analyze -i q3-2025.json --analysis oss --oss-orgs kubernetes,istio,envoyproxy
-
-# Save analysis to file
-./bin/qbrtool analyze -i q3-2025.json --analysis all -f analysis.json
+qbrtool export [flags]
 ```
 
-#### Analyze Flags
+| Flag | Short | Description | Default |
+|------|-------|-------------|---------|
+| `--org` | `-o` | GitHub organization | `platform-mesh` |
+| `--project` | `-p` | Project number | `1` |
+| `--quarter` | `-q` | Filter by quarter (e.g., Q4-2025) | - |
+| `--type` | `-t` | Item types: issue, pr, draft, epic | all |
+| `--full` | - | Include all custom field values | `false` |
+| `--field` | - | Filter by field (repeatable) | - |
+| `--org-filter` | - | Filter: all, internal, external | `all` |
+| `--filter-orgs` | - | Specific orgs (comma-separated) | - |
+| `--include-archived` | - | Include archived items | `false` |
+| `--list-fields` | - | List available fields and exit | `false` |
+| `--output-file` | `-f` | Output file | stdout |
+| `--format` | `-F` | Format: json, csv | `json` |
+
+**Field Filter Syntax:**
+- `Field=Value` - Exact match (case-insensitive)
+- `Field!=Value` - Not equal
+- `Field~Value` - Contains
+- `Field=A,B,C` - Match any value
+
+### analyze
+
+Analyze exported items.
+
+```bash
+qbrtool analyze [flags]
+```
 
 | Flag | Short | Description | Default |
 |------|-------|-------------|---------|
 | `--input` | `-i` | Input JSON file | stdin |
-| `--analysis` | `-a` | Analysis type(s) | `all` |
+| `--analysis` | `-a` | Analyzer: all, cve, oss, security, monitoring, lifecycle | `all` |
+| `--group-by` | - | Group by field (repeatable) | - |
 | `--oss-orgs` | - | OSS orgs to detect | `kcp-dev,kube-bind,multicluster-runtime` |
-| `--output-file` | `-f` | Output file path | stdout |
-| `--format` | `-F` | Output format: json, markdown, md | `json` |
+| `--output-file` | `-f` | Output file | stdout |
+| `--format` | `-F` | Format: json, markdown, md | `json` |
 
-### Pipeline Usage
+---
 
-Export and analyze in one command:
+## Output Formats
 
-```bash
-# Export items closed in Q3-2025 and run all analyzers
-./bin/qbrtool export --quarter Q3-2025 --include-archived | ./bin/qbrtool analyze --analysis all
-
-# Export, analyze, and save
-./bin/qbrtool export --quarter Q3-2025 --include-archived | ./bin/qbrtool analyze --analysis all -f report.json
-```
-
-### Verbose Mode
-
-Enable verbose logging to see what the tool is doing:
-
-```bash
-./bin/qbrtool export --quarter Q3-2025 --include-archived -v
-```
-
-## Analysis Types
-
-### CVE Analysis
-Detects CVE references using the pattern `CVE-YYYY-NNNNN` in:
-- Issue/PR titles
-- Issue/PR bodies
-- Labels
-
-### OSS Contribution Analysis
-Identifies contributions to specified OSS organizations by checking:
-- Repository owner
-- URLs in content
-- Mentions in title/body
-
-Default organizations: `kcp-dev`, `kube-bind`, `multicluster-runtime`
-
-### Monitoring Analysis
-Keywords: monitoring, observability, metrics, prometheus, grafana, alerting, logging, tracing, opentelemetry, dashboard, SLO, SLI, etc.
-
-### Lifecycle Analysis
-Keywords: lifecycle, upgrade, migration, deprecation, EOL, maintenance, release, version, rollout, rollback, canary, blue-green, etc.
-
-### Security Analysis
-Keywords: security, vulnerability, CVE, RBAC, authentication, authorization, TLS, certificate, encryption, audit, penetration, hardening, etc.
-
-## Output Format
-
-### Export Output (JSON)
-
-When using `--quarter`, only items closed within that quarter are returned.
+### Export JSON (with --full)
 
 ```json
 {
   "metadata": {
     "organization": "platform-mesh",
     "project_number": 1,
-    "quarter": "Q3-2025",
-    "include_archived": true,
-    "total_items": 42,
-    "exported_at": "2025-10-15T10:30:00Z"
+    "quarter": "Q4-2025",
+    "total_items": 42
   },
   "items": [
     {
       "id": "I_xxxxx",
       "type": "ISSUE",
-      "is_archived": false,
       "number": 123,
-      "title": "Fix CVE-2025-1234",
-      "body": "...",
+      "title": "Implement feature X",
       "state": "CLOSED",
       "url": "https://github.com/...",
-      "created_at": "2025-07-15T...",
-      "closed_at": "2025-08-20T...",
+      "closed_at": "2025-10-15T...",
       "repository": {
         "owner": "platform-mesh",
         "name": "my-repo"
       },
-      "labels": ["security", "priority/high"],
+      "author": "username",
+      "assignees": ["user1", "user2"],
+      "milestone": {
+        "title": "v0.8",
+        "due_on": "2025-12-01T00:00:00Z"
+      },
+      "labels": ["enhancement", "priority/high"],
       "field_values": {
         "Status": "Done",
-        "Type": "Bug"
-      },
-      "is_epic": false
+        "IssueType": "Task",
+        "Priority": "P1",
+        "Domain": "Platform Mesh"
+      }
     }
   ]
 }
 ```
 
-### Export Output (CSV)
-
-CSV format provides a flat, tabular view with minimal columns for easy reading:
-
-```csv
-number,type,title,state,url,closed_at,repository,labels
-123,ISSUE,Fix CVE-2025-1234,CLOSED,https://github.com/...,2025-08-20,platform-mesh/my-repo,"security, priority/high"
-456,PULL_REQUEST,Add monitoring dashboard,MERGED,https://github.com/...,2025-09-10,platform-mesh/my-repo,monitoring
-```
-
-### Analysis Output (JSON)
+### Group-By Output
 
 ```json
 {
-  "source_metadata": { ... },
-  "results": {
-    "cve": {
-      "type": "cve",
-      "items": [...],
-      "summary": {
-        "cve_ids": ["CVE-2025-1234", "CVE-2025-5678"],
-        "count": 2
-      },
-      "timestamp": "2025-10-15T..."
+  "name": "group-by-Status",
+  "groups": {
+    "Done": {
+      "count": 25,
+      "items": [{"number": 123, "title": "...", "url": "..."}]
     },
-    "oss": {
-      "type": "oss",
-      "items": [...],
-      "summary": {
-        "by_org": {
-          "kcp-dev": 5,
-          "kube-bind": 3
-        },
-        "total": 8
-      }
+    "In Progress": {
+      "count": 10,
+      "items": [{"number": 456, "title": "...", "url": "..."}]
     }
-  }
+  },
+  "total_items": 35
 }
 ```
 
-### Analysis Output (Markdown)
-
-Markdown format generates a quarterly report grouped by analyzer:
+### Markdown Report
 
 ```markdown
 # Quarterly Analysis Report
@@ -311,62 +374,43 @@ Markdown format generates a quarterly report grouped by analyzer:
 |-------|-------|
 | Organization | platform-mesh |
 | Project | #1 |
-| Quarter | Q3-2025 |
+| Quarter | Q4-2025 |
 | Total Items | 42 |
 
 ---
 
-## CVE Analysis
+## Group By: Status
 
-**CVEs found:** `CVE-2025-1234`, `CVE-2025-5678`
+| Status | Count |
+|--------|-------|
+| Done | 25 |
+| In Progress | 10 |
+| Backlog | 7 |
 
-Found **2** items.
+### Done (25 items)
 
-| # | Title | URL | Match |
-|---|-------|-----|-------|
-| 123 | Fix CVE-2025-1234 | [#123](url) | title: CVE-2025-1234 |
-
-## OSS Contributions
-
-**Contributions by organization:**
-
-- **kcp-dev**: 5 items
-- **kube-bind**: 3 items
-
-Found **8** items.
-
-| # | Title | URL | Match |
-|---|-------|-----|-------|
-| 456 | Add feature to kcp | [#456](url) | repository: kcp-dev/kcp |
+| # | Title | URL |
+|---|-------|-----|
+| 123 | Implement feature X | [#123](https://...) |
 ```
+
+---
 
 ## Development
 
 ```bash
-# Build
-make build
-
-# Run tests
-make test
-
-# Run tests with coverage
-make test-coverage
-
-# Lint (requires golangci-lint)
-make lint
-
-# Clean build artifacts
-make clean
-
-# Show all make targets
-make help
+make build          # Build binary to ./bin/qbrtool
+make test           # Run tests with race detection
+make test-coverage  # Generate coverage report
+make lint           # Run golangci-lint
+make install        # Install to $GOPATH/bin
 ```
 
 ## Known Limitations
 
 1. **GitHub Search API limit**: Maximum 1000 results per query. The tool splits queries by month to mitigate this.
 
-2. **Archived items**: GitHub's ProjectV2 API doesn't return archived items directly. The tool uses a search-based workaround that queries issues/PRs and checks their `projectItems` connection.
+2. **Archived items**: GitHub's ProjectV2 API doesn't return archived items directly. The tool uses a search-based workaround.
 
 3. **Draft Issues**: Draft issues are not searchable via GitHub's search API, so they can only be retrieved from the project items query (if not archived).
 

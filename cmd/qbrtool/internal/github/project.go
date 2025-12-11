@@ -31,8 +31,13 @@ func (c *Client) GetProjectID(ctx context.Context, org string, projectNumber int
 	return fmt.Sprintf("%v", query.Organization.ProjectV2.ID), nil
 }
 
-// GetProjectItems fetches all items from a project
+// GetProjectItems fetches all items from a project (basic mode)
 func (c *Client) GetProjectItems(ctx context.Context, projectID string) ([]*models.ProjectItem, error) {
+	return c.GetProjectItemsFull(ctx, projectID, false)
+}
+
+// GetProjectItemsFull fetches all items from a project with optional field values
+func (c *Client) GetProjectItemsFull(ctx context.Context, projectID string, includeFieldValues bool) ([]*models.ProjectItem, error) {
 	var allItems []*models.ProjectItem
 	var cursor *graphql.String
 
@@ -52,9 +57,61 @@ func (c *Client) GetProjectItems(ctx context.Context, projectID string) ([]*mode
 							Type       graphql.String
 							CreatedAt  graphql.String
 							UpdatedAt  graphql.String
-							Content    struct {
+							FieldValues struct {
+								Nodes []struct {
+									Typename graphql.String `graphql:"__typename"`
+									// Text field value
+									TextField struct {
+										Field struct {
+											Common struct {
+												Name graphql.String
+											} `graphql:"... on ProjectV2Field"`
+										}
+										Text graphql.String
+									} `graphql:"... on ProjectV2ItemFieldTextValue"`
+									// Number field value
+									NumberField struct {
+										Field struct {
+											Common struct {
+												Name graphql.String
+											} `graphql:"... on ProjectV2Field"`
+										}
+										Number graphql.Float
+									} `graphql:"... on ProjectV2ItemFieldNumberValue"`
+									// Date field value
+									DateField struct {
+										Field struct {
+											Common struct {
+												Name graphql.String
+											} `graphql:"... on ProjectV2Field"`
+										}
+										Date graphql.String
+									} `graphql:"... on ProjectV2ItemFieldDateValue"`
+									// Single select field value
+									SingleSelectField struct {
+										Field struct {
+											SSField struct {
+												Name graphql.String
+											} `graphql:"... on ProjectV2SingleSelectField"`
+										}
+										Name graphql.String
+									} `graphql:"... on ProjectV2ItemFieldSingleSelectValue"`
+									// Iteration field value
+									IterationField struct {
+										Field struct {
+											IterField struct {
+												Name graphql.String
+											} `graphql:"... on ProjectV2IterationField"`
+										}
+										Title     graphql.String
+										StartDate graphql.String
+										Duration  graphql.Int
+									} `graphql:"... on ProjectV2ItemFieldIterationValue"`
+								}
+							} `graphql:"fieldValues(first: 50)"`
+							Content struct {
 								Typename graphql.String `graphql:"__typename"`
-								Issue    struct {
+								Issue struct {
 									ID        graphql.ID
 									Number    graphql.Int
 									Title     graphql.String
@@ -63,7 +120,19 @@ func (c *Client) GetProjectItems(ctx context.Context, projectID string) ([]*mode
 									URL       graphql.String `graphql:"url"`
 									CreatedAt graphql.String
 									ClosedAt  graphql.String
-									Labels    struct {
+									Author    struct {
+										Login graphql.String
+									}
+									Assignees struct {
+										Nodes []struct {
+											Login graphql.String
+										}
+									} `graphql:"assignees(first: 20)"`
+									Milestone struct {
+										Title graphql.String
+										DueOn graphql.String
+									}
+									Labels struct {
 										Nodes []struct {
 											Name graphql.String
 										}
@@ -76,16 +145,31 @@ func (c *Client) GetProjectItems(ctx context.Context, projectID string) ([]*mode
 									}
 								} `graphql:"... on Issue"`
 								PullRequest struct {
-									ID        graphql.ID
-									Number    graphql.Int
-									Title     graphql.String
-									Body      graphql.String
-									State     graphql.String
-									URL       graphql.String `graphql:"url"`
-									CreatedAt graphql.String
-									ClosedAt  graphql.String
-									MergedAt  graphql.String
-									Labels    struct {
+									ID           graphql.ID
+									Number       graphql.Int
+									Title        graphql.String
+									Body         graphql.String
+									State        graphql.String
+									URL          graphql.String `graphql:"url"`
+									CreatedAt    graphql.String
+									ClosedAt     graphql.String
+									MergedAt     graphql.String
+									Additions    graphql.Int
+									Deletions    graphql.Int
+									ChangedFiles graphql.Int
+									Author       struct {
+										Login graphql.String
+									}
+									Assignees struct {
+										Nodes []struct {
+											Login graphql.String
+										}
+									} `graphql:"assignees(first: 20)"`
+									Milestone struct {
+										Title graphql.String
+										DueOn graphql.String
+									}
+									Labels struct {
 										Nodes []struct {
 											Name graphql.String
 										}
@@ -101,6 +185,9 @@ func (c *Client) GetProjectItems(ctx context.Context, projectID string) ([]*mode
 									Title     graphql.String
 									Body      graphql.String
 									CreatedAt graphql.String
+									Creator   struct {
+										Login graphql.String
+									}
 								} `graphql:"... on DraftIssue"`
 							}
 						}
@@ -143,6 +230,16 @@ func (c *Client) GetProjectItems(ctx context.Context, projectID string) ([]*mode
 					Owner: string(issue.Repository.Owner.Login),
 					Name:  string(issue.Repository.Name),
 				}
+				item.Author = string(issue.Author.Login)
+				for _, assignee := range issue.Assignees.Nodes {
+					item.Assignees = append(item.Assignees, string(assignee.Login))
+				}
+				if string(issue.Milestone.Title) != "" {
+					item.Milestone = &models.Milestone{
+						Title: string(issue.Milestone.Title),
+						DueOn: parseTimePtr(string(issue.Milestone.DueOn)),
+					}
+				}
 				for _, label := range issue.Labels.Nodes {
 					item.Labels = append(item.Labels, string(label.Name))
 				}
@@ -163,6 +260,21 @@ func (c *Client) GetProjectItems(ctx context.Context, projectID string) ([]*mode
 					Owner: string(pr.Repository.Owner.Login),
 					Name:  string(pr.Repository.Name),
 				}
+				item.Author = string(pr.Author.Login)
+				for _, assignee := range pr.Assignees.Nodes {
+					item.Assignees = append(item.Assignees, string(assignee.Login))
+				}
+				if string(pr.Milestone.Title) != "" {
+					item.Milestone = &models.Milestone{
+						Title: string(pr.Milestone.Title),
+						DueOn: parseTimePtr(string(pr.Milestone.DueOn)),
+					}
+				}
+				item.PRStats = &models.PRStats{
+					Additions:    int(pr.Additions),
+					Deletions:    int(pr.Deletions),
+					ChangedFiles: int(pr.ChangedFiles),
+				}
 				for _, label := range pr.Labels.Nodes {
 					item.Labels = append(item.Labels, string(label.Name))
 				}
@@ -174,6 +286,7 @@ func (c *Client) GetProjectItems(ctx context.Context, projectID string) ([]*mode
 				item.Title = string(draft.Title)
 				item.Body = string(draft.Body)
 				item.CreatedAt = parseTime(string(draft.CreatedAt))
+				item.Author = string(draft.Creator.Login)
 
 			default:
 				continue
@@ -181,6 +294,13 @@ func (c *Client) GetProjectItems(ctx context.Context, projectID string) ([]*mode
 
 			if string(node.UpdatedAt) != "" {
 				item.UpdatedAt = parseTime(string(node.UpdatedAt))
+			}
+
+			// Extract field values if requested
+			if includeFieldValues {
+				for _, fv := range node.FieldValues.Nodes {
+					extractFieldValue(item.FieldValues, fv)
+				}
 			}
 
 			allItems = append(allItems, item)
@@ -213,4 +333,81 @@ func parseTimePtr(s string) *time.Time {
 		return nil
 	}
 	return &t
+}
+
+// extractFieldValue extracts a field value and adds it to the map
+func extractFieldValue(fieldValues map[string]string, fv struct {
+	Typename graphql.String `graphql:"__typename"`
+	TextField struct {
+		Field struct {
+			Common struct {
+				Name graphql.String
+			} `graphql:"... on ProjectV2Field"`
+		}
+		Text graphql.String
+	} `graphql:"... on ProjectV2ItemFieldTextValue"`
+	NumberField struct {
+		Field struct {
+			Common struct {
+				Name graphql.String
+			} `graphql:"... on ProjectV2Field"`
+		}
+		Number graphql.Float
+	} `graphql:"... on ProjectV2ItemFieldNumberValue"`
+	DateField struct {
+		Field struct {
+			Common struct {
+				Name graphql.String
+			} `graphql:"... on ProjectV2Field"`
+		}
+		Date graphql.String
+	} `graphql:"... on ProjectV2ItemFieldDateValue"`
+	SingleSelectField struct {
+		Field struct {
+			SSField struct {
+				Name graphql.String
+			} `graphql:"... on ProjectV2SingleSelectField"`
+		}
+		Name graphql.String
+	} `graphql:"... on ProjectV2ItemFieldSingleSelectValue"`
+	IterationField struct {
+		Field struct {
+			IterField struct {
+				Name graphql.String
+			} `graphql:"... on ProjectV2IterationField"`
+		}
+		Title     graphql.String
+		StartDate graphql.String
+		Duration  graphql.Int
+	} `graphql:"... on ProjectV2ItemFieldIterationValue"`
+}) {
+	typename := string(fv.Typename)
+
+	switch typename {
+	case "ProjectV2ItemFieldTextValue":
+		name := string(fv.TextField.Field.Common.Name)
+		if name != "" && string(fv.TextField.Text) != "" {
+			fieldValues[name] = string(fv.TextField.Text)
+		}
+	case "ProjectV2ItemFieldNumberValue":
+		name := string(fv.NumberField.Field.Common.Name)
+		if name != "" {
+			fieldValues[name] = fmt.Sprintf("%.0f", fv.NumberField.Number)
+		}
+	case "ProjectV2ItemFieldDateValue":
+		name := string(fv.DateField.Field.Common.Name)
+		if name != "" && string(fv.DateField.Date) != "" {
+			fieldValues[name] = string(fv.DateField.Date)
+		}
+	case "ProjectV2ItemFieldSingleSelectValue":
+		name := string(fv.SingleSelectField.Field.SSField.Name)
+		if name != "" && string(fv.SingleSelectField.Name) != "" {
+			fieldValues[name] = string(fv.SingleSelectField.Name)
+		}
+	case "ProjectV2ItemFieldIterationValue":
+		name := string(fv.IterationField.Field.IterField.Name)
+		if name != "" && string(fv.IterationField.Title) != "" {
+			fieldValues[name] = string(fv.IterationField.Title)
+		}
+	}
 }

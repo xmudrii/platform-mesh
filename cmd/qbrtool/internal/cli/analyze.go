@@ -19,6 +19,7 @@ var (
 	ossOrgs       []string
 	analyzeOutput string
 	analyzeFormat string
+	groupByFields []string
 )
 
 var analyzeCmd = &cobra.Command{
@@ -34,6 +35,10 @@ Analysis types:
   - security: Find security related items
   - all: Run all analyzers
 
+Dynamic grouping:
+  Use --group-by to group items by any field value (from project board or built-in).
+  Multiple --group-by flags create separate groupings for each field.
+
 Output formats:
   - json: Detailed JSON output (default)
   - markdown/md: Markdown report grouped by analyzer
@@ -45,6 +50,15 @@ Examples:
   # Run all analyzers with JSON output
   qbrtool analyze -i items.json --analysis all
 
+  # Group items by Status field
+  qbrtool analyze -i items.json --group-by Status
+
+  # Group by multiple fields
+  qbrtool analyze -i items.json --group-by Status --group-by IssueType
+
+  # Combine with other analyzers
+  qbrtool analyze -i items.json --analysis cve --group-by Status
+
   # Generate markdown report
   qbrtool analyze -i items.json --analysis all --format md -f report.md
 
@@ -55,7 +69,8 @@ Examples:
 
 func init() {
 	analyzeCmd.Flags().StringVarP(&inputFile, "input", "i", "", "Input JSON file (default: stdin)")
-	analyzeCmd.Flags().StringVarP(&analysisType, "analysis", "a", "all", "Analysis type: cve, oss, monitoring, lifecycle, security, all")
+	analyzeCmd.Flags().StringVarP(&analysisType, "analysis", "a", "", "Analysis type: cve, oss, monitoring, lifecycle, security, all")
+	analyzeCmd.Flags().StringArrayVar(&groupByFields, "group-by", nil, "Group items by field (e.g., Status, Type, IssueType)")
 	analyzeCmd.Flags().StringSliceVar(&ossOrgs, "oss-orgs", []string{"kcp-dev", "kube-bind", "multicluster-runtime"}, "OSS organizations to detect")
 	analyzeCmd.Flags().StringVarP(&analyzeOutput, "output-file", "f", "", "Output file path (default: stdout)")
 	analyzeCmd.Flags().StringVarP(&analyzeFormat, "format", "F", "json", "Output format: json, markdown, md")
@@ -87,10 +102,10 @@ func runAnalyze(cmd *cobra.Command, args []string) error {
 	items := exportResult.Items
 	Log("Loaded %d items for analysis", len(items))
 
-	// Create analyzers based on type
-	analyzers := createAnalyzers(analysisType, ossOrgs)
+	// Create analyzers based on type and group-by fields
+	analyzers := createAnalyzers(analysisType, ossOrgs, groupByFields)
 	if len(analyzers) == 0 {
-		return fmt.Errorf("unknown analysis type: %s", analysisType)
+		return fmt.Errorf("no analyzers specified: use --analysis or --group-by")
 	}
 
 	// Run analyses
@@ -158,32 +173,40 @@ type AnalyzeOutput struct {
 	Results        map[string]*models.AnalysisResult `json:"results"`
 }
 
-func createAnalyzers(analysisType string, ossOrgs []string) []analyzer.Analyzer {
+func createAnalyzers(analysisType string, ossOrgs []string, groupByFields []string) []analyzer.Analyzer {
 	var result []analyzer.Analyzer
 
-	types := strings.Split(strings.ToLower(analysisType), ",")
-	for _, t := range types {
-		t = strings.TrimSpace(t)
-		switch t {
-		case "all":
-			return []analyzer.Analyzer{
-				analyzer.NewCVEAnalyzer(),
-				analyzer.NewOSSAnalyzer(ossOrgs),
-				analyzer.NewMonitoringAnalyzer(),
-				analyzer.NewLifecycleAnalyzer(),
-				analyzer.NewSecurityAnalyzer(),
+	// Add standard analyzers based on type
+	if analysisType != "" {
+		types := strings.Split(strings.ToLower(analysisType), ",")
+		for _, t := range types {
+			t = strings.TrimSpace(t)
+			switch t {
+			case "all":
+				result = append(result,
+					analyzer.NewCVEAnalyzer(),
+					analyzer.NewOSSAnalyzer(ossOrgs),
+					analyzer.NewMonitoringAnalyzer(),
+					analyzer.NewLifecycleAnalyzer(),
+					analyzer.NewSecurityAnalyzer(),
+				)
+			case "cve":
+				result = append(result, analyzer.NewCVEAnalyzer())
+			case "oss":
+				result = append(result, analyzer.NewOSSAnalyzer(ossOrgs))
+			case "monitoring":
+				result = append(result, analyzer.NewMonitoringAnalyzer())
+			case "lifecycle":
+				result = append(result, analyzer.NewLifecycleAnalyzer())
+			case "security":
+				result = append(result, analyzer.NewSecurityAnalyzer())
 			}
-		case "cve":
-			result = append(result, analyzer.NewCVEAnalyzer())
-		case "oss":
-			result = append(result, analyzer.NewOSSAnalyzer(ossOrgs))
-		case "monitoring":
-			result = append(result, analyzer.NewMonitoringAnalyzer())
-		case "lifecycle":
-			result = append(result, analyzer.NewLifecycleAnalyzer())
-		case "security":
-			result = append(result, analyzer.NewSecurityAnalyzer())
 		}
+	}
+
+	// Add group-by analyzers
+	for _, field := range groupByFields {
+		result = append(result, analyzer.NewGroupByAnalyzer(field))
 	}
 
 	return result

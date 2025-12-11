@@ -162,7 +162,87 @@ func writeSummary(w io.Writer, name string, result *models.AnalysisResult) {
 				fmt.Fprintf(w, "\n")
 			}
 		}
+	default:
+		// Handle group-by analyzers
+		if strings.HasPrefix(name, "group-by-") {
+			writeGroupBySummary(w, result)
+		}
 	}
+}
+
+// writeGroupBySummary writes a summary table for group-by analysis
+func writeGroupBySummary(w io.Writer, result *models.AnalysisResult) {
+	summary, ok := result.Summary.(*GroupBySummary)
+	if !ok {
+		return
+	}
+
+	// Sort groups by count (descending)
+	type groupEntry struct {
+		name  string
+		stats GroupStats
+	}
+	var groups []groupEntry
+	for name, stats := range summary.Groups {
+		groups = append(groups, groupEntry{name, stats})
+	}
+	sort.Slice(groups, func(i, j int) bool {
+		return groups[i].stats.Count > groups[j].stats.Count
+	})
+
+	// Check if we have sub-groups (org grouping)
+	hasSubGroups := false
+	for _, g := range groups {
+		if len(g.stats.SubGroups) > 0 {
+			hasSubGroups = true
+			break
+		}
+	}
+
+	if hasSubGroups {
+		// Org grouping with repos column
+		fmt.Fprintf(w, "| %s | Count | Repos |\n", summary.FieldName)
+		fmt.Fprintf(w, "|-----|-------|-------|\n")
+		for _, g := range groups {
+			reposStr := formatSubGroups(g.stats.SubGroups)
+			fmt.Fprintf(w, "| %s | %d | %s |\n", g.name, g.stats.Count, reposStr)
+		}
+	} else {
+		// Standard group-by table
+		fmt.Fprintf(w, "| %s | Count |\n", summary.FieldName)
+		fmt.Fprintf(w, "|-----|-------|\n")
+		for _, g := range groups {
+			fmt.Fprintf(w, "| %s | %d |\n", g.name, g.stats.Count)
+		}
+	}
+	fmt.Fprintf(w, "\n")
+}
+
+// formatSubGroups formats repo sub-groups as "repo1 (n), repo2 (n), ..."
+func formatSubGroups(subGroups map[string]int) string {
+	if len(subGroups) == 0 {
+		return "-"
+	}
+
+	// Sort by count descending
+	type sg struct {
+		name  string
+		count int
+	}
+	var sorted []sg
+	for name, count := range subGroups {
+		sorted = append(sorted, sg{name, count})
+	}
+	sort.Slice(sorted, func(i, j int) bool {
+		return sorted[i].count > sorted[j].count
+	})
+
+	// Format as "repo (count), ..."
+	var parts []string
+	for _, s := range sorted {
+		parts = append(parts, fmt.Sprintf("%s (%d)", s.name, s.count))
+	}
+	return strings.Join(parts, ", ")
 }
 
 func formatAnalyzerTitle(name string) string {

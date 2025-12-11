@@ -37,12 +37,31 @@ type ProjectItem struct {
 	// Relationships
 	Repository Repository `json:"repository,omitempty"`
 	Labels     []string   `json:"labels,omitempty"`
+	Assignees  []string   `json:"assignees,omitempty"`
+	Author     string     `json:"author,omitempty"`
+	Milestone  *Milestone `json:"milestone,omitempty"`
+
+	// PR-specific stats
+	PRStats *PRStats `json:"pr_stats,omitempty"`
 
 	// Project-specific fields (custom fields from the project board)
 	FieldValues map[string]string `json:"field_values,omitempty"`
 
 	// Analysis metadata
 	IsEpic bool `json:"is_epic,omitempty"`
+}
+
+// Milestone represents a GitHub milestone
+type Milestone struct {
+	Title string     `json:"title"`
+	DueOn *time.Time `json:"due_on,omitempty"`
+}
+
+// PRStats holds pull request statistics
+type PRStats struct {
+	Additions    int `json:"additions"`
+	Deletions    int `json:"deletions"`
+	ChangedFiles int `json:"changed_files"`
 }
 
 // Repository represents a GitHub repository
