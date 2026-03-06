@@ -218,10 +218,12 @@ func (l *Lifecycle) Reconcile(ctx context.Context, req mcreconcile.Request) (rec
 		subroutineErr error
 		hasPending    bool
 		hasStopped    bool
+		hasSkipAll    bool
+		skipAllReady  bool
 		minRequeue    time.Duration
 	)
 
-	for _, sub := range subs {
+	for i, sub := range subs {
 		action, actionName := l.resolveAction(ctx, sub, obj, isDeleting)
 		if action == nil {
 			continue
@@ -284,10 +286,26 @@ func (l *Lifecycle) Reconcile(ctx context.Context, req mcreconcile.Request) (rec
 			logger.Info("subroutine stopped the chain", "subroutine", sub.GetName(), "action", actionName, "message", result.Message())
 			break
 		}
+
+		if result.IsSkipAll() {
+			hasSkipAll = true
+			skipAllReady = result.Ready()
+			logger.Info("subroutine skipped remaining chain", "subroutine", sub.GetName(), "action", actionName, "message", result.Message(), "ready", result.Ready())
+			if l.conditions != nil {
+				var remaining []string
+				for _, r := range subs[i+1:] {
+					remaining = append(remaining, r.GetName())
+				}
+				if len(remaining) > 0 {
+					l.conditions.SetSkippedConditions(obj, remaining, skipAllReady, result.Message())
+				}
+			}
+			break
+		}
 	}
 
 	// Remove initializer/terminator from status if all succeeded with no requeue.
-	if subroutineErr == nil && !hasStopped && !hasPending && minRequeue == 0 {
+	if subroutineErr == nil && !hasStopped && !hasSkipAll && !hasPending && minRequeue == 0 {
 		if l.initializer != "" && !isDeleting {
 			if removeMarkerFromStatus(ctx, obj, statusFieldInitializers, l.initializer) {
 				logger.V(1).Info("removed initializer from status", "initializer", l.initializer)
@@ -307,6 +325,8 @@ func (l *Lifecycle) Reconcile(ctx context.Context, req mcreconcile.Request) (rec
 		case subroutineErr != nil:
 			readyReason = conditions.ReasonError
 		case hasStopped:
+			readyReason = conditions.ReasonStopped
+		case hasSkipAll && !skipAllReady:
 			readyReason = conditions.ReasonStopped
 		case hasPending:
 			readyReason = conditions.ReasonPending

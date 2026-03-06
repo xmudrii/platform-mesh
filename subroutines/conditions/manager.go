@@ -16,6 +16,7 @@ const (
 	ReasonComplete = "Complete"
 	ReasonPending  = "Pending"
 	ReasonStopped  = "Stopped"
+	ReasonSkipped  = "Skipped"
 	ReasonError    = "Error"
 	ReasonUnknown  = "Unknown"
 )
@@ -83,6 +84,32 @@ func (m *Manager) SetSubroutineCondition(obj client.Object, name string, result 
 
 	conditions := accessor.GetConditions()
 	meta.SetStatusCondition(&conditions, cond)
+	accessor.SetConditions(conditions)
+}
+
+// SetSkippedConditions sets conditions for the given subroutine names to Skipped.
+// When ready is true, condition status is True; when false, condition status is False.
+func (m *Manager) SetSkippedConditions(obj client.Object, names []string, ready bool, msg string) {
+	accessor, ok := obj.(ConditionAccessor)
+	if !ok {
+		return
+	}
+
+	status := metav1.ConditionFalse
+	if ready {
+		status = metav1.ConditionTrue
+	}
+
+	conditions := accessor.GetConditions()
+	for _, name := range names {
+		meta.SetStatusCondition(&conditions, metav1.Condition{
+			Type:               name,
+			Status:             status,
+			Reason:             ReasonSkipped,
+			Message:            msg,
+			ObservedGeneration: obj.GetGeneration(),
+		})
+	}
 	accessor.SetConditions(conditions)
 }
 

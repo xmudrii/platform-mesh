@@ -9,6 +9,7 @@ const (
 	actionPending
 	actionStopWithRequeue
 	actionStop
+	actionSkipAll
 )
 
 // Result encodes the outcome of a subroutine invocation.
@@ -17,6 +18,7 @@ type Result struct {
 	action  action
 	requeue time.Duration
 	message string
+	ready   bool
 }
 
 // OK returns a Result that continues the chain with no requeue.
@@ -51,6 +53,13 @@ func Stop(msg string) Result {
 	return Result{action: actionStop, message: msg}
 }
 
+// SkipAll halts the subroutine chain and marks remaining subroutines as Skipped.
+// The ready flag controls the aggregate Ready condition: true sets it to True,
+// false sets it to False.
+func SkipAll(ready bool, msg string) Result {
+	return Result{action: actionSkipAll, message: msg, ready: ready}
+}
+
 // IsContinue returns true if the result is OK or OKWithRequeue.
 // Note: Pending also continues the chain but returns false here — use IsPending
 // to check for that case separately.
@@ -71,6 +80,16 @@ func (r Result) IsStopWithRequeue() bool {
 // IsStop returns true if the result stops the chain with no requeue.
 func (r Result) IsStop() bool {
 	return r.action == actionStop
+}
+
+// IsSkipAll returns true if the result halts the chain and marks remaining subroutines as Skipped.
+func (r Result) IsSkipAll() bool {
+	return r.action == actionSkipAll
+}
+
+// Ready returns the ready flag, which controls the aggregate Ready condition for SkipAll results.
+func (r Result) Ready() bool {
+	return r.ready
 }
 
 // Requeue returns the requeue duration.

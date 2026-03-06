@@ -11,6 +11,7 @@ import (
 type ConditionManager interface {
 	InitUnknownConditions(obj client.Object, subroutineNames []string)
 	SetSubroutineCondition(obj client.Object, name string, result subroutines.Result, err error, isFinalize bool)
+	SetSkippedConditions(obj client.Object, names []string, ready bool, msg string)
 	SetReadyCondition(obj client.Object, reason string)
 }
 
