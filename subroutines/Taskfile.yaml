@@ -1,0 +1,28 @@
+version: "3"
+
+vars:
+  GOLANGCI_LINT_VERSION: v2.1.6
+  ENVTEST_VERSION: release-0.23
+
+tasks:
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}} run --fix ./...
+
+  test:
+    desc: Run unit tests
+    cmds:
+      - go test -count=1 -short ./...
+
+  cover:
+    desc: Run tests with coverage
+    cmds:
+      - go test -count=1 -short -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out
+
+  validate:
+    desc: Run lint and tests
+    cmds:
+      - task: lint
+      - task: test
