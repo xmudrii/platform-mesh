@@ -23,6 +23,7 @@ import (
 )
 
 var syncCfg config.SyncConfig
+var syncConfigPath string
 
 var syncCmd = &cobra.Command{
 	Use:   "sync",
@@ -53,27 +54,9 @@ Example (multi-resource):
 }
 
 func init() {
-	// Bind sync-specific flags
-	syncCmd.Flags().String("config", "", "Path to YAML config file for multi-resource sync")
-	syncCmd.Flags().String("migration-name", "", "Name of the KCPMigration resource")
-	syncCmd.Flags().String("migration-namespace", "", "Namespace of the KCPMigration resource")
-	syncCmd.Flags().String("source-api-version", "", "API version of source resources to watch")
-	syncCmd.Flags().String("source-kind", "", "Kind of source resources to watch")
-	syncCmd.Flags().String("source-namespace", "", "Namespace to watch for source resources (empty = all namespaces)")
-	syncCmd.Flags().StringSlice("source-label-selectors", []string{}, "Label selectors to filter source resources (e.g., 'app=myapp,env=prod')")
-	syncCmd.Flags().String("target-workspace-expression", "", "Go template for target workspace")
-	syncCmd.Flags().String("target-namespace", "", "Target namespace in KCP workspace")
-	syncCmd.Flags().String("template", "", "Inline transformation template")
-	syncCmd.Flags().String("template-path", "", "Path to template file (useful for local development)")
-	syncCmd.Flags().String("template-configmap-name", "", "ConfigMap containing template")
-	syncCmd.Flags().String("template-configmap-key", "template.yaml", "Key in ConfigMap for template")
-	syncCmd.Flags().String("kcp-kubeconfig-path", "/etc/kcp/kubeconfig", "Path to KCP kubeconfig")
-	syncCmd.Flags().String("source-kubeconfig-path", "", "Path to source cluster kubeconfig")
-	syncCmd.Flags().Int("rate-limit-resources-per-second", 50, "Max resources to sync per second")
-	syncCmd.Flags().Int("rate-limit-burst", 100, "Rate limiter burst size")
-	syncCmd.Flags().Int("max-workers", 1, "Max concurrent workers for reconciliation queue")
-
-	_ = v.BindPFlags(syncCmd.Flags())
+	syncCfg = config.NewSyncConfig()
+	syncCmd.Flags().StringVar(&syncConfigPath, "config", syncConfigPath, "Path to YAML config file for multi-resource sync")
+	syncCfg.AddFlags(syncCmd.Flags())
 }
 
 func RunSync(_ *cobra.Command, _ []string) {
@@ -90,9 +73,8 @@ func RunSync(_ *cobra.Command, _ []string) {
 	}()
 
 	// Check if config file is specified for multi-resource mode
-	configPath := v.GetString("config")
-	if configPath != "" {
-		runMultiSync(ctx, configPath)
+	if syncConfigPath != "" {
+		runMultiSync(ctx, syncConfigPath)
 		return
 	}
 
@@ -102,11 +84,6 @@ func RunSync(_ *cobra.Command, _ []string) {
 
 // runSingleSync runs the sync controller for a single resource type using CLI flags
 func runSingleSync(ctx context.Context) {
-	// Unmarshal sync config
-	if err := v.Unmarshal(&syncCfg); err != nil {
-		log.Fatal().Err(err).Msg("failed to unmarshal sync config")
-	}
-
 	// Load template from file if template-path is specified
 	if syncCfg.Transform.TemplatePath != "" {
 		templateBytes, err := os.ReadFile(syncCfg.Transform.TemplatePath)

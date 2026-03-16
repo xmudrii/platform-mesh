@@ -4,7 +4,6 @@ import (
 	platformmeshcontext "github.com/platform-mesh/golang-commons/config"
 	"github.com/platform-mesh/golang-commons/logger"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -16,9 +15,8 @@ import (
 
 var (
 	scheme      = runtime.NewScheme()
-	operatorCfg config.OperatorConfig
+	operatorCfg = config.NewOperatorConfig()
 	defaultCfg  *platformmeshcontext.CommonServiceConfig
-	v           *viper.Viper
 	log         *logger.Logger
 )
 
@@ -35,16 +33,9 @@ func init() {
 	rootCmd.AddCommand(operatorCmd)
 	rootCmd.AddCommand(syncCmd)
 
-	var err error
-	v, defaultCfg, err = platformmeshcontext.NewDefaultConfig(rootCmd)
-	if err != nil {
-		panic(err)
-	}
-
-	err = platformmeshcontext.BindConfigToFlags(v, operatorCmd, &operatorCfg)
-	if err != nil {
-		panic(err)
-	}
+	defaultCfg = platformmeshcontext.NewDefaultConfig()
+	defaultCfg.AddFlags(rootCmd.PersistentFlags())
+	operatorCfg.AddFlags(operatorCmd.Flags())
 
 	cobra.OnInitialize(initLog)
 }

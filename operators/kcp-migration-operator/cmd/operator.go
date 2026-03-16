@@ -59,7 +59,7 @@ func RunController(_ *cobra.Command, _ []string) { // coverage-ignore
 			TLSOpts:       tlsOpts,
 		},
 		HealthProbeBindAddress:        defaultCfg.HealthProbeBindAddress,
-		LeaderElection:                defaultCfg.LeaderElection.Enabled,
+		LeaderElection:                defaultCfg.LeaderElectionEnabled,
 		LeaderElectionID:              "kcp-migration-operator.platform-mesh.io",
 		LeaderElectionReleaseOnCancel: true,
 	})
