@@ -1,4 +1,5 @@
 name: ci
+
 on:
   push:
     branches:
@@ -8,72 +9,42 @@ on:
       - opened
       - synchronize
 
+permissions:
+  contents: write
+  id-token: write
+  issues: write
+  packages: write
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  auto-labeler:
-    if: ${{ (github.head_ref || github.ref) != 'refs/heads/main' && github.event.pull_request.head.repo.full_name == github.repository }}
-    uses: platform-mesh/.github/.github/workflows/job-auto-labeler.yml@main
-    secrets: inherit
-
-  createVersion:
-    if: ${{ (github.head_ref || github.ref) == 'refs/heads/main' }}
-    uses: platform-mesh/.github/.github/workflows/job-create-version.yml@main
-    secrets: inherit
-
   lint:
-    concurrency:
-      group: ${{ github.ref }}-lint
-      cancel-in-progress: true
     uses: platform-mesh/.github/.github/workflows/job-golang-lint.yml@main
-    secrets: inherit
     with:
       useTask: true
 
-  testSource:
-    concurrency:
-      group: ${{ github.ref }}-test
-      cancel-in-progress: true
+  test:
     uses: platform-mesh/.github/.github/workflows/job-golang-test-source.yml@main
     secrets: inherit
     with:
       useTask: true
       useLocalCoverageConfig: true
 
-  dockerBuild:
-    if: ${{ (github.head_ref || github.ref) != 'refs/heads/main' }}
+  docker-build:
+    if: github.event_name == 'pull_request'
     uses: platform-mesh/.github/.github/workflows/job-docker-build-push.yml@main
-    secrets: inherit
     with:
       imageTagName: ghcr.io/platform-mesh/terminal-controller-manager
-      multiarch: false
-
-  dockerBuildAndPush:
-    if: ${{ (github.head_ref || github.ref) == 'refs/heads/main' }}
-    needs: [createVersion, lint, testSource]
-    uses: platform-mesh/.github/.github/workflows/job-docker-build-push.yml@main
     secrets: inherit
-    with:
-      imageTagName: ghcr.io/platform-mesh/terminal-controller-manager
-      version: ${{ needs.createVersion.outputs.version }}
-      multiarch: true
 
-  updateVersion:
-    if: ${{ (github.head_ref || github.ref) == 'refs/heads/main' }}
-    needs: [createVersion, dockerBuildAndPush]
-    uses: platform-mesh/.github/.github/workflows/job-chart-version-update.yml@main
-    secrets: inherit
-    with:
-      chart: terminal-controller-manager
-      appVersion: ${{ needs.createVersion.outputs.version }}
-      targetRepository: platform-mesh/helm-charts
-
-  terminalImageBuild:
+  terminal-image-build:
     name: Build Terminal Image
-    if: ${{ (github.head_ref || github.ref) != 'refs/heads/main' }}
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    concurrency:
-      group: ${{ github.ref }}-terminal
-      cancel-in-progress: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -93,15 +64,54 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  terminalImageBuildAndPush:
+  quality-gate:
+    if: always()
+    permissions: {}
+    needs: [lint, test, docker-build, terminal-image-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Check results
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" ]]; then
+            echo "lint failed"
+            exit 1
+          fi
+          if [[ "${{ needs.test.result }}" != "success" ]]; then
+            echo "test failed"
+            exit 1
+          fi
+          # docker-build and terminal-image-build are skipped on main pushes — allow skipped
+          if [[ "${{ needs.docker-build.result }}" != "success" && "${{ needs.docker-build.result }}" != "skipped" ]]; then
+            echo "docker-build failed"
+            exit 1
+          fi
+          if [[ "${{ needs.terminal-image-build.result }}" != "success" && "${{ needs.terminal-image-build.result }}" != "skipped" ]]; then
+            echo "terminal-image-build failed"
+            exit 1
+          fi
+
+  create-version:
+    if: github.ref == 'refs/heads/main'
+    uses: platform-mesh/.github/.github/workflows/job-create-version.yml@main
+    secrets: inherit
+
+  docker-build-push:
+    if: github.ref == 'refs/heads/main'
+    needs: [create-version, lint, test]
+    uses: platform-mesh/.github/.github/workflows/job-docker-build-push.yml@main
+    with:
+      imageTagName: ghcr.io/platform-mesh/terminal-controller-manager
+      version: ${{ needs.create-version.outputs.version }}
+      multiarch: true
+    secrets: inherit
+
+  terminal-image-build-push:
     name: Build and Push Terminal Image
-    if: ${{ (github.head_ref || github.ref) == 'refs/heads/main' }}
-    needs: [createVersion]
+    if: github.ref == 'refs/heads/main'
+    needs: [create-version]
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    concurrency:
-      group: ${{ github.ref }}-terminal
-      cancel-in-progress: true
     permissions:
       contents: read
       packages: write
@@ -130,7 +140,7 @@ jobs:
           tags: |
             type=sha,prefix=
             type=raw,value=latest
-            type=raw,value=${{ needs.createVersion.outputs.version }}
+            type=raw,value=${{ needs.create-version.outputs.version }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -143,9 +153,12 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  quality-gate:
-    permissions: {}
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      - run: echo "OK"
+  update-version:
+    if: github.ref == 'refs/heads/main'
+    needs: [create-version, docker-build-push]
+    uses: platform-mesh/.github/.github/workflows/job-chart-version-update.yml@main
+    secrets: inherit
+    with:
+      chart: terminal-controller-manager
+      appVersion: ${{ needs.create-version.outputs.version }}
+      targetRepository: platform-mesh/helm-charts
