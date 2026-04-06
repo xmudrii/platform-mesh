@@ -100,6 +100,13 @@ func TestSetSubroutineCondition(t *testing.T) {
 			wantType:   "mysub",
 		},
 		{
+			name:       "Skip result",
+			result:     subroutines.Skip("not needed"),
+			wantStatus: metav1.ConditionTrue,
+			wantReason: ReasonSkipped,
+			wantType:   "mysub",
+		},
+		{
 			name:       "finalize suffix",
 			result:     subroutines.OK(),
 			isFinalize: true,

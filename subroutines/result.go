@@ -10,6 +10,7 @@ const (
 	actionStopWithRequeue
 	actionStop
 	actionSkipAll
+	actionSkip
 )
 
 // Result encodes the outcome of a subroutine invocation.
@@ -60,6 +61,13 @@ func SkipAll(ready bool, msg string) Result {
 	return Result{action: actionSkipAll, message: msg, ready: ready}
 }
 
+// Skip returns a Result that continues the chain but marks the condition as True/Skipped.
+// Use Skip when a subroutine's preconditions are not met and it should be bypassed
+// without interrupting the remaining chain.
+func Skip(msg string) Result {
+	return Result{action: actionSkip, message: msg}
+}
+
 // IsContinue returns true if the result is OK or OKWithRequeue.
 // Note: Pending also continues the chain but returns false here — use IsPending
 // to check for that case separately.
@@ -85,6 +93,11 @@ func (r Result) IsStop() bool {
 // IsSkipAll returns true if the result halts the chain and marks remaining subroutines as Skipped.
 func (r Result) IsSkipAll() bool {
 	return r.action == actionSkipAll
+}
+
+// IsSkip returns true if the result continues the chain with a True/Skipped condition.
+func (r Result) IsSkip() bool {
+	return r.action == actionSkip
 }
 
 // Ready returns the ready flag, which controls the aggregate Ready condition for SkipAll results.

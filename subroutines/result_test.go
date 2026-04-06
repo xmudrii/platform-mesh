@@ -15,6 +15,7 @@ func TestResult(t *testing.T) {
 		wantPending     bool
 		wantStopRequeue bool
 		wantStop        bool
+		wantSkip        bool
 		wantRequeue     time.Duration
 		wantMessage     string
 	}{
@@ -54,6 +55,12 @@ func TestResult(t *testing.T) {
 			wantStop:    true,
 			wantMessage: "precondition failed",
 		},
+		{
+			name:        "Skip",
+			result:      Skip("not applicable"),
+			wantSkip:    true,
+			wantMessage: "not applicable",
+		},
 	}
 
 	for _, tt := range tests {
@@ -62,6 +69,7 @@ func TestResult(t *testing.T) {
 			assert.Equal(t, tt.wantPending, tt.result.IsPending())
 			assert.Equal(t, tt.wantStopRequeue, tt.result.IsStopWithRequeue())
 			assert.Equal(t, tt.wantStop, tt.result.IsStop())
+			assert.Equal(t, tt.wantSkip, tt.result.IsSkip())
 			assert.Equal(t, tt.wantRequeue, tt.result.Requeue())
 			assert.Equal(t, tt.wantMessage, tt.result.Message())
 		})

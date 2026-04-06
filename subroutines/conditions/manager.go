@@ -76,6 +76,10 @@ func (m *Manager) SetSubroutineCondition(obj client.Object, name string, result 
 		cond.Status = metav1.ConditionFalse
 		cond.Reason = ReasonStopped
 		cond.Message = result.Message()
+	case result.IsSkip():
+		cond.Status = metav1.ConditionTrue
+		cond.Reason = ReasonSkipped
+		cond.Message = result.Message()
 	default:
 		cond.Status = metav1.ConditionTrue
 		cond.Reason = ReasonComplete
