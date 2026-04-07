@@ -3,6 +3,7 @@ version: "3"
 vars:
   GOLANGCI_LINT_VERSION: v2.1.6
   ENVTEST_VERSION: release-0.23
+  GO_TEST_COVERAGE_VERSION: v2.17.1
 
 tasks:
   lint:
@@ -18,8 +19,16 @@ tasks:
   cover:
     desc: Run tests with coverage
     cmds:
-      - go test -count=1 -short -coverprofile=coverage.out ./...
-      - go tool cover -func=coverage.out
+      - go test -count=1 -short -coverprofile=cover.out -covermode=atomic -coverpkg=./... ./...
+      - go tool cover -func=cover.out
+
+  test-coverage:
+    desc: Run tests with coverage and check thresholds
+    deps:
+      - task: cover
+    cmds:
+      - go install github.com/vladopajic/go-test-coverage/v2@{{.GO_TEST_COVERAGE_VERSION}}
+      - go-test-coverage --profile cover.out --config ./.testcoverage.yml
 
   validate:
     desc: Run lint and tests
