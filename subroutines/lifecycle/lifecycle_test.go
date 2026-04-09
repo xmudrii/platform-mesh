@@ -789,14 +789,16 @@ func TestInitializer_NotRemovedOnPending(t *testing.T) {
 // --- Fake Spread Manager ---
 
 type fakeSpreadManager struct {
-	reconcileRequired bool
-	requeueDelay      time.Duration
+	reconcileRequired    bool
+	requeueDelay         time.Duration
+	observedGenUpdated   bool
+	nextReconcileTimeSet bool
 }
 
 func (f *fakeSpreadManager) ReconcileRequired(client.Object) bool     { return f.reconcileRequired }
 func (f *fakeSpreadManager) RequeueDelay(client.Object) time.Duration { return f.requeueDelay }
-func (f *fakeSpreadManager) SetNextReconcileTime(client.Object)       {}
-func (f *fakeSpreadManager) UpdateObservedGeneration(client.Object)   {}
+func (f *fakeSpreadManager) SetNextReconcileTime(client.Object)       { f.nextReconcileTimeSet = true }
+func (f *fakeSpreadManager) UpdateObservedGeneration(client.Object)   { f.observedGenUpdated = true }
 func (f *fakeSpreadManager) RemoveRefreshLabel(client.Object) bool    { return false }
 
 func TestSpread_SkipsWhenNotDue(t *testing.T) {
@@ -840,6 +842,68 @@ func TestSpread_ReconcileWhenDue(t *testing.T) {
 	_, err := lc.Reconcile(context.Background(), newReq("test", "default"))
 	require.NoError(t, err)
 	assert.True(t, processCalled, "subroutine should run when spread says due")
+}
+
+func TestSpread_NotAdvancedOnStopWithRequeue(t *testing.T) {
+	obj := newTestObj("test", "default")
+	cl := fake.NewClientBuilder().WithScheme(newScheme()).WithObjects(obj).WithStatusSubresource(obj).Build()
+
+	sub := &processorSub{
+		name: "step1",
+		fn: func(context.Context, client.Object) (subroutines.Result, error) {
+			return subroutines.StopWithRequeue(30*time.Second, "rate limited"), nil
+		},
+	}
+
+	sm := &fakeSpreadManager{reconcileRequired: true}
+	lc := setupLifecycle(cl, sub).WithSpread(sm)
+
+	result, err := lc.Reconcile(context.Background(), newReq("test", "default"))
+	require.NoError(t, err)
+	assert.Equal(t, 30*time.Second, result.RequeueAfter)
+	assert.False(t, sm.observedGenUpdated, "observed generation should not be updated when chain stopped with requeue")
+	assert.False(t, sm.nextReconcileTimeSet, "next reconcile time should not be set when chain stopped with requeue")
+}
+
+func TestSpread_NotAdvancedOnPendingWithRequeue(t *testing.T) {
+	obj := newTestObj("test", "default")
+	cl := fake.NewClientBuilder().WithScheme(newScheme()).WithObjects(obj).WithStatusSubresource(obj).Build()
+
+	sub := &processorSub{
+		name: "step1",
+		fn: func(context.Context, client.Object) (subroutines.Result, error) {
+			return subroutines.Pending(10*time.Second, "waiting for external resource"), nil
+		},
+	}
+
+	sm := &fakeSpreadManager{reconcileRequired: true}
+	lc := setupLifecycle(cl, sub).WithSpread(sm)
+
+	result, err := lc.Reconcile(context.Background(), newReq("test", "default"))
+	require.NoError(t, err)
+	assert.Equal(t, 10*time.Second, result.RequeueAfter)
+	assert.False(t, sm.observedGenUpdated, "observed generation should not be updated when subroutine is pending")
+	assert.False(t, sm.nextReconcileTimeSet, "next reconcile time should not be set when subroutine is pending")
+}
+
+func TestSpread_AdvancedOnSuccess(t *testing.T) {
+	obj := newTestObj("test", "default")
+	cl := fake.NewClientBuilder().WithScheme(newScheme()).WithObjects(obj).WithStatusSubresource(obj).Build()
+
+	sub := &processorSub{
+		name: "step1",
+		fn: func(context.Context, client.Object) (subroutines.Result, error) {
+			return subroutines.OK(), nil
+		},
+	}
+
+	sm := &fakeSpreadManager{reconcileRequired: true}
+	lc := setupLifecycle(cl, sub).WithSpread(sm)
+
+	_, err := lc.Reconcile(context.Background(), newReq("test", "default"))
+	require.NoError(t, err)
+	assert.True(t, sm.observedGenUpdated, "observed generation should be updated on successful reconciliation")
+	assert.True(t, sm.nextReconcileTimeSet, "next reconcile time should be set on successful reconciliation")
 }
 
 // --- incompatible object type ---
