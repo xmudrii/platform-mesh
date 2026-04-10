@@ -18,13 +18,13 @@ package subroutines
 
 import (
 	"context"
+	"errors"
 	"time"
 
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/runtimeobject"
-	"github.com/platform-mesh/golang-commons/errors"
 	"github.com/platform-mesh/golang-commons/logger"
+	"github.com/platform-mesh/subroutines"
 	"github.com/platform-mesh/terminal-controller-manager/api/v1alpha1"
-	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	mccontext "sigs.k8s.io/multicluster-runtime/pkg/context"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
@@ -57,17 +57,8 @@ func (r *LifetimeSubroutine) GetName() string {
 	return LifetimeSubroutineName
 }
 
-func (r *LifetimeSubroutine) Finalizers(_ runtimeobject.RuntimeObject) []string {
-	return nil // No finalizer needed - this subroutine only checks lifetime
-}
-
-func (r *LifetimeSubroutine) Finalize(_ context.Context, _ runtimeobject.RuntimeObject) (ctrl.Result, errors.OperatorError) {
-	// Nothing to clean up
-	return ctrl.Result{}, nil
-}
-
-func (r *LifetimeSubroutine) Process(ctx context.Context, ro runtimeobject.RuntimeObject) (ctrl.Result, errors.OperatorError) {
-	instance := ro.(*v1alpha1.Terminal)
+func (r *LifetimeSubroutine) Process(ctx context.Context, obj client.Object) (subroutines.Result, error) {
+	instance := obj.(*v1alpha1.Terminal)
 	log := logger.LoadLoggerFromContext(ctx)
 
 	// Check if terminal has exceeded its lifetime
@@ -83,19 +74,20 @@ func (r *LifetimeSubroutine) Process(ctx context.Context, ro runtimeobject.Runti
 		if instance.DeletionTimestamp == nil {
 			clusterName, ok := mccontext.ClusterFrom(ctx)
 			if !ok {
-				return ctrl.Result{}, errors.NewOperatorError(
-					errors.New("cluster name not found in context"), true, true)
+				return subroutines.OK(), errors.New("cluster name not found in context")
 			}
 			cluster, err := r.mgr.GetCluster(ctx, clusterName)
 			if err != nil {
-				return ctrl.Result{}, errors.NewOperatorError(err, true, true)
+				return subroutines.OK(), err
 			}
 			if err := cluster.GetClient().Delete(ctx, instance); err != nil && !kerrors.IsNotFound(err) {
-				return ctrl.Result{}, errors.NewOperatorError(err, true, true)
+				return subroutines.OK(), err
 			}
 		}
-		return ctrl.Result{}, nil
+		return subroutines.Stop("terminal exceeded configured lifetime"), nil
 	}
 
-	return ctrl.Result{}, nil
+	return subroutines.OK(), nil
 }
+
+var _ subroutines.Processor = (*LifetimeSubroutine)(nil)

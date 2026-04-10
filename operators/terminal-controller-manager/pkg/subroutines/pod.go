@@ -20,15 +20,13 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	accountv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/ratelimiter"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/runtimeobject"
-	"github.com/platform-mesh/golang-commons/errors"
 	"github.com/platform-mesh/golang-commons/logger"
+	"github.com/platform-mesh/subroutines"
 	"github.com/platform-mesh/terminal-controller-manager/api/v1alpha1"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mccontext "sigs.k8s.io/multicluster-runtime/pkg/context"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
@@ -38,7 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/ptr"
 )
 
@@ -46,13 +43,13 @@ const (
 	PodSubroutineName      = "PodSubroutine"
 	PodSubroutineFinalizer = "terminal.platform-mesh.io/pod-finalizer"
 	DefaultAccountInfoName = "account"
+	PodRequeueAfter        = 5 * time.Second
 )
 
 // PodSubroutine manages terminal pods on the runtime cluster
 type PodSubroutine struct {
 	mgr            mcmanager.Manager
 	runtimeClient  client.Client
-	limiter        workqueue.TypedRateLimiter[*v1alpha1.Terminal]
 	terminalImage  string
 	namespace      string
 	hostAliasIP    string
@@ -60,12 +57,9 @@ type PodSubroutine struct {
 }
 
 func NewPodSubroutine(mgr mcmanager.Manager, runtimeClient client.Client, terminalImage, namespace, hostAliasIP string, hostAliasNames []string) *PodSubroutine {
-	rl, _ := ratelimiter.NewStaticThenExponentialRateLimiter[*v1alpha1.Terminal](ratelimiter.NewConfig()) //nolint:errcheck
-
 	return &PodSubroutine{
 		mgr:            mgr,
 		runtimeClient:  runtimeClient,
-		limiter:        rl,
 		terminalImage:  terminalImage,
 		namespace:      namespace,
 		hostAliasIP:    hostAliasIP,
@@ -77,17 +71,16 @@ func (r *PodSubroutine) GetName() string {
 	return PodSubroutineName
 }
 
-func (r *PodSubroutine) Finalizers(_ runtimeobject.RuntimeObject) []string { // coverage-ignore
+func (r *PodSubroutine) Finalizers(_ client.Object) []string { // coverage-ignore
 	return []string{PodSubroutineFinalizer}
 }
 
-func (r *PodSubroutine) Finalize(ctx context.Context, ro runtimeobject.RuntimeObject) (ctrl.Result, errors.OperatorError) {
-	instance := ro.(*v1alpha1.Terminal)
+func (r *PodSubroutine) Finalize(ctx context.Context, obj client.Object) (subroutines.Result, error) {
+	instance := obj.(*v1alpha1.Terminal)
 	log := logger.LoadLoggerFromContext(ctx)
 
 	if instance.Status.PodName == "" {
-		r.limiter.Forget(instance)
-		return ctrl.Result{}, nil
+		return subroutines.OK(), nil
 	}
 
 	pod := &corev1.Pod{}
@@ -95,43 +88,41 @@ func (r *PodSubroutine) Finalize(ctx context.Context, ro runtimeobject.RuntimeOb
 
 	if err := r.runtimeClient.Get(ctx, podKey, pod); err != nil {
 		if kerrors.IsNotFound(err) || meta.IsNoMatchError(err) {
-			r.limiter.Forget(instance)
-			return ctrl.Result{}, nil
+			return subroutines.OK(), nil
 		}
-		return ctrl.Result{}, errors.NewOperatorError(err, true, true)
+		return subroutines.OK(), err
 	}
 
 	if pod.GetDeletionTimestamp() != nil {
 		log.Debug().Str("podName", pod.Name).Msg("pod is already being deleted, waiting")
-		return ctrl.Result{RequeueAfter: r.limiter.When(instance)}, nil
+		return subroutines.StopWithRequeue(PodRequeueAfter, "pod is already being deleted"), nil
 	}
 
 	log.Info().Str("podName", pod.Name).Msg("deleting terminal pod")
 	if err := r.runtimeClient.Delete(ctx, pod); err != nil {
 		if kerrors.IsNotFound(err) {
-			r.limiter.Forget(instance)
-			return ctrl.Result{}, nil
+			return subroutines.OK(), nil
 		}
-		return ctrl.Result{}, errors.NewOperatorError(err, true, true)
+		return subroutines.OK(), err
 	}
 
-	return ctrl.Result{RequeueAfter: r.limiter.When(instance)}, nil
+	return subroutines.StopWithRequeue(PodRequeueAfter, "terminal pod deletion requested"), nil
 }
 
-func (r *PodSubroutine) Process(ctx context.Context, ro runtimeobject.RuntimeObject) (ctrl.Result, errors.OperatorError) {
-	instance := ro.(*v1alpha1.Terminal)
+func (r *PodSubroutine) Process(ctx context.Context, obj client.Object) (subroutines.Result, error) {
+	instance := obj.(*v1alpha1.Terminal)
 	log := logger.LoadLoggerFromContext(ctx)
 
 	// Get cluster name from multicluster context
 	clusterName, ok := mccontext.ClusterFrom(ctx)
 	if !ok {
-		return ctrl.Result{}, errors.NewOperatorError(fmt.Errorf("cluster name not found in context"), true, true)
+		return subroutines.OK(), fmt.Errorf("cluster name not found in context")
 	}
 
 	// Get the cluster client for this workspace
 	cluster, err := r.mgr.GetCluster(ctx, clusterName)
 	if err != nil {
-		return ctrl.Result{}, errors.NewOperatorError(err, true, true)
+		return subroutines.OK(), err
 	}
 	clusterClient := cluster.GetClient()
 
@@ -140,9 +131,9 @@ func (r *PodSubroutine) Process(ctx context.Context, ro runtimeobject.RuntimeObj
 	if err := clusterClient.Get(ctx, client.ObjectKey{Name: DefaultAccountInfoName}, accountInfo); err != nil {
 		if kerrors.IsNotFound(err) {
 			log.Warn().Msg("AccountInfo not found, waiting for it to be created")
-			return ctrl.Result{RequeueAfter: r.limiter.When(instance)}, nil
+			return subroutines.StopWithRequeue(PodRequeueAfter, "AccountInfo not found yet"), nil
 		}
-		return ctrl.Result{}, errors.NewOperatorError(err, true, true)
+		return subroutines.OK(), err
 	}
 
 	workspaceURL := accountInfo.Spec.Account.URL
@@ -151,12 +142,12 @@ func (r *PodSubroutine) Process(ctx context.Context, ro runtimeobject.RuntimeObj
 
 	if workspaceURL == "" {
 		log.Warn().Msg("AccountInfo.spec.account.url is empty, waiting")
-		return ctrl.Result{RequeueAfter: r.limiter.When(instance)}, nil
+		return subroutines.StopWithRequeue(PodRequeueAfter, "AccountInfo.spec.account.url is empty"), nil
 	}
 
 	if clusterCA == "" {
 		log.Warn().Msg("AccountInfo.spec.clusterInfo.ca is empty, waiting")
-		return ctrl.Result{RequeueAfter: r.limiter.When(instance)}, nil
+		return subroutines.StopWithRequeue(PodRequeueAfter, "AccountInfo.spec.clusterInfo.ca is empty"), nil
 	}
 
 	// Update workspace path in status
@@ -186,7 +177,7 @@ func (r *PodSubroutine) Process(ctx context.Context, ro runtimeobject.RuntimeObj
 
 	if err := r.runtimeClient.Get(ctx, podKey, existingPod); err != nil {
 		if !kerrors.IsNotFound(err) {
-			return ctrl.Result{}, errors.NewOperatorError(err, true, true)
+			return subroutines.OK(), err
 		}
 
 		// Pod doesn't exist, create it
@@ -196,14 +187,14 @@ func (r *PodSubroutine) Process(ctx context.Context, ro runtimeobject.RuntimeObj
 		clusterCAEncoded := base64.StdEncoding.EncodeToString([]byte(clusterCA))
 		pod := r.buildTerminalPod(instance, podName, workspaceURL, clusterCAEncoded)
 		if err := r.runtimeClient.Create(ctx, pod); err != nil {
-			return ctrl.Result{}, errors.NewOperatorError(err, true, true)
+			return subroutines.OK(), err
 		}
 
 		// Update status
 		instance.Status.PodName = podName
 		instance.Status.Phase = v1alpha1.TerminalPhaseCreating
 		// Requeue to check pod status
-		return ctrl.Result{RequeueAfter: r.limiter.When(instance)}, nil
+		return subroutines.StopWithRequeue(PodRequeueAfter, "terminal pod created, waiting for readiness"), nil
 	}
 
 	// Pod exists, update status based on pod phase
@@ -211,12 +202,10 @@ func (r *PodSubroutine) Process(ctx context.Context, ro runtimeobject.RuntimeObj
 	switch existingPod.Status.Phase {
 	case corev1.PodRunning:
 		instance.Status.Phase = v1alpha1.TerminalPhaseReady
-		r.limiter.Forget(instance)
-		return ctrl.Result{}, nil
+		return subroutines.OK(), nil
 	case corev1.PodFailed:
 		instance.Status.Phase = v1alpha1.TerminalPhaseFailed
-		r.limiter.Forget(instance)
-		return ctrl.Result{}, nil
+		return subroutines.OK(), nil
 	case corev1.PodPending:
 		instance.Status.Phase = v1alpha1.TerminalPhaseCreating
 	default:
@@ -224,7 +213,7 @@ func (r *PodSubroutine) Process(ctx context.Context, ro runtimeobject.RuntimeObj
 	}
 
 	// Pod not yet ready, requeue to check again
-	return ctrl.Result{RequeueAfter: r.limiter.When(instance)}, nil
+	return subroutines.StopWithRequeue(PodRequeueAfter, "terminal pod is not ready yet"), nil
 }
 
 func (r *PodSubroutine) buildTerminalPod(terminal *v1alpha1.Terminal, podName, workspaceURL, clusterCA string) *corev1.Pod {
@@ -331,3 +320,6 @@ func (r *PodSubroutine) buildTerminalPod(terminal *v1alpha1.Terminal, podName, w
 
 	return pod
 }
+
+var _ subroutines.Processor = (*PodSubroutine)(nil)
+var _ subroutines.Finalizer = (*PodSubroutine)(nil)

@@ -19,13 +19,11 @@ package subroutines
 import (
 	"context"
 	"fmt"
+	"time"
 
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/ratelimiter"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/runtimeobject"
-	"github.com/platform-mesh/golang-commons/errors"
 	"github.com/platform-mesh/golang-commons/logger"
+	"github.com/platform-mesh/subroutines"
 	"github.com/platform-mesh/terminal-controller-manager/api/v1alpha1"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -34,27 +32,24 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/util/workqueue"
 )
 
 const (
 	ServiceSubroutineName      = "ServiceSubroutine"
 	ServiceSubroutineFinalizer = "terminal.platform-mesh.io/service-finalizer"
 	TerminalServicePort        = 8080
+	ServiceRequeueAfter        = 5 * time.Second
 )
 
 // ServiceSubroutine manages terminal services on the runtime cluster
 type ServiceSubroutine struct {
 	runtimeClient client.Client
-	limiter       workqueue.TypedRateLimiter[*v1alpha1.Terminal]
 	namespace     string
 }
 
 func NewServiceSubroutine(runtimeClient client.Client, namespace string) *ServiceSubroutine {
-	rl, _ := ratelimiter.NewStaticThenExponentialRateLimiter[*v1alpha1.Terminal](ratelimiter.NewConfig()) //nolint:errcheck
 	return &ServiceSubroutine{
 		runtimeClient: runtimeClient,
-		limiter:       rl,
 		namespace:     namespace,
 	}
 }
@@ -63,12 +58,12 @@ func (r *ServiceSubroutine) GetName() string {
 	return ServiceSubroutineName
 }
 
-func (r *ServiceSubroutine) Finalizers(_ runtimeobject.RuntimeObject) []string { // coverage-ignore
+func (r *ServiceSubroutine) Finalizers(_ client.Object) []string { // coverage-ignore
 	return []string{ServiceSubroutineFinalizer}
 }
 
-func (r *ServiceSubroutine) Finalize(ctx context.Context, ro runtimeobject.RuntimeObject) (ctrl.Result, errors.OperatorError) {
-	instance := ro.(*v1alpha1.Terminal)
+func (r *ServiceSubroutine) Finalize(ctx context.Context, obj client.Object) (subroutines.Result, error) {
+	instance := obj.(*v1alpha1.Terminal)
 	log := logger.LoadLoggerFromContext(ctx)
 
 	serviceName := fmt.Sprintf("terminal-%s", instance.Name)
@@ -77,31 +72,29 @@ func (r *ServiceSubroutine) Finalize(ctx context.Context, ro runtimeobject.Runti
 
 	if err := r.runtimeClient.Get(ctx, serviceKey, service); err != nil {
 		if kerrors.IsNotFound(err) || meta.IsNoMatchError(err) {
-			r.limiter.Forget(instance)
-			return ctrl.Result{}, nil
+			return subroutines.OK(), nil
 		}
-		return ctrl.Result{}, errors.NewOperatorError(err, true, true)
+		return subroutines.OK(), err
 	}
 
 	if service.GetDeletionTimestamp() != nil {
 		log.Debug().Str("serviceName", service.Name).Msg("service is already being deleted, waiting")
-		return ctrl.Result{RequeueAfter: r.limiter.When(instance)}, nil
+		return subroutines.StopWithRequeue(ServiceRequeueAfter, "service is already being deleted"), nil
 	}
 
 	log.Info().Str("serviceName", service.Name).Msg("deleting terminal service")
 	if err := r.runtimeClient.Delete(ctx, service); err != nil {
 		if kerrors.IsNotFound(err) {
-			r.limiter.Forget(instance)
-			return ctrl.Result{}, nil
+			return subroutines.OK(), nil
 		}
-		return ctrl.Result{}, errors.NewOperatorError(err, true, true)
+		return subroutines.OK(), err
 	}
 
-	return ctrl.Result{RequeueAfter: r.limiter.When(instance)}, nil
+	return subroutines.StopWithRequeue(ServiceRequeueAfter, "terminal service deletion requested"), nil
 }
 
-func (r *ServiceSubroutine) Process(ctx context.Context, ro runtimeobject.RuntimeObject) (ctrl.Result, errors.OperatorError) {
-	instance := ro.(*v1alpha1.Terminal)
+func (r *ServiceSubroutine) Process(ctx context.Context, obj client.Object) (subroutines.Result, error) {
+	instance := obj.(*v1alpha1.Terminal)
 	log := logger.LoadLoggerFromContext(ctx)
 
 	serviceName := fmt.Sprintf("terminal-%s", instance.Name)
@@ -118,12 +111,11 @@ func (r *ServiceSubroutine) Process(ctx context.Context, ro runtimeobject.Runtim
 		return nil
 	})
 	if err != nil {
-		return ctrl.Result{}, errors.NewOperatorError(err, true, true)
+		return subroutines.OK(), err
 	}
 
 	log.Debug().Str("serviceName", serviceName).Str("result", string(result)).Msg("service reconciled")
-	r.limiter.Forget(instance)
-	return ctrl.Result{}, nil
+	return subroutines.OK(), nil
 }
 
 func (r *ServiceSubroutine) mutateService(service *corev1.Service, terminal *v1alpha1.Terminal) {
@@ -146,3 +138,6 @@ func (r *ServiceSubroutine) mutateService(service *corev1.Service, terminal *v1a
 		},
 	}
 }
+
+var _ subroutines.Processor = (*ServiceSubroutine)(nil)
+var _ subroutines.Finalizer = (*ServiceSubroutine)(nil)

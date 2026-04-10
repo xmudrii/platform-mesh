@@ -20,42 +20,43 @@ import (
 	"context"
 
 	platformmeshconfig "github.com/platform-mesh/golang-commons/config"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/builder"
-	mclifecycle "github.com/platform-mesh/golang-commons/controller/lifecycle/multicluster"
-	lifecyclesubroutine "github.com/platform-mesh/golang-commons/controller/lifecycle/subroutine"
+	"github.com/platform-mesh/golang-commons/controller/filter"
 	"github.com/platform-mesh/golang-commons/logger"
+	"github.com/platform-mesh/subroutines"
+	"github.com/platform-mesh/subroutines/conditions"
+	"github.com/platform-mesh/subroutines/lifecycle"
 	"github.com/platform-mesh/terminal-controller-manager/api/v1alpha1"
 	"github.com/platform-mesh/terminal-controller-manager/internal/config"
-	"github.com/platform-mesh/terminal-controller-manager/pkg/subroutines"
+	tcmsubroutines "github.com/platform-mesh/terminal-controller-manager/pkg/subroutines"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	mccontext "sigs.k8s.io/multicluster-runtime/pkg/context"
+	mcbuilder "sigs.k8s.io/multicluster-runtime/pkg/builder"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 )
 
 const (
-	operatorName           = "terminal-controller-manager"
 	terminalReconcilerName = "TerminalReconciler"
 )
 
 // TerminalReconciler orchestrates Terminal resources across logical clusters.
 type TerminalReconciler struct {
 	cfg       config.OperatorConfig
-	lifecycle *mclifecycle.LifecycleManager
+	lifecycle *lifecycle.Lifecycle
 }
 
-func NewTerminalReconciler(log *logger.Logger, mgr mcmanager.Manager, cfg config.OperatorConfig, runtimeClient client.Client) *TerminalReconciler { // coverage-ignore
-	subs := []lifecyclesubroutine.Subroutine{}
+func NewTerminalReconciler(_ *logger.Logger, mgr mcmanager.Manager, cfg config.OperatorConfig, runtimeClient client.Client) *TerminalReconciler { // coverage-ignore
+	subs := []subroutines.Subroutine{}
 
 	// Lifetime subroutine runs first to check for expired terminals
 	if cfg.Subroutines.Lifetime.Enabled {
-		subs = append(subs, subroutines.NewLifetimeSubroutine(mgr, cfg.Terminal.Lifetime))
+		subs = append(subs, tcmsubroutines.NewLifetimeSubroutine(mgr, cfg.Terminal.Lifetime))
 	}
 
 	if cfg.Subroutines.Pod.Enabled {
-		subs = append(subs, subroutines.NewPodSubroutine(
+		subs = append(subs, tcmsubroutines.NewPodSubroutine(
 			mgr,
 			runtimeClient,
 			cfg.Terminal.Image,
@@ -66,11 +67,11 @@ func NewTerminalReconciler(log *logger.Logger, mgr mcmanager.Manager, cfg config
 	}
 
 	if cfg.Subroutines.Service.Enabled {
-		subs = append(subs, subroutines.NewServiceSubroutine(runtimeClient, cfg.Terminal.Namespace))
+		subs = append(subs, tcmsubroutines.NewServiceSubroutine(runtimeClient, cfg.Terminal.Namespace))
 	}
 
 	if cfg.Subroutines.HTTPRoute.Enabled {
-		subs = append(subs, subroutines.NewHTTPRouteSubroutine(
+		subs = append(subs, tcmsubroutines.NewHTTPRouteSubroutine(
 			runtimeClient,
 			cfg.Terminal.Namespace,
 			cfg.Gateway.Name,
@@ -81,16 +82,26 @@ func NewTerminalReconciler(log *logger.Logger, mgr mcmanager.Manager, cfg config
 
 	return &TerminalReconciler{
 		cfg: cfg,
-		lifecycle: builder.NewBuilder(operatorName, terminalReconcilerName, subs, log).
-			WithConditionManagement().
-			BuildMultiCluster(mgr),
+		lifecycle: lifecycle.New(mgr, terminalReconcilerName, func() client.Object {
+			return &v1alpha1.Terminal{}
+		}, subs...).WithConditions(conditions.NewManager()),
 	}
 }
 
-func (r *TerminalReconciler) SetupWithManager(mgr mcmanager.Manager, cfg *platformmeshconfig.CommonServiceConfig, log *logger.Logger, eventPredicates ...predicate.Predicate) error { // coverage-ignore
-	return r.lifecycle.SetupWithManager(mgr, cfg.MaxConcurrentReconciles, terminalReconcilerName, &v1alpha1.Terminal{}, cfg.DebugLabelValue, r, log, eventPredicates...)
+func (r *TerminalReconciler) SetupWithManager(mgr mcmanager.Manager, cfg *platformmeshconfig.CommonServiceConfig, _ *logger.Logger, eventPredicates ...predicate.Predicate) error { // coverage-ignore
+	opts := controller.TypedOptions[mcreconcile.Request]{
+		MaxConcurrentReconciles: cfg.MaxConcurrentReconciles,
+	}
+	predicates := append([]predicate.Predicate{filter.DebugResourcesBehaviourPredicate(cfg.DebugLabelValue)}, eventPredicates...)
+
+	return mcbuilder.ControllerManagedBy(mgr).
+		Named("terminal").
+		For(&v1alpha1.Terminal{}).
+		WithOptions(opts).
+		WithEventFilter(predicate.And(predicates...)).
+		Complete(r)
 }
 
 func (r *TerminalReconciler) Reconcile(ctx context.Context, req mcreconcile.Request) (ctrl.Result, error) { // coverage-ignore
-	return r.lifecycle.Reconcile(mccontext.WithCluster(ctx, req.ClusterName), req, &v1alpha1.Terminal{})
+	return r.lifecycle.Reconcile(ctx, req)
 }

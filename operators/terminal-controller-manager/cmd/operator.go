@@ -95,7 +95,7 @@ func RunController(_ *cobra.Command, _ []string) { // coverage-ignore
 	runtimeCfg := ctrl.GetConfigOrDie()
 
 	var leaderCfg *rest.Config
-	if defaultCfg.LeaderElection.Enabled {
+	if defaultCfg.LeaderElectionEnabled {
 		leaderCfg = rest.CopyConfig(runtimeCfg)
 	}
 
@@ -119,7 +119,7 @@ func RunController(_ *cobra.Command, _ []string) { // coverage-ignore
 		},
 		BaseContext:                   func() context.Context { return ctx },
 		HealthProbeBindAddress:        defaultCfg.HealthProbeBindAddress,
-		LeaderElection:                defaultCfg.LeaderElection.Enabled,
+		LeaderElection:                defaultCfg.LeaderElectionEnabled,
 		LeaderElectionID:              "terminal.platform-mesh.io",
 		LeaderElectionConfig:          leaderCfg,
 		LeaderElectionReleaseOnCancel: true,

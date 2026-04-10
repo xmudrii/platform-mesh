@@ -18,12 +18,11 @@ package cmd
 
 import (
 	accountv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
-	platformmeshcontext "github.com/platform-mesh/golang-commons/config"
+	platformmeshconfig "github.com/platform-mesh/golang-commons/config"
 	"github.com/platform-mesh/golang-commons/logger"
 	"github.com/platform-mesh/terminal-controller-manager/api/v1alpha1"
 	"github.com/platform-mesh/terminal-controller-manager/internal/config"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	ctrl "sigs.k8s.io/controller-runtime"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
@@ -37,8 +36,7 @@ import (
 var (
 	scheme      = runtime.NewScheme()
 	operatorCfg config.OperatorConfig
-	defaultCfg  *platformmeshcontext.CommonServiceConfig
-	v           *viper.Viper
+	defaultCfg  *platformmeshconfig.CommonServiceConfig
 	log         *logger.Logger
 )
 
@@ -57,16 +55,10 @@ func init() {
 
 	rootCmd.AddCommand(operatorCmd)
 
-	var err error
-	v, defaultCfg, err = platformmeshcontext.NewDefaultConfig(rootCmd)
-	if err != nil {
-		panic(err)
-	}
-
-	err = platformmeshcontext.BindConfigToFlags(v, operatorCmd, &operatorCfg)
-	if err != nil {
-		panic(err)
-	}
+	defaultCfg = platformmeshconfig.NewDefaultConfig()
+	operatorCfg = config.NewOperatorConfig()
+	defaultCfg.AddFlags(rootCmd.PersistentFlags())
+	operatorCfg.AddFlags(operatorCmd.Flags())
 
 	cobra.OnInitialize(initLog)
 }
