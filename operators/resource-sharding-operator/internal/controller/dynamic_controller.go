@@ -13,7 +13,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	toolscache "k8s.io/client-go/tools/cache"
 
@@ -52,7 +51,7 @@ func StartDynamicController(ctx context.Context, mgr ctrl.Manager, rs *v1alpha1.
 
 	assigner := NewShardAssigner(shardNames(rs.Spec.Shards))
 	ctrlCtx, cancel := context.WithCancel(ctx)
-	logger := log.FromContext(ctx)
+	logger := ctrl.Log.WithName("shard-assign").WithValues("gvk", gvk.String(), "resourcesharding", rs.Name)
 
 	// Get the informer BEFORE starting the cache
 	informer, err := informerCache.GetInformer(ctrlCtx, obj)
@@ -133,6 +132,7 @@ func StartDynamicController(ctx context.Context, mgr ctrl.Manager, rs *v1alpha1.
 					return
 				}
 
+				assignmentsTotal.WithLabelValues(rs.Name, shard).Inc()
 				logger.Info("assigned shard", "resource", req.NamespacedName, "shard", shard)
 				queue.Forget(req)
 			}()

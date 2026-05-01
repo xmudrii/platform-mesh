@@ -130,11 +130,12 @@ func (r *ResourceShardingReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	rebalancer := &Rebalancer{
-		Client:   r.Client,
-		LabelKey: rs.Spec.ShardLabelKey,
-		GVK:      gvk,
-		Shards:   shardNames(rs.Spec.Shards),
-		Config:   rs.Spec.Rebalance,
+		Client:               r.Client,
+		LabelKey:             rs.Spec.ShardLabelKey,
+		GVK:                  gvk,
+		Shards:               shardNames(rs.Spec.Shards),
+		Config:               rs.Spec.Rebalance,
+		ResourceShardingName: rs.Name,
 	}
 
 	result, err := rebalancer.Run(ctx)

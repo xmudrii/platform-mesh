@@ -21,11 +21,12 @@ type RebalanceResult struct {
 }
 
 type Rebalancer struct {
-	Client   client.Client
-	LabelKey string
-	GVK      schema.GroupVersionKind
-	Shards   []string
-	Config   v1alpha1.RebalanceConfig
+	Client              client.Client
+	LabelKey            string
+	GVK                 schema.GroupVersionKind
+	Shards              []string
+	Config              v1alpha1.RebalanceConfig
+	ResourceShardingName string
 }
 
 func (r *Rebalancer) Run(ctx context.Context) (*RebalanceResult, error) {
@@ -47,16 +48,39 @@ func (r *Rebalancer) Run(ctx context.Context) (*RebalanceResult, error) {
 	}
 
 	distribution := make([]v1alpha1.ShardDistribution, 0, len(r.Shards))
+	total := 0
 	for _, shard := range r.Shards {
 		distribution = append(distribution, v1alpha1.ShardDistribution{
 			Shard: shard,
 			Count: counts[shard],
 		})
+		total += counts[shard]
+		shardDistribution.WithLabelValues(r.ResourceShardingName, shard).Set(float64(counts[shard]))
+	}
+
+	if total > 0 && len(r.Shards) > 0 {
+		ideal := float64(total) / float64(len(r.Shards))
+		maxDeviation := 0.0
+		for _, c := range counts {
+			dev := (float64(c) - ideal) / ideal
+			if dev < 0 {
+				dev = -dev
+			}
+			if dev > maxDeviation {
+				maxDeviation = dev
+			}
+		}
+		shardImbalanceRatio.WithLabelValues(r.ResourceShardingName).Set(maxDeviation)
+	}
+
+	totalMoved := moved + orphanCount
+	if totalMoved > 0 {
+		rebalanceMovesTotal.WithLabelValues(r.ResourceShardingName).Add(float64(totalMoved))
 	}
 
 	return &RebalanceResult{
 		Distribution: distribution,
-		Moved:        moved + orphanCount,
+		Moved:        totalMoved,
 	}, nil
 }
 
