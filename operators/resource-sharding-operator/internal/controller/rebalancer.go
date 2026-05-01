@@ -1,0 +1,276 @@
+package controller
+
+import (
+	"context"
+	"fmt"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	"golang.org/x/time/rate"
+
+	"github.com/platform-mesh/resource-sharding-operator/api/v1alpha1"
+)
+
+type RebalanceResult struct {
+	Distribution []v1alpha1.ShardDistribution
+	Moved        int
+}
+
+type Rebalancer struct {
+	Client   client.Client
+	LabelKey string
+	GVR      schema.GroupVersionResource
+	Shards   []string
+	Config   v1alpha1.RebalanceConfig
+}
+
+func (r *Rebalancer) Run(ctx context.Context) (*RebalanceResult, error) {
+	logger := log.FromContext(ctx)
+
+	counts, err := r.countPerShard(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("counting shards: %w", err)
+	}
+
+	orphanCount, err := r.cleanupOrphans(ctx, counts)
+	if err != nil {
+		logger.Error(err, "orphan cleanup failed")
+	}
+
+	moved, err := r.rebalance(ctx, counts)
+	if err != nil {
+		logger.Error(err, "rebalance moves failed")
+	}
+
+	distribution := make([]v1alpha1.ShardDistribution, 0, len(r.Shards))
+	for _, shard := range r.Shards {
+		distribution = append(distribution, v1alpha1.ShardDistribution{
+			Shard: shard,
+			Count: counts[shard],
+		})
+	}
+
+	return &RebalanceResult{
+		Distribution: distribution,
+		Moved:        moved + orphanCount,
+	}, nil
+}
+
+func (r *Rebalancer) countPerShard(ctx context.Context) (map[string]int, error) {
+	counts := make(map[string]int, len(r.Shards))
+
+	for _, shard := range r.Shards {
+		selector, err := labels.Parse(r.LabelKey + "=" + shard)
+		if err != nil {
+			return nil, err
+		}
+
+		list := &metav1.PartialObjectMetadataList{}
+		list.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   r.GVR.Group,
+			Version: r.GVR.Version,
+			Kind:    r.GVR.Resource,
+		})
+
+		if err := r.Client.List(ctx, list,
+			client.MatchingLabelsSelector{Selector: selector},
+			client.Limit(1),
+		); err != nil {
+			return nil, fmt.Errorf("listing shard %s: %w", shard, err)
+		}
+
+		count := len(list.Items)
+		if list.RemainingItemCount != nil {
+			count += int(*list.RemainingItemCount)
+		}
+		counts[shard] = count
+	}
+
+	return counts, nil
+}
+
+func (r *Rebalancer) cleanupOrphans(ctx context.Context, validCounts map[string]int) (int, error) {
+	selector, err := labels.Parse(r.LabelKey)
+	if err != nil {
+		return 0, err
+	}
+
+	list := &metav1.PartialObjectMetadataList{}
+	list.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   r.GVR.Group,
+		Version: r.GVR.Version,
+		Kind:    r.GVR.Resource,
+	})
+
+	if err := r.Client.List(ctx, list,
+		client.MatchingLabelsSelector{Selector: selector},
+		client.Limit(100),
+	); err != nil {
+		return 0, err
+	}
+
+	validShards := make(map[string]struct{}, len(r.Shards))
+	for _, s := range r.Shards {
+		validShards[s] = struct{}{}
+	}
+
+	limiter := rate.NewLimiter(rate.Limit(r.rateLimit()), 1)
+	orphanCount := 0
+
+	for i := range list.Items {
+		item := &list.Items[i]
+		labelValue := item.Labels[r.LabelKey]
+		if _, valid := validShards[labelValue]; valid {
+			continue
+		}
+
+		if err := limiter.Wait(ctx); err != nil {
+			return orphanCount, err
+		}
+
+		patch := client.MergeFrom(item.DeepCopy())
+		delete(item.Labels, r.LabelKey)
+		if err := r.Client.Patch(ctx, item, patch); err != nil {
+			return orphanCount, fmt.Errorf("stripping orphan label: %w", err)
+		}
+		orphanCount++
+	}
+
+	return orphanCount, nil
+}
+
+func (r *Rebalancer) rebalance(ctx context.Context, counts map[string]int) (int, error) {
+	total := 0
+	for _, c := range counts {
+		total += c
+	}
+	if total == 0 || len(r.Shards) == 0 {
+		return 0, nil
+	}
+
+	ideal := total / len(r.Shards)
+	threshold := r.Config.Threshold
+	if threshold == 0 {
+		threshold = 20
+	}
+
+	maxAllowed := ideal + (ideal * threshold / 100)
+
+	var overloaded []string
+	var underloaded []string
+	for _, shard := range r.Shards {
+		if counts[shard] > maxAllowed {
+			overloaded = append(overloaded, shard)
+		} else if counts[shard] < ideal {
+			underloaded = append(underloaded, shard)
+		}
+	}
+
+	if len(overloaded) == 0 || len(underloaded) == 0 {
+		return 0, nil
+	}
+
+	toMove := 0
+	for _, shard := range overloaded {
+		toMove += counts[shard] - ideal
+	}
+
+	movesPercent := r.Config.MovesPerCycle
+	if movesPercent == 0 {
+		movesPercent = 10
+	}
+	minMoves := r.Config.MinMovesPerCycle
+	if minMoves == 0 {
+		minMoves = 10
+	}
+
+	maxMoves := toMove * movesPercent / 100
+	if maxMoves < minMoves {
+		maxMoves = minMoves
+	}
+	if maxMoves > toMove {
+		maxMoves = toMove
+	}
+
+	limiter := rate.NewLimiter(rate.Limit(r.rateLimit()), 1)
+	moved := 0
+
+	for _, shard := range overloaded {
+		if moved >= maxMoves {
+			break
+		}
+
+		excess := counts[shard] - ideal
+		if excess <= 0 {
+			continue
+		}
+
+		selector, err := labels.Parse(r.LabelKey + "=" + shard)
+		if err != nil {
+			return moved, err
+		}
+
+		list := &metav1.PartialObjectMetadataList{}
+		list.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   r.GVR.Group,
+			Version: r.GVR.Version,
+			Kind:    r.GVR.Resource,
+		})
+
+		limit := maxMoves - moved
+		if limit > excess {
+			limit = excess
+		}
+
+		if err := r.Client.List(ctx, list,
+			client.MatchingLabelsSelector{Selector: selector},
+			client.Limit(int64(limit)),
+		); err != nil {
+			return moved, err
+		}
+
+		targetIdx := 0
+		for i := range list.Items {
+			if moved >= maxMoves {
+				break
+			}
+
+			if err := limiter.Wait(ctx); err != nil {
+				return moved, err
+			}
+
+			for targetIdx < len(underloaded) && counts[underloaded[targetIdx]] >= ideal {
+				targetIdx++
+			}
+			if targetIdx >= len(underloaded) {
+				break
+			}
+
+			item := &list.Items[i]
+			targetShard := underloaded[targetIdx]
+
+			patch := client.MergeFrom(item.DeepCopy())
+			item.Labels[r.LabelKey] = targetShard
+			if err := r.Client.Patch(ctx, item, patch); err != nil {
+				return moved, fmt.Errorf("moving resource to shard %s: %w", targetShard, err)
+			}
+
+			counts[shard]--
+			counts[targetShard]++
+			moved++
+		}
+	}
+
+	return moved, nil
+}
+
+func (r *Rebalancer) rateLimit() int {
+	if r.Config.RateLimit > 0 {
+		return r.Config.RateLimit
+	}
+	return 10
+}
