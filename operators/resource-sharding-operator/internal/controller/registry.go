@@ -11,6 +11,7 @@ import (
 type RunningController struct {
 	Cancel   context.CancelFunc
 	GVR      schema.GroupVersionResource
+	LabelKey string
 	Assigner *ShardAssigner
 }
 

@@ -149,6 +149,7 @@ func StartDynamicController(ctx context.Context, mgr ctrl.Manager, rs *v1alpha1.
 	return &RunningController{
 		Cancel:   cancel,
 		GVR:      gvr,
+		LabelKey: labelKey,
 		Assigner: assigner,
 	}, nil
 }

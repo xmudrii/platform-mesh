@@ -27,9 +27,11 @@ const (
 
 type ResourceShardingReconciler struct {
 	client.Client
-	Discovery discovery.DiscoveryInterface
-	Registry  *DynamicControllerRegistry
-	Manager   ctrl.Manager
+	Discovery          discovery.DiscoveryInterface
+	Registry           *DynamicControllerRegistry
+	Manager            ctrl.Manager
+	WebhookNamespace   string
+	WebhookServiceName string
 }
 
 func (r *ResourceShardingReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -122,6 +124,10 @@ func (r *ResourceShardingReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, err
 	}
 
+	if err := EnsureWebhookConfiguration(ctx, r.Client, &rs, gvr, r.WebhookNamespace, r.WebhookServiceName); err != nil {
+		logger.Error(err, "failed to ensure webhook configuration")
+	}
+
 	// Resolve GVR → GVK for the rebalancer
 	gvk, err := r.Manager.GetRESTMapper().KindFor(gvr)
 	if err != nil {
@@ -169,6 +175,7 @@ func (r *ResourceShardingReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 func (r *ResourceShardingReconciler) handleDeletion(ctx context.Context, rs *v1alpha1.ResourceSharding) (ctrl.Result, error) {
 	r.Registry.Deregister(rs.UID)
+	_ = DeleteWebhookConfiguration(ctx, r.Client, rs)
 
 	controllerutil.RemoveFinalizer(rs, finalizerName)
 	if err := r.Update(ctx, rs); err != nil {
