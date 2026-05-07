@@ -16,7 +16,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 )
@@ -85,4 +88,72 @@ func (s *ResourceShardingSuite) TearDownSuite() {
 	}
 	err := s.env.Stop()
 	s.Require().NoError(err)
+}
+
+// TestStartDynamicController_CancelledContext verifies that StartDynamicController
+// returns an error when the context is already cancelled before the cache can sync.
+// Uses an empty ShardLabelKey to also exercise the default-labelKey assignment branch.
+func (s *ResourceShardingSuite) TestStartDynamicController_CancelledContext() {
+	rs := &v1alpha1.ResourceSharding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-dc-cancelled",
+			UID:  types.UID("uid-dc-cancelled"),
+		},
+		Spec: v1alpha1.ResourceShardingSpec{
+			Target: v1alpha1.TargetResource{Group: "", Version: "v1", Resource: "configmaps"},
+			// Intentionally empty ShardLabelKey to exercise the default-assignment branch.
+			ShardLabelKey: "",
+			Shards:        []v1alpha1.ShardRef{{Name: "shard-a"}},
+		},
+	}
+	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "configmaps"}
+
+	cancelledCtx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel immediately
+
+	_, err := StartDynamicController(cancelledCtx, s.mgr, rs, gvr)
+	s.Require().Error(err, "StartDynamicController with cancelled context should return an error")
+}
+
+// TestStartDynamicController_InvalidLabelKey verifies that StartDynamicController
+// returns an error when the ShardLabelKey contains invalid characters (making the
+// label selector unparseable).
+func (s *ResourceShardingSuite) TestStartDynamicController_InvalidLabelKey() {
+	rs := &v1alpha1.ResourceSharding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-dc-invalid-key",
+			UID:  types.UID("uid-dc-invalid"),
+		},
+		Spec: v1alpha1.ResourceShardingSpec{
+			Target:        v1alpha1.TargetResource{Group: "", Version: "v1", Resource: "configmaps"},
+			ShardLabelKey: "invalid label key with spaces",
+			Shards:        []v1alpha1.ShardRef{{Name: "shard-a"}},
+		},
+	}
+	gvr := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "configmaps"}
+
+	_, err := StartDynamicController(s.ctx, s.mgr, rs, gvr)
+	s.Require().Error(err, "StartDynamicController with invalid label key should return an error")
+	s.Contains(err.Error(), "parsing label selector")
+}
+
+// TestStartDynamicController_UnknownGVR verifies that StartDynamicController
+// returns an error when the GVR cannot be resolved to a GVK.
+func (s *ResourceShardingSuite) TestStartDynamicController_UnknownGVR() {
+	rs := &v1alpha1.ResourceSharding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-dc-unknown-gvr",
+			UID:  types.UID("uid-dc-unknown"),
+		},
+		Spec: v1alpha1.ResourceShardingSpec{
+			Target:        v1alpha1.TargetResource{Group: "nonexistent.example.io", Version: "v1", Resource: "fakes"},
+			ShardLabelKey: "test.unknown.io/shard",
+			Shards:        []v1alpha1.ShardRef{{Name: "shard-a"}},
+		},
+	}
+	gvr := schema.GroupVersionResource{Group: "nonexistent.example.io", Version: "v1", Resource: "fakes"}
+
+	_, err := StartDynamicController(s.ctx, s.mgr, rs, gvr)
+	s.Require().Error(err, "StartDynamicController with unknown GVR should return an error")
+	s.Contains(err.Error(), "resolving GVR")
 }
