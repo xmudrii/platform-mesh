@@ -31,7 +31,7 @@ func (s *ResourceShardingSuite) TestHappyPath() {
 				{Name: "shard-c"},
 			},
 			Rebalance: v1alpha1.RebalanceConfig{
-				Interval: metav1.Duration{Duration: 1 * time.Minute},
+				Interval: metav1.Duration{Duration: 2 * time.Second},
 			},
 		},
 	}
