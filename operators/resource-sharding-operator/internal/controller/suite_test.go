@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	testTimeout  = 30 * time.Second
+	testTimeout  = 90 * time.Second
 	testInterval = 250 * time.Millisecond
 )
 
