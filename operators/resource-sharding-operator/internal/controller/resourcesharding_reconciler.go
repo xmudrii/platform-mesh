@@ -243,6 +243,9 @@ func (r *ResourceShardingReconciler) validateUniqueness(ctx context.Context, rs 
 		if other.UID == rs.UID {
 			continue
 		}
+		if !other.DeletionTimestamp.IsZero() {
+			continue // skip RSes that are being deleted; they relinquish ownership on deletion
+		}
 		otherGVR := schema.GroupVersionResource{
 			Group:    other.Spec.Target.Group,
 			Version:  other.Spec.Target.Version,
