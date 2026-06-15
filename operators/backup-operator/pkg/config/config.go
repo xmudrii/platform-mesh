@@ -7,7 +7,8 @@ type KcpConfig struct {
 }
 
 type OperatorConfig struct {
-	Kcp KcpConfig
+	Kcp       KcpConfig
+	Namespace string
 }
 
 func NewOperatorConfig() OperatorConfig {
@@ -15,9 +16,11 @@ func NewOperatorConfig() OperatorConfig {
 		Kcp: KcpConfig{
 			ApiExportEndpointSliceName: "backup.platform-mesh.io",
 		},
+		Namespace: "platform-mesh",
 	}
 }
 
 func (c *OperatorConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.Kcp.ApiExportEndpointSliceName, "kcp-api-export-endpoint-slice-name", c.Kcp.ApiExportEndpointSliceName, "Set APIExportEndpointSlice name")
+	fs.StringVar(&c.Namespace, "namespace", c.Namespace, "Namespace in which the operator manages resources")
 }
