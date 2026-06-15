@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/platform-mesh/backup-operator/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	operatorcfg "github.com/platform-mesh/backup-operator/pkg/config"
 	"github.com/platform-mesh/backup-operator/pkg/topology"
 )
 
@@ -22,7 +22,7 @@ func sampleManifest() *topology.Manifest {
 		CapturedAt:    time.Date(2026, 5, 20, 13, 4, 22, 0, time.UTC),
 		HostCluster: topology.HostCluster{
 			KubernetesVersion: "v1.32.4",
-			Namespace:         config.DefaultNamespace,
+			Namespace:         operatorcfg.DefaultNamespace,
 		},
 		KCP: topology.KcpTopology{
 			ShardCount: 2,
@@ -72,7 +72,7 @@ func TestUnmarshalMissingRequiredField(t *testing.T) {
 		"capturedAt": "2026-05-20T13:04:22Z",
 		"hostCluster": map[string]any{
 			"kubernetesVersion": "v1.32.4",
-			"namespace":         config.DefaultNamespace,
+			"namespace":         operatorcfg.DefaultNamespace,
 		},
 		"kcp": map[string]any{
 			"shardCount": 1,
@@ -106,7 +106,7 @@ func TestUnmarshalBadDigest(t *testing.T) {
 		"capturedAt":    "2026-05-20T13:04:22Z",
 		"hostCluster": map[string]any{
 			"kubernetesVersion": "v1.32.4",
-			"namespace":         config.DefaultNamespace,
+			"namespace":         operatorcfg.DefaultNamespace,
 		},
 		"kcp": map[string]any{
 			"shardCount": 1,
@@ -193,7 +193,7 @@ func TestDigestStable(t *testing.T) {
 
 // h. RFC 009 sample document passes Unmarshal and Validate(sample, sample).
 func TestRFC009SampleDocument(t *testing.T) {
-	raw := rfcSampleDigest + `{
+	raw := `{
 		"schemaVersion": "v1alpha1",
 		"capturedAt": "2026-05-20T13:04:22Z",
 		"hostCluster": {
@@ -203,7 +203,7 @@ func TestRFC009SampleDocument(t *testing.T) {
 		"kcp": {
 			"shardCount": 2,
 			"shards": [
-				{ "name": "root",    "etcdRef": "etcd/root",    "logicalClusterIDsDigest": "` + `" },
+				{ "name": "root",    "etcdRef": "etcd/root",    "logicalClusterIDsDigest": "` + rfcSampleDigest + `" },
 				{ "name": "shard-a", "etcdRef": "etcd/shard-a", "logicalClusterIDsDigest": "` + rfcSampleDigest + `" }
 			]
 		},

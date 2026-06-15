@@ -1,6 +1,8 @@
 package topology
 
-import "time"
+import (
+	"time"
+)
 
 // Manifest is the in-memory representation of topology.json.
 type Manifest struct {

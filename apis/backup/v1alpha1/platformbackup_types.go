@@ -75,12 +75,12 @@ type VeleroSpec struct {
 
 // PlatformBackupStatus defines the observed state of PlatformBackup
 type PlatformBackupStatus struct {
-	Phase              BackupPhase      `json:"phase,omitempty"`
-	BackupID           string           `json:"backupID,omitempty"`
-	TopologyDigest     string           `json:"topologyDigest,omitempty"`
-	Artefacts          ArtefactsStatus  `json:"artefacts,omitempty"`
-	ObservedGeneration int64            `json:"observedGeneration,omitempty"`
-	NextReconcileTime  metav1.Time      `json:"nextReconcileTime,omitempty"`
+	Phase              BackupPhase        `json:"phase,omitempty"`
+	BackupID           string             `json:"backupID,omitempty"`
+	TopologyDigest     string             `json:"topologyDigest,omitempty"`
+	Artefacts          ArtefactsStatus    `json:"artefacts,omitempty"`
+	ObservedGeneration int64              `json:"observedGeneration,omitempty"`
+	NextReconcileTime  metav1.Time        `json:"nextReconcileTime,omitempty"`
 	Conditions         []metav1.Condition `json:"conditions,omitempty"`
 }
 
@@ -136,9 +136,9 @@ func init() {
 	SchemeBuilder.Register(&PlatformBackup{}, &PlatformBackupList{})
 }
 
-func (b *PlatformBackup) GetConditions() []metav1.Condition           { return b.Status.Conditions }
-func (b *PlatformBackup) SetConditions(c []metav1.Condition)          { b.Status.Conditions = c }
-func (b *PlatformBackup) GetObservedGeneration() int64                { return b.Status.ObservedGeneration }
-func (b *PlatformBackup) SetObservedGeneration(g int64)               { b.Status.ObservedGeneration = g }
-func (b *PlatformBackup) GetNextReconcileTime() metav1.Time           { return b.Status.NextReconcileTime }
-func (b *PlatformBackup) SetNextReconcileTime(t metav1.Time)          { b.Status.NextReconcileTime = t }
+func (b *PlatformBackup) GetConditions() []metav1.Condition  { return b.Status.Conditions }
+func (b *PlatformBackup) SetConditions(c []metav1.Condition) { b.Status.Conditions = c }
+func (b *PlatformBackup) GetObservedGeneration() int64       { return b.Status.ObservedGeneration }
+func (b *PlatformBackup) SetObservedGeneration(g int64)      { b.Status.ObservedGeneration = g }
+func (b *PlatformBackup) GetNextReconcileTime() metav1.Time  { return b.Status.NextReconcileTime }
+func (b *PlatformBackup) SetNextReconcileTime(t metav1.Time) { b.Status.NextReconcileTime = t }

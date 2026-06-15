@@ -104,9 +104,9 @@ func init() {
 	SchemeBuilder.Register(&PlatformRestore{}, &PlatformRestoreList{})
 }
 
-func (r *PlatformRestore) GetConditions() []metav1.Condition           { return r.Status.Conditions }
-func (r *PlatformRestore) SetConditions(c []metav1.Condition)          { r.Status.Conditions = c }
-func (r *PlatformRestore) GetObservedGeneration() int64                { return r.Status.ObservedGeneration }
-func (r *PlatformRestore) SetObservedGeneration(g int64)               { r.Status.ObservedGeneration = g }
-func (r *PlatformRestore) GetNextReconcileTime() metav1.Time           { return r.Status.NextReconcileTime }
-func (r *PlatformRestore) SetNextReconcileTime(t metav1.Time)          { r.Status.NextReconcileTime = t }
+func (r *PlatformRestore) GetConditions() []metav1.Condition  { return r.Status.Conditions }
+func (r *PlatformRestore) SetConditions(c []metav1.Condition) { r.Status.Conditions = c }
+func (r *PlatformRestore) GetObservedGeneration() int64       { return r.Status.ObservedGeneration }
+func (r *PlatformRestore) SetObservedGeneration(g int64)      { r.Status.ObservedGeneration = g }
+func (r *PlatformRestore) GetNextReconcileTime() metav1.Time  { return r.Status.NextReconcileTime }
+func (r *PlatformRestore) SetNextReconcileTime(t metav1.Time) { r.Status.NextReconcileTime = t }
