@@ -5,7 +5,7 @@ vars:
   GOLANGCI_LINT_VERSION: v2.8.0
   CONTROLLER_TOOLS_VERSION: v0.20.0
   ENVTEST_K8S_VERSION: "1.29.0"
-  ENVTEST_VERSION: release-0.17
+  ENVTEST_VERSION: latest
   CRD_DIRECTORY: config/crd
   KCP_VERSION: 0.30.0
   KCP_APIGEN_VERSION: v0.30.0
@@ -38,7 +38,7 @@ tasks:
     internal: true
     cmds:
       - test -s {{.LOCAL_BIN}}/setup-envtest || GOBIN=$(pwd)/{{.LOCAL_BIN}} go install sigs.k8s.io/controller-runtime/tools/setup-envtest@{{.ENVTEST_VERSION}}
-      - test -f {{.LOCAL_BIN}}/k8s/kube-apiserver || (mkdir -p {{.LOCAL_BIN}}/k8s && {{.LOCAL_BIN}}/setup-envtest use {{.ENVTEST_K8S_VERSION}} --bin-dir $(pwd)/{{.LOCAL_BIN}}/k8s && find $(pwd)/{{.LOCAL_BIN}}/k8s -name "kube-apiserver" -exec dirname {} \; | xargs -I{} sh -c 'cp {}/* $(pwd)/{{.LOCAL_BIN}}/k8s/' 2>/dev/null || true)
+      - "{{.LOCAL_BIN}}/setup-envtest use {{.ENVTEST_K8S_VERSION}} --bin-dir $(pwd)/{{.LOCAL_BIN}}/k8s"
 
   ## Development
   manifests:
@@ -66,14 +66,19 @@ tasks:
       - task: fmt
       - "{{.LOCAL_BIN}}/golangci-lint run --timeout 15m ./..."
   envtest:
+    vars:
+      ASSETS:
+        sh: 'echo "${KUBEBUILDER_ASSETS:-$(test -s {{.LOCAL_BIN}}/setup-envtest && {{.LOCAL_BIN}}/setup-envtest use {{.ENVTEST_K8S_VERSION}} --bin-dir $(pwd)/{{.LOCAL_BIN}}/k8s -p path)}"'
+    env:
+      KUBEBUILDER_ASSETS: "{{.ASSETS}}"
     cmds:
       - go test ./... {{.ADDITIONAL_COMMAND_ARGS}}
   test:
-    deps: [setup:kcp, setup:gomplate, setup:envtest]
+    deps: [setup:kcp, setup:gomplate]
     cmds:
       - task: envtest
   cover:
-    deps: [setup:kcp, setup:gomplate, setup:envtest]
+    deps: [setup:kcp, setup:gomplate]
     cmds:
       - task: envtest
         vars:
