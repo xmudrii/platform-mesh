@@ -7,7 +7,7 @@ type Manifest struct {
 	SchemaVersion   string          `json:"schemaVersion"`
 	CapturedAt      time.Time       `json:"capturedAt"`
 	HostCluster     HostCluster     `json:"hostCluster"`
-	KCP             KCPTopology     `json:"kcp"`
+	KCP             KcpTopology     `json:"kcp"`
 	CNPG            CNPGTopology    `json:"cnpg"`
 	OpenFGA         OpenFGATopology `json:"openfga"`
 	OperatorVersion string          `json:"operatorVersion"`
@@ -18,12 +18,12 @@ type HostCluster struct {
 	Namespace         string `json:"namespace"`
 }
 
-type KCPTopology struct {
+type KcpTopology struct {
 	ShardCount int        `json:"shardCount"`
-	Shards     []KCPShard `json:"shards"`
+	Shards     []KcpShard `json:"shards"`
 }
 
-type KCPShard struct {
+type KcpShard struct {
 	Name                    string `json:"name"`
 	EtcdRef                 string `json:"etcdRef"`
 	LogicalClusterIDsDigest string `json:"logicalClusterIDsDigest"`

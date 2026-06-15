@@ -233,8 +233,8 @@ func canonicalJSON(v any) ([]byte, error) {
 	return bytes.TrimRight(buf.Bytes(), "\n"), nil
 }
 
-func shardsByName(shards []KCPShard) map[string]KCPShard {
-	m := make(map[string]KCPShard, len(shards))
+func shardsByName(shards []KcpShard) map[string]KcpShard {
+	m := make(map[string]KcpShard, len(shards))
 	for _, s := range shards {
 		m[s.Name] = s
 	}

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/platform-mesh/backup-operator/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -21,11 +22,11 @@ func sampleManifest() *topology.Manifest {
 		CapturedAt:    time.Date(2026, 5, 20, 13, 4, 22, 0, time.UTC),
 		HostCluster: topology.HostCluster{
 			KubernetesVersion: "v1.32.4",
-			Namespace:         "platform-mesh",
+			Namespace:         config.DefaultNamespace,
 		},
-		KCP: topology.KCPTopology{
+		KCP: topology.KcpTopology{
 			ShardCount: 2,
-			Shards: []topology.KCPShard{
+			Shards: []topology.KcpShard{
 				{Name: "root", EtcdRef: "etcd/root", LogicalClusterIDsDigest: rfcSampleDigest},
 				{Name: "shard-a", EtcdRef: "etcd/shard-a", LogicalClusterIDsDigest: rfcSampleDigest},
 			},
@@ -71,7 +72,7 @@ func TestUnmarshalMissingRequiredField(t *testing.T) {
 		"capturedAt": "2026-05-20T13:04:22Z",
 		"hostCluster": map[string]any{
 			"kubernetesVersion": "v1.32.4",
-			"namespace":         "platform-mesh",
+			"namespace":         config.DefaultNamespace,
 		},
 		"kcp": map[string]any{
 			"shardCount": 1,
@@ -105,7 +106,7 @@ func TestUnmarshalBadDigest(t *testing.T) {
 		"capturedAt":    "2026-05-20T13:04:22Z",
 		"hostCluster": map[string]any{
 			"kubernetesVersion": "v1.32.4",
-			"namespace":         "platform-mesh",
+			"namespace":         config.DefaultNamespace,
 		},
 		"kcp": map[string]any{
 			"shardCount": 1,
@@ -156,7 +157,7 @@ func TestValidateShardDigestMismatch(t *testing.T) {
 func TestValidateExtraShardOnTarget(t *testing.T) {
 	source := sampleManifest()
 	target := sampleManifest()
-	target.KCP.Shards = append(target.KCP.Shards, topology.KCPShard{
+	target.KCP.Shards = append(target.KCP.Shards, topology.KcpShard{
 		Name:                    "shard-b",
 		EtcdRef:                 "etcd/shard-b",
 		LogicalClusterIDsDigest: rfcSampleDigest,
@@ -192,7 +193,7 @@ func TestDigestStable(t *testing.T) {
 
 // h. RFC 009 sample document passes Unmarshal and Validate(sample, sample).
 func TestRFC009SampleDocument(t *testing.T) {
-	raw := `{
+	raw := rfcSampleDigest + `{
 		"schemaVersion": "v1alpha1",
 		"capturedAt": "2026-05-20T13:04:22Z",
 		"hostCluster": {
@@ -202,7 +203,7 @@ func TestRFC009SampleDocument(t *testing.T) {
 		"kcp": {
 			"shardCount": 2,
 			"shards": [
-				{ "name": "root",    "etcdRef": "etcd/root",    "logicalClusterIDsDigest": "` + rfcSampleDigest + `" },
+				{ "name": "root",    "etcdRef": "etcd/root",    "logicalClusterIDsDigest": "` + `" },
 				{ "name": "shard-a", "etcdRef": "etcd/shard-a", "logicalClusterIDsDigest": "` + rfcSampleDigest + `" }
 			]
 		},

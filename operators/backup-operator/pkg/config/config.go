@@ -2,6 +2,8 @@ package config
 
 import "github.com/spf13/pflag"
 
+const DefaultNamespace = "platform-mesh"
+
 type KcpConfig struct {
 	ApiExportEndpointSliceName string
 }
@@ -16,7 +18,7 @@ func NewOperatorConfig() OperatorConfig {
 		Kcp: KcpConfig{
 			ApiExportEndpointSliceName: "backup.platform-mesh.io",
 		},
-		Namespace: "platform-mesh",
+		Namespace: DefaultNamespace,
 	}
 }
 
