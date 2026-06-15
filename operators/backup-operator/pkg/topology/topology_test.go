@@ -24,7 +24,7 @@ func sampleManifest() *topology.Manifest {
 			KubernetesVersion: "v1.32.4",
 			Namespace:         operatorcfg.DefaultNamespace,
 		},
-		KCP: topology.KcpTopology{
+		Kcp: topology.KcpTopology{
 			ShardCount: 2,
 			Shards: []topology.KcpShard{
 				{Name: "root", EtcdRef: "etcd/root", LogicalClusterIDsDigest: rfcSampleDigest},
@@ -60,7 +60,7 @@ func TestMarshalUnmarshalRoundTrip(t *testing.T) {
 	assert.Equal(t, original.OperatorVersion, got.OperatorVersion)
 	assert.True(t, original.CapturedAt.Equal(got.CapturedAt))
 	assert.Equal(t, original.HostCluster, got.HostCluster)
-	assert.Equal(t, original.KCP, got.KCP)
+	assert.Equal(t, original.Kcp, got.Kcp)
 	assert.Equal(t, original.CNPG, got.CNPG)
 	assert.Equal(t, original.OpenFGA, got.OpenFGA)
 }
@@ -142,7 +142,7 @@ func TestValidateIdentical(t *testing.T) {
 func TestValidateShardDigestMismatch(t *testing.T) {
 	source := sampleManifest()
 	target := sampleManifest()
-	target.KCP.Shards[0].LogicalClusterIDsDigest = "sha256:" + "b" + rfcSampleDigest[8:]
+	target.Kcp.Shards[0].LogicalClusterIDsDigest = "sha256:" + "b" + rfcSampleDigest[8:]
 
 	err := topology.Validate(source, target)
 	require.Error(t, err)
@@ -157,7 +157,7 @@ func TestValidateShardDigestMismatch(t *testing.T) {
 func TestValidateExtraShardOnTarget(t *testing.T) {
 	source := sampleManifest()
 	target := sampleManifest()
-	target.KCP.Shards = append(target.KCP.Shards, topology.KcpShard{
+	target.Kcp.Shards = append(target.Kcp.Shards, topology.KcpShard{
 		Name:                    "shard-b",
 		EtcdRef:                 "etcd/shard-b",
 		LogicalClusterIDsDigest: rfcSampleDigest,

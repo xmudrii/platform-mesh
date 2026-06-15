@@ -89,8 +89,8 @@ func Validate(source, target *Manifest) error {
 	}
 
 	// Compare KCP shards by name (order-independent).
-	sourceShards := shardsByName(source.KCP.Shards)
-	targetShards := shardsByName(target.KCP.Shards)
+	sourceShards := shardsByName(source.Kcp.Shards)
+	targetShards := shardsByName(target.Kcp.Shards)
 
 	for name, ss := range sourceShards {
 		ts, ok := targetShards[name]
