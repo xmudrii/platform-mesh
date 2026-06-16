@@ -9,8 +9,10 @@ import (
 	"io"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/graphql-go/graphql"
+	"github.com/platform-mesh/kubernetes-graphql-gateway/gateway/gateway/metrics"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -28,16 +30,29 @@ import (
 
 type Service struct {
 	runtimeClient client.WithWatch
+	metrics       *metrics.ResolverMetrics
 }
 
-func New(runtimeClient client.WithWatch) *Service {
+func New(runtimeClient client.WithWatch, m *metrics.ResolverMetrics) *Service {
 	return &Service{
 		runtimeClient: runtimeClient,
+		metrics:       m,
 	}
 }
 
 func (r *Service) ListItems(gvk schema.GroupVersionKind, scope v1.ResourceScope) graphql.FieldResolveFn {
-	return func(p graphql.ResolveParams) (any, error) {
+	return func(p graphql.ResolveParams) (result any, err error) {
+		start := time.Now()
+		defer func() {
+			if r.metrics == nil {
+				return
+			}
+			labelResult := metrics.ResultSuccess
+			if err != nil {
+				labelResult = metrics.ResultError
+			}
+			r.metrics.Record(metrics.OperationList, gvk.Kind, time.Since(start), labelResult)
+		}()
 		logger := log.FromContext(p.Context)
 		ctx, span := otel.Tracer("").Start(p.Context, "ListItems", trace.WithAttributes(attribute.String("kind", gvk.Kind)))
 		defer span.End()
@@ -127,7 +142,18 @@ func (r *Service) ListItems(gvk schema.GroupVersionKind, scope v1.ResourceScope)
 }
 
 func (r *Service) GetItem(gvk schema.GroupVersionKind, scope v1.ResourceScope) graphql.FieldResolveFn {
-	return func(p graphql.ResolveParams) (any, error) {
+	return func(p graphql.ResolveParams) (result any, err error) {
+		start := time.Now()
+		defer func() {
+			if r.metrics == nil {
+				return
+			}
+			labelResult := metrics.ResultSuccess
+			if err != nil {
+				labelResult = metrics.ResultError
+			}
+			r.metrics.Record(metrics.OperationGet, gvk.Kind, time.Since(start), labelResult)
+		}()
 		logger := log.FromContext(p.Context)
 		ctx, span := otel.Tracer("").Start(p.Context, "GetItem", trace.WithAttributes(attribute.String("kind", gvk.Kind)))
 		defer span.End()
@@ -173,7 +199,7 @@ func (r *Service) GetItem(gvk schema.GroupVersionKind, scope v1.ResourceScope) g
 }
 
 func (r *Service) GetItemAsYAML(gvk schema.GroupVersionKind, scope v1.ResourceScope) graphql.FieldResolveFn {
-	return func(p graphql.ResolveParams) (any, error) {
+	return func(p graphql.ResolveParams) (result any, err error) {
 		_, span := otel.Tracer("").Start(p.Context, "GetItemAsYAML", trace.WithAttributes(attribute.String("kind", gvk.Kind)))
 		defer span.End()
 
@@ -192,7 +218,18 @@ func (r *Service) GetItemAsYAML(gvk schema.GroupVersionKind, scope v1.ResourceSc
 }
 
 func (r *Service) CreateItem(gvk schema.GroupVersionKind, scope v1.ResourceScope) graphql.FieldResolveFn {
-	return func(p graphql.ResolveParams) (any, error) {
+	return func(p graphql.ResolveParams) (result any, err error) {
+		start := time.Now()
+		defer func() {
+			if r.metrics == nil {
+				return
+			}
+			labelResult := metrics.ResultSuccess
+			if err != nil {
+				labelResult = metrics.ResultError
+			}
+			r.metrics.Record(metrics.OperationCreate, gvk.Kind, time.Since(start), labelResult)
+		}()
 		ctx, span := otel.Tracer("").Start(p.Context, "CreateItem", trace.WithAttributes(attribute.String("kind", gvk.Kind)))
 		defer span.End()
 
@@ -241,7 +278,18 @@ func (r *Service) CreateItem(gvk schema.GroupVersionKind, scope v1.ResourceScope
 }
 
 func (r *Service) UpdateItem(gvk schema.GroupVersionKind, scope v1.ResourceScope) graphql.FieldResolveFn {
-	return func(p graphql.ResolveParams) (any, error) {
+	return func(p graphql.ResolveParams) (result any, err error) {
+		start := time.Now()
+		defer func() {
+			if r.metrics == nil {
+				return
+			}
+			labelResult := metrics.ResultSuccess
+			if err != nil {
+				labelResult = metrics.ResultError
+			}
+			r.metrics.Record(metrics.OperationUpdate, gvk.Kind, time.Since(start), labelResult)
+		}()
 		logger := log.FromContext(p.Context)
 		ctx, span := otel.Tracer("").Start(p.Context, "UpdateItem", trace.WithAttributes(attribute.String("kind", gvk.Kind)))
 		defer span.End()
@@ -291,7 +339,18 @@ func (r *Service) UpdateItem(gvk schema.GroupVersionKind, scope v1.ResourceScope
 }
 
 func (r *Service) DeleteItem(gvk schema.GroupVersionKind, scope v1.ResourceScope) graphql.FieldResolveFn {
-	return func(p graphql.ResolveParams) (any, error) {
+	return func(p graphql.ResolveParams) (result any, err error) {
+		start := time.Now()
+		defer func() {
+			if r.metrics == nil {
+				return
+			}
+			labelResult := metrics.ResultSuccess
+			if err != nil {
+				labelResult = metrics.ResultError
+			}
+			r.metrics.Record(metrics.OperationDelete, gvk.Kind, time.Since(start), labelResult)
+		}()
 		logger := log.FromContext(p.Context)
 		ctx, span := otel.Tracer("").Start(p.Context, "DeleteItem", trace.WithAttributes(attribute.String("kind", gvk.Kind)))
 		defer span.End()
@@ -337,7 +396,19 @@ func (r *Service) DeleteItem(gvk schema.GroupVersionKind, scope v1.ResourceScope
 // Kubernetes API server with create-or-update semantics: if the resource
 // exists it is updated, otherwise it is created.
 func (r *Service) ApplyYaml() graphql.FieldResolveFn {
-	return func(p graphql.ResolveParams) (any, error) {
+	return func(p graphql.ResolveParams) (result any, err error) {
+		start := time.Now()
+		var kind string
+		defer func() {
+			if r.metrics == nil {
+				return
+			}
+			labelResult := metrics.ResultSuccess
+			if err != nil {
+				labelResult = metrics.ResultError
+			}
+			r.metrics.Record(metrics.OperationApply, kind, time.Since(start), labelResult)
+		}()
 		ctx, span := otel.Tracer("").Start(p.Context, "ApplyYaml")
 		defer span.End()
 
@@ -356,6 +427,7 @@ func (r *Service) ApplyYaml() graphql.FieldResolveFn {
 		obj := &unstructured.Unstructured{Object: parsed}
 
 		gvk := obj.GetObjectKind().GroupVersionKind()
+		kind = gvk.Kind
 		name := obj.GetName()
 		namespace := obj.GetNamespace()
 

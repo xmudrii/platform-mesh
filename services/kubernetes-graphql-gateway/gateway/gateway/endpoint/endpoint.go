@@ -12,6 +12,7 @@ import (
 	"github.com/platform-mesh/kubernetes-graphql-gateway/gateway/gateway/cluster"
 	"github.com/platform-mesh/kubernetes-graphql-gateway/gateway/gateway/config"
 	"github.com/platform-mesh/kubernetes-graphql-gateway/gateway/gateway/graphql"
+	"github.com/platform-mesh/kubernetes-graphql-gateway/gateway/gateway/metrics"
 	"github.com/platform-mesh/kubernetes-graphql-gateway/gateway/gateway/queryvalidation"
 	"github.com/platform-mesh/kubernetes-graphql-gateway/gateway/gateway/requestparser"
 	"github.com/platform-mesh/kubernetes-graphql-gateway/gateway/resolver"
@@ -29,6 +30,7 @@ type Endpoint struct {
 	graphqlServer *graphql.GraphQLServer
 	handler       http.Handler
 	cancelFunc    context.CancelFunc
+	metrics       *metrics.EndpointMetrics
 }
 
 func New(
@@ -39,7 +41,17 @@ func New(
 	limits config.Limits,
 	tokenReviewCacheTTL time.Duration,
 	injectedValidator authn.Validator,
+	m *metrics.Collector,
 ) (*Endpoint, error) {
+	var endpointM *metrics.EndpointMetrics
+	var resolverM *metrics.ResolverMetrics
+	var authM *metrics.AuthMetrics
+	if m != nil {
+		endpointM = m.Endpoint
+		resolverM = m.Resolver
+		authM = m.Auth
+	}
+
 	schemaData, err := parseSchema(schemaJSON)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse schema: %w", err)
@@ -56,7 +68,7 @@ func New(
 	validatorCancel := context.CancelFunc(func() {})
 	if validator == nil {
 		validatorCtx, trCancel := context.WithCancel(ctx)
-		tr, err := authn.NewTokenReviewValidator(cl.AdminConfig(), tokenReviewCacheTTL)
+		tr, err := authn.NewTokenReviewValidator(cl.AdminConfig(), tokenReviewCacheTTL, authM)
 		if err != nil {
 			trCancel()
 			return nil, fmt.Errorf("failed to create token validator: %w", err)
@@ -66,7 +78,7 @@ func New(
 		validatorCancel = trCancel
 	}
 
-	resolverProvider := resolver.New(cl.Client())
+	resolverProvider := resolver.New(cl.Client(), resolverM)
 
 	customSubGen, err := extensions.NewCustomSubscriptionGenerator(cl.RestConfig())
 	if err != nil {
@@ -140,6 +152,7 @@ func New(
 		graphqlServer: graphqlServer,
 		handler:       handler,
 		cancelFunc:    validatorCancel,
+		metrics:       endpointM,
 	}, nil
 }
 
@@ -148,7 +161,38 @@ func (e *Endpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Endpoint not ready", http.StatusServiceUnavailable)
 		return
 	}
-	e.handler.ServeHTTP(w, r)
+	start := time.Now()
+	operation := metrics.OperationQuery
+	if r.Header.Get("Accept") == "text/event-stream" {
+		operation = metrics.OperationSubscription
+	}
+	rw := &statusResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+	e.handler.ServeHTTP(rw, r)
+	if e.metrics != nil {
+		labelResult := metrics.ResultSuccess
+		if rw.statusCode >= 400 {
+			labelResult = metrics.ResultError
+		}
+		e.metrics.Record(e.name, operation, time.Since(start), labelResult)
+	}
+}
+
+// statusResponseWriter wraps http.ResponseWriter to capture the HTTP status code.
+// It also forwards Flush calls so that SSE streaming works correctly.
+type statusResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (rw *statusResponseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+func (rw *statusResponseWriter) Flush() {
+	if f, ok := rw.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
 }
 
 func (e *Endpoint) Name() string {
