@@ -1,0 +1,43 @@
+apiVersion: ui.platform-mesh.io/v1alpha1
+kind: ContentConfiguration
+metadata:
+  name: inline-and-remote-json
+  namespace: default
+spec:
+  remoteConfiguration:
+    authentication:
+      secretRef:
+        name: "your-secret-name"
+      type: "Bearer"
+    url: "we will never go there since the inlineConfiguration has higher priority than remoteConfiguration"
+  inlineConfiguration:
+    content: |
+      {
+      		"iAmOptionalCustomFieldThatShouldBeStored": "iAmOptionalCustomValue",
+      		"luigiConfigFragment": {
+						"data": {
+							"nodeDefaults": {
+								"entityType": "global",
+								"isolateView": true
+							},
+							"nodes": [
+								{
+									"entityType": "global",
+									"icon": "home",
+									"label": "Overview",
+									"pathSegment": "home"
+								}
+							],
+							"texts": [
+								{
+									"locale": "de",
+									"textDictionary": {
+										"hello": "Hallo"
+									}
+								}
+							]
+						}
+					},
+      		"name": "overview"
+      	}
+    contentType: "json"

@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - ui.platform-mesh.io
+  resources:
+  - contentconfigurations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ui.platform-mesh.io
+  resources:
+  - contentconfigurations/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - ui.platform-mesh.io
+  resources:
+  - contentconfigurations/status
+  verbs:
+  - get
+  - patch
+  - update

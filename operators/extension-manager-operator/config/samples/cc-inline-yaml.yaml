@@ -1,0 +1,25 @@
+apiVersion: ui.platform-mesh.io/v1alpha1
+kind: ContentConfiguration
+metadata:
+  name: inline-yaml
+  namespace: default
+spec:
+  inlineConfiguration:
+    content: |
+      iAmOptionalCustomFieldThatShouldBeStored: iAmOptionalCustomValue
+      name: overview
+      luigiConfigFragment:
+       data:
+        nodeDefaults:
+          entityType: global
+          isolateView: true
+        nodes:
+        - entityType: global
+          pathSegment: home
+          label: Overview
+          icon: home
+        texts:
+        - locale: de
+          textDictionary:
+            hello: Hallo
+    contentType: "yaml"  # or "json"
