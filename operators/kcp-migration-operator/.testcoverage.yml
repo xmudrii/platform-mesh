@@ -1,0 +1,10 @@
+threshold:
+  file: 40
+  package: 40
+  total: 40
+exclude:
+  paths:
+    - ^pkg/mocks # exclude generated mock files
+    - api/v1alpha1 # skipping generated files and crd type definitions
+    - main\.go$ # skip covering main.go
+    - ^cmd # skip covering cmd directory
