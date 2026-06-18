@@ -1,0 +1,16 @@
+threshold:
+  file: 80
+  package: 80
+  total: 80
+exclude:
+  paths:
+    - api/v1alpha1 # skipping generated files and crd type definitions
+    - main\.go$ # skip covering main.go
+    - ^cmd # skip covering cmd directory
+    - internal/controller/setup\.go$ # manager wiring; covered by integration only
+
+override:
+  - path: ^internal/controller/(.+)_reconciler.go$
+    threshold: 60
+  - path: ^internal/controller$
+    threshold: 70
