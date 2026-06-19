@@ -113,6 +113,7 @@ tasks:
       PUSH: '{{.PUSH | default "false"}}'                          # true -> buildx --push, false -> --load
       PLATFORMS: '{{.PLATFORMS | default "linux/amd64"}}'          # multi-arch (e.g. linux/amd64,linux/arm64) requires PUSH=true
       CONTEXT: '{{.CONTEXT | default "."}}'                         # build context; repo root by default (shared go.work)
+      METADATA_FILE: '{{.METADATA_FILE | default ""}}'             # write buildx metadata (incl. containerimage.digest) here for signing
     cmds:
       - task: _image
         vars:
@@ -123,6 +124,7 @@ tasks:
           PUSH: "{{.PUSH}}"
           PLATFORMS: "{{.PLATFORMS}}"
           CONTEXT: "{{.CONTEXT}}"
+          METADATA_FILE: "{{.METADATA_FILE}}"
 
   # Resolve a component name to its directory and delegate to its Taskfile.
   _run:
@@ -178,13 +180,22 @@ tasks:
         push_flag='--load'
         [ '{{.PUSH}}' = 'true' ] && push_flag='--push'
 
+        # Tag image:VERSION, plus the bare-semver alias only when VERSION carries
+        # a leading "v" (so latest/pr-N/dev produce a single tag, not a dup).
+        set -- -t "$image:$version"
+        [ "$semver" != "$version" ] && set -- "$@" -t "$image:$semver"
+
+        # Optional: emit buildx metadata (incl. containerimage.digest) so callers
+        # like the release workflow can cosign-sign the pushed image by digest.
+        meta='{{.METADATA_FILE}}'
+        [ -n "$meta" ] && set -- "$@" --metadata-file "$meta"
+
         echo ">> building $image:$version (context=$context platforms={{.PLATFORMS}} push={{.PUSH}})"
         docker buildx build \
           --file "$dir/Dockerfile" \
           --platform '{{.PLATFORMS}}' \
           "$push_flag" \
-          -t "$image:$version" \
-          -t "$image:$semver" \
+          "$@" \
           "$context"
 
   # ---------------------------------------------------------------------------
