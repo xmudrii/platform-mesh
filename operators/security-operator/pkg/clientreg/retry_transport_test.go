@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/platform-mesh/security-operator/internal/subroutine/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"platform-mesh.io/security-operator/internal/subroutine/mocks"
 )
 
 func closedServer(t *testing.T) *httptest.Server {

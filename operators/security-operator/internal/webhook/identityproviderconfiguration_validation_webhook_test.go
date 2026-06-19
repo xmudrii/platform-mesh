@@ -8,10 +8,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/platform-mesh/security-operator/api/v1alpha1"
-	"github.com/platform-mesh/security-operator/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	"platform-mesh.io/security-operator/internal/config"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -75,7 +75,7 @@ func TestIdentityProviderConfigurationValidator_ValidateCreate(t *testing.T) {
 				keycloakClient: tt.checker,
 				realmDenyList:  tt.realmDenyList,
 			}
-			_, err := v.ValidateCreate(t.Context(), &v1alpha1.IdentityProviderConfiguration{
+			_, err := v.ValidateCreate(t.Context(), &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{Name: tt.realmName},
 			})
 			if tt.wantErr {
@@ -92,13 +92,13 @@ func TestIdentityProviderConfigurationValidator_ValidateCreate(t *testing.T) {
 
 func TestIdentityProviderConfigurationValidator_ValidateUpdate(t *testing.T) {
 	v := &identityProviderConfigurationValidator{keycloakClient: fakeRealmChecker{exists: true}}
-	_, err := v.ValidateUpdate(t.Context(), &v1alpha1.IdentityProviderConfiguration{}, &v1alpha1.IdentityProviderConfiguration{})
+	_, err := v.ValidateUpdate(t.Context(), &corev1alpha1.IdentityProviderConfiguration{}, &corev1alpha1.IdentityProviderConfiguration{})
 	require.NoError(t, err)
 }
 
 func TestIdentityProviderConfigurationValidator_ValidateDelete(t *testing.T) {
 	v := &identityProviderConfigurationValidator{keycloakClient: fakeRealmChecker{}}
-	_, err := v.ValidateDelete(t.Context(), &v1alpha1.IdentityProviderConfiguration{})
+	_, err := v.ValidateDelete(t.Context(), &corev1alpha1.IdentityProviderConfiguration{})
 	require.NoError(t, err)
 }
 

@@ -2,13 +2,13 @@ version: '3'
 
 vars:
   LOCAL_BIN: bin
-  GOLANGCI_LINT_VERSION: v2.8.0
-  CONTROLLER_TOOLS_VERSION: v0.20.0
+  # Shared codegen/lint tools come from the repo-root bin (root `tools:` tasks).
+  ROOT_BIN:
+    sh: echo "$(git rev-parse --show-toplevel)/bin"
   ENVTEST_K8S_VERSION: "1.29.0"
   ENVTEST_VERSION: release-0.17
   CRD_DIRECTORY: config/crd
   TEST_SETUP_DIRECTORY: test/setup/01-platform-mesh-system
-  KCP_APIGEN_VERSION: v0.30.0
   KCP_VERSION: 0.30.0
   GOMPLATE_VERSION: v4.3.0
   GOARCH:
@@ -16,11 +16,7 @@ vars:
   GOOS:
     sh: go env GOOS
 tasks:
-  ## Setup
-  setup:controller-gen:
-    internal: true
-    cmds:
-      - test -s {{.LOCAL_BIN}}/controller-gen || GOBIN=$(pwd)/{{.LOCAL_BIN}} go install sigs.k8s.io/controller-tools/cmd/controller-gen@{{.CONTROLLER_TOOLS_VERSION}}
+  ## Setup (e2e assets only — codegen/lint tools live in the root tools Taskfile)
   setup:kcp:
     internal: true
     cmds:
@@ -29,26 +25,21 @@ tasks:
     internal: true
     cmds:
       - test -s {{.LOCAL_BIN}}/gomplate || curl -o {{.LOCAL_BIN}}/gomplate -sSL https://github.com/hairyhenderson/gomplate/releases/download/{{ .GOMPLATE_VERSION }}/gomplate_{{ .GOOS }}-{{ .GOARCH }} && chmod +x {{.LOCAL_BIN}}/gomplate && chmod 755 {{.LOCAL_BIN}}/gomplate
-  setup:golangci-lint:
-    internal: true
-    cmds:
-      - test -s {{.LOCAL_BIN}}/golangci-lint || GOBIN=$(pwd)/{{.LOCAL_BIN}} go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}}
-  setup:kcp-api-gen:
-    internal: true
-    cmds:
-      - test -s {{.LOCAL_BIN}}/apigen || GOBIN=$(pwd)/{{.LOCAL_BIN}} go install github.com/kcp-dev/sdk/cmd/apigen@{{.KCP_APIGEN_VERSION}}
 
   ## Development
   manifests:
-    deps: [setup:controller-gen,setup:kcp-api-gen]
     cmds:
-      - "{{.LOCAL_BIN}}/controller-gen rbac:roleName=manager-role crd paths=./... output:crd:artifacts:config={{.CRD_DIRECTORY}}"
+      - "{{.ROOT_BIN}}/controller-gen rbac:roleName=manager-role crd paths=./... output:crd:artifacts:config={{.CRD_DIRECTORY}}"
   generate:
     cmds:
       - task: manifests
-      - "{{.LOCAL_BIN}}/controller-gen object:headerFile=hack/boilerplate.go.txt paths=./..."
-      - "{{.LOCAL_BIN}}/apigen --input-dir {{.CRD_DIRECTORY}} --output-dir ./config/resources"
-      - "{{.LOCAL_BIN}}/apigen --input-dir {{.CRD_DIRECTORY}} --output-dir {{ .TEST_SETUP_DIRECTORY }}"
+      - "{{.ROOT_BIN}}/controller-gen object:headerFile=hack/boilerplate.go.txt paths=./..."
+      - "{{.ROOT_BIN}}/apigen --input-dir {{.CRD_DIRECTORY}} --output-dir ./config/resources"
+      - "{{.ROOT_BIN}}/apigen --input-dir {{.CRD_DIRECTORY}} --output-dir {{ .TEST_SETUP_DIRECTORY }}"
+  build:
+    desc: Build the account-operator.
+    cmds:
+      - go build ./...
   docker-build:
     cmds:
       - docker build .
@@ -57,23 +48,23 @@ tasks:
     cmds:
       - go fmt ./...
   lint:
-    deps: [setup:golangci-lint]
     cmds:
       - task: fmt
-      - "{{.LOCAL_BIN}}/golangci-lint run --timeout 15m ./..."
-  envtest:
-    cmds:
-      - go test ./... {{.ADDITIONAL_COMMAND_ARGS}}
+      - "{{.ROOT_BIN}}/golangci-lint run --timeout 15m ./..."
+  # Integration (envtest) lives in ./internal/controller; everything else is unit.
   test:
+    desc: Run unit tests (no kcp/envtest).
+    cmds:
+      - go test -count=1 $(go list ./... | grep -v '/internal/controller$')
+  test-e2e:
+    desc: Run envtest integration tests (downloads kcp).
     deps: [setup:kcp, setup:gomplate]
     cmds:
-      - task: envtest
+      - go test -count=1 ./internal/controller/... {{.ADDITIONAL_COMMAND_ARGS}}
   cover:
     deps: [setup:kcp, setup:gomplate]
     cmds:
-      - task: envtest
-        vars:
-          ADDITIONAL_COMMAND_ARGS: -v -coverprofile=./cover.out -covermode=atomic -coverpkg=./...
+      - go test -count=1 ./... -v -coverprofile=./cover.out -covermode=atomic -coverpkg=./...
   start-kcp:
     deps: [setup:kcp]
     cmds:

@@ -6,13 +6,12 @@ import (
 	"slices"
 	"strings"
 
-	accountv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
 	"github.com/platform-mesh/golang-commons/controller/lifecycle/ratelimiter"
-	"github.com/platform-mesh/security-operator/api/v1alpha1"
-	iclient "github.com/platform-mesh/security-operator/internal/client"
-	"github.com/platform-mesh/security-operator/internal/config"
 	"github.com/platform-mesh/subroutines"
 	"github.com/rs/zerolog/log"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	iclient "platform-mesh.io/security-operator/internal/client"
+	"platform-mesh.io/security-operator/internal/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
@@ -33,7 +32,7 @@ const (
 )
 
 func NewIDPSubroutine(mgr mcmanager.Manager, kcpClientGetter iclient.KCPClientGetter, cfg config.Config) (*IDPSubroutine, error) {
-	limiter, err := ratelimiter.NewStaticThenExponentialRateLimiter[*v1alpha1.IdentityProviderConfiguration](ratelimiter.NewConfig())
+	limiter, err := ratelimiter.NewStaticThenExponentialRateLimiter[*corev1alpha1.IdentityProviderConfiguration](ratelimiter.NewConfig())
 	if err != nil {
 		return nil, fmt.Errorf("creating RateLimiter: %w", err)
 	}
@@ -60,7 +59,7 @@ type IDPSubroutine struct {
 	kubectlClientRedirectURLs []string
 	baseDomain                string
 	registrationAllowed       bool
-	limiter                   workqueue.TypedRateLimiter[*v1alpha1.IdentityProviderConfiguration]
+	limiter                   workqueue.TypedRateLimiter[*corev1alpha1.IdentityProviderConfiguration]
 }
 
 func (i *IDPSubroutine) GetName() string { return "IDPSubroutine" }
@@ -92,21 +91,21 @@ func (i *IDPSubroutine) reconcile(ctx context.Context, obj client.Object) (subro
 	if err != nil {
 		return subroutines.OK(), fmt.Errorf("getting orgs client: %w", err)
 	}
-	var account accountv1alpha1.Account
+	var account corev1alpha1.Account
 	err = orgsClient.Get(ctx, types.NamespacedName{Name: workspaceName}, &account)
 	if err != nil {
 		return subroutines.OK(), fmt.Errorf("failed to get account resource %w", err)
 	}
 
-	if account.Spec.Type != accountv1alpha1.AccountTypeOrg {
+	if account.Spec.Type != corev1alpha1.AccountTypeOrg {
 		log.Debug().Str("workspace", workspaceName).Msg("account is not of type organization, skipping idp creation")
 		return subroutines.OK(), nil
 	}
 
-	clients := []v1alpha1.IdentityProviderClientConfig{
+	clients := []corev1alpha1.IdentityProviderClientConfig{
 		{
 			ClientName:             workspaceName,
-			ClientType:             v1alpha1.IdentityProviderClientTypeConfidential,
+			ClientType:             corev1alpha1.IdentityProviderClientTypeConfidential,
 			RedirectURIs:           append(i.additionalRedirectURLs, fmt.Sprintf("https://%s.%s/*", workspaceName, i.baseDomain)),
 			PostLogoutRedirectURIs: []string{fmt.Sprintf("https://%s.%s/logout*", workspaceName, i.baseDomain)},
 			SecretRef: corev1.SecretReference{
@@ -116,7 +115,7 @@ func (i *IDPSubroutine) reconcile(ctx context.Context, obj client.Object) (subro
 		},
 		{
 			ClientName:   kubectlClientName,
-			ClientType:   v1alpha1.IdentityProviderClientTypePublic,
+			ClientType:   corev1alpha1.IdentityProviderClientTypePublic,
 			RedirectURIs: i.kubectlClientRedirectURLs,
 			SecretRef: corev1.SecretReference{
 				Name:      fmt.Sprintf("portal-client-secret-%s-%s", workspaceName, kubectlClientName),
@@ -125,7 +124,7 @@ func (i *IDPSubroutine) reconcile(ctx context.Context, obj client.Object) (subro
 		},
 	}
 
-	idp := &v1alpha1.IdentityProviderConfiguration{ObjectMeta: metav1.ObjectMeta{Name: workspaceName}}
+	idp := &corev1alpha1.IdentityProviderConfiguration{ObjectMeta: metav1.ObjectMeta{Name: workspaceName}}
 	_, err = controllerutil.CreateOrPatch(ctx, orgsClient, idp, func() error {
 		idp.Spec.RegistrationAllowed = i.registrationAllowed
 
@@ -172,8 +171,8 @@ func (i *IDPSubroutine) reconcile(ctx context.Context, obj client.Object) (subro
 	return subroutines.OK(), nil
 }
 
-func (i *IDPSubroutine) patchAccountInfo(ctx context.Context, cl client.Client, workspaceName string, idp *v1alpha1.IdentityProviderConfiguration) error {
-	accountInfo := accountv1alpha1.AccountInfo{
+func (i *IDPSubroutine) patchAccountInfo(ctx context.Context, cl client.Client, workspaceName string, idp *corev1alpha1.IdentityProviderConfiguration) error {
+	accountInfo := corev1alpha1.AccountInfo{
 		ObjectMeta: metav1.ObjectMeta{Name: "account"},
 	}
 	if err := cl.Get(ctx, types.NamespacedName{Name: "account"}, &accountInfo); err != nil {
@@ -181,14 +180,14 @@ func (i *IDPSubroutine) patchAccountInfo(ctx context.Context, cl client.Client, 
 	}
 
 	desiredIssuerURL := fmt.Sprintf("https://%s/keycloak/realms/%s", i.baseDomain, workspaceName)
-	desiredClients := make(map[string]accountv1alpha1.ClientInfo)
+	desiredClients := make(map[string]corev1alpha1.ClientInfo)
 	for clientName, managedClient := range idp.Status.ManagedClients {
-		desiredClients[clientName] = accountv1alpha1.ClientInfo{
+		desiredClients[clientName] = corev1alpha1.ClientInfo{
 			ClientID: managedClient.ClientID,
 		}
 	}
 
-	desiredOIDC := &accountv1alpha1.OIDCInfo{
+	desiredOIDC := &corev1alpha1.OIDCInfo{
 		IssuerURL: desiredIssuerURL,
 		Clients:   desiredClients,
 	}
@@ -208,8 +207,8 @@ func (i *IDPSubroutine) patchAccountInfo(ctx context.Context, cl client.Client, 
 }
 
 // ensureClient updates only clients managed by this subroutine
-func ensureClient(existing []v1alpha1.IdentityProviderClientConfig, desired v1alpha1.IdentityProviderClientConfig) []v1alpha1.IdentityProviderClientConfig {
-	idx := slices.IndexFunc(existing, func(c v1alpha1.IdentityProviderClientConfig) bool {
+func ensureClient(existing []corev1alpha1.IdentityProviderClientConfig, desired corev1alpha1.IdentityProviderClientConfig) []corev1alpha1.IdentityProviderClientConfig {
+	idx := slices.IndexFunc(existing, func(c corev1alpha1.IdentityProviderClientConfig) bool {
 		return c.ClientName == desired.ClientName
 	})
 

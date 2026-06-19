@@ -5,15 +5,14 @@ import (
 	"testing"
 	"time"
 
-	accountv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
 	"github.com/platform-mesh/golang-commons/logger/testlogger"
-	secopv1alpha1 "github.com/platform-mesh/security-operator/api/v1alpha1"
-	"github.com/platform-mesh/security-operator/internal/config"
-	"github.com/platform-mesh/security-operator/internal/subroutine/mocks"
 	"github.com/platform-mesh/subroutines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	"platform-mesh.io/security-operator/internal/config"
+	"platform-mesh.io/security-operator/internal/subroutine/mocks"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -113,8 +112,8 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				kcpHelper.EXPECT().NewClientForLogicalCluster(mock.Anything, "root:orgs").Return(orgsClient, nil).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "test"}, mock.AnythingOfType("*v1alpha1.Account")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						acc := obj.(*accountv1alpha1.Account)
-						acc.Spec.Type = accountv1alpha1.AccountTypeAccount // Not organization type
+						acc := obj.(*corev1alpha1.Account)
+						acc.Spec.Type = corev1alpha1.AccountTypeAccount // Not organization type
 						return nil
 					}).Once()
 			},
@@ -135,8 +134,8 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				kcpHelper.EXPECT().NewClientForLogicalCluster(mock.Anything, "root:orgs").Return(orgsClient, nil).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "acme"}, mock.AnythingOfType("*v1alpha1.Account")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						acc := obj.(*accountv1alpha1.Account)
-						acc.Spec.Type = accountv1alpha1.AccountTypeOrg
+						acc := obj.(*corev1alpha1.Account)
+						acc.Spec.Type = corev1alpha1.AccountTypeOrg
 						return nil
 					}).Once()
 				cluster.EXPECT().GetClient().Return(orgsClient).Maybe()
@@ -144,22 +143,22 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 					Return(apierrors.NewNotFound(schema.GroupResource{Group: "core.platform-mesh.io", Resource: "identityproviderconfigurations"}, "acme")).Once()
 				orgsClient.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
 					RunAndReturn(func(_ context.Context, obj client.Object, _ ...client.CreateOption) error {
-						idp := obj.(*secopv1alpha1.IdentityProviderConfiguration)
+						idp := obj.(*corev1alpha1.IdentityProviderConfiguration)
 						assert.Len(t, idp.Spec.Clients, 2)
 						assert.Equal(t, "acme", idp.Spec.Clients[0].ClientName)
 						assert.Equal(t, "portal-client-secret-acme-acme", idp.Spec.Clients[0].SecretRef.Name)
 						assert.Equal(t, "default", idp.Spec.Clients[0].SecretRef.Namespace)
 						assert.Equal(t, "kubectl", idp.Spec.Clients[1].ClientName)
-						assert.Equal(t, secopv1alpha1.IdentityProviderClientTypePublic, idp.Spec.Clients[1].ClientType)
+						assert.Equal(t, corev1alpha1.IdentityProviderClientTypePublic, idp.Spec.Clients[1].ClientType)
 						assert.Equal(t, []string{"http://localhost:8000", "http://localhost:18000"}, idp.Spec.Clients[1].RedirectURIs)
 						idp.Status.Conditions = []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue}}
 						return nil
 					}).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "acme"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						idp := obj.(*secopv1alpha1.IdentityProviderConfiguration)
+						idp := obj.(*corev1alpha1.IdentityProviderConfiguration)
 						idp.Status.Conditions = []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue}}
-						idp.Status.ManagedClients = map[string]secopv1alpha1.ManagedClient{
+						idp.Status.ManagedClients = map[string]corev1alpha1.ManagedClient{
 							"acme":    {ClientID: "acme-client-id"},
 							"kubectl": {ClientID: "kubectl-client-id"},
 						}
@@ -167,10 +166,10 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 					}).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						accountInfo := obj.(*accountv1alpha1.AccountInfo)
-						accountInfo.Spec.OIDC = &accountv1alpha1.OIDCInfo{
+						accountInfo := obj.(*corev1alpha1.AccountInfo)
+						accountInfo.Spec.OIDC = &corev1alpha1.OIDCInfo{
 							IssuerURL: "https://old.example.com/keycloak/realms/acme",
-							Clients: map[string]accountv1alpha1.ClientInfo{
+							Clients: map[string]corev1alpha1.ClientInfo{
 								"old-client": {ClientID: "old-client-id"},
 							},
 						}
@@ -196,8 +195,8 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				kcpHelper.EXPECT().NewClientForLogicalCluster(mock.Anything, "root:orgs").Return(orgsClient, nil).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "beta"}, mock.AnythingOfType("*v1alpha1.Account")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						acc := obj.(*accountv1alpha1.Account)
-						acc.Spec.Type = accountv1alpha1.AccountTypeOrg
+						acc := obj.(*corev1alpha1.Account)
+						acc.Spec.Type = corev1alpha1.AccountTypeOrg
 						return nil
 					}).Once()
 				cluster.EXPECT().GetClient().Return(orgsClient).Maybe()
@@ -205,20 +204,20 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 					Return(apierrors.NewNotFound(schema.GroupResource{Group: "core.platform-mesh.io", Resource: "identityproviderconfigurations"}, "beta")).Once()
 				orgsClient.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
 					RunAndReturn(func(_ context.Context, obj client.Object, _ ...client.CreateOption) error {
-						idp := obj.(*secopv1alpha1.IdentityProviderConfiguration)
+						idp := obj.(*corev1alpha1.IdentityProviderConfiguration)
 						assert.Len(t, idp.Spec.Clients, 2)
 						assert.Equal(t, "beta", idp.Spec.Clients[0].ClientName)
 						assert.Equal(t, "portal-client-secret-beta-beta", idp.Spec.Clients[0].SecretRef.Name)
 						assert.Equal(t, "default", idp.Spec.Clients[0].SecretRef.Namespace)
 						assert.Equal(t, "kubectl", idp.Spec.Clients[1].ClientName)
-						assert.Equal(t, secopv1alpha1.IdentityProviderClientTypePublic, idp.Spec.Clients[1].ClientType)
+						assert.Equal(t, corev1alpha1.IdentityProviderClientTypePublic, idp.Spec.Clients[1].ClientType)
 						assert.Equal(t, []string{"http://localhost:8000", "http://localhost:18000"}, idp.Spec.Clients[1].RedirectURIs)
 						idp.Status.Conditions = []metav1.Condition{{Type: "Ready", Status: metav1.ConditionFalse}}
 						return nil
 					}).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "beta"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						idp := obj.(*secopv1alpha1.IdentityProviderConfiguration)
+						idp := obj.(*corev1alpha1.IdentityProviderConfiguration)
 						idp.Status.Conditions = []metav1.Condition{{Type: "Ready", Status: metav1.ConditionFalse}}
 						return nil
 					}).Once()
@@ -240,7 +239,7 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				kcpHelper.EXPECT().NewClientForLogicalCluster(mock.Anything, "root:orgs").Return(orgsClient, nil).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "delta"}, mock.AnythingOfType("*v1alpha1.Account")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						obj.(*accountv1alpha1.Account).Spec.Type = accountv1alpha1.AccountTypeOrg
+						obj.(*corev1alpha1.Account).Spec.Type = corev1alpha1.AccountTypeOrg
 						return nil
 					}).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "delta"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
@@ -261,7 +260,7 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				kcpHelper.EXPECT().NewClientForLogicalCluster(mock.Anything, "root:orgs").Return(orgsClient, nil).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "epsilon"}, mock.AnythingOfType("*v1alpha1.Account")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						obj.(*accountv1alpha1.Account).Spec.Type = accountv1alpha1.AccountTypeOrg
+						obj.(*corev1alpha1.Account).Spec.Type = corev1alpha1.AccountTypeOrg
 						return nil
 					}).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "epsilon"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
@@ -269,8 +268,8 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				orgsClient.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).Return(nil).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "epsilon"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						idp := obj.(*secopv1alpha1.IdentityProviderConfiguration)
-						idp.Spec.Clients = []secopv1alpha1.IdentityProviderClientConfig{{ClientName: "epsilon"}, {ClientName: kubectlClientName}}
+						idp := obj.(*corev1alpha1.IdentityProviderConfiguration)
+						idp.Spec.Clients = []corev1alpha1.IdentityProviderClientConfig{{ClientName: "epsilon"}, {ClientName: kubectlClientName}}
 						idp.Status.Conditions = []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue}}
 						// ManagedClients intentionally empty
 						return nil
@@ -289,7 +288,7 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				kcpHelper.EXPECT().NewClientForLogicalCluster(mock.Anything, "root:orgs").Return(orgsClient, nil).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "zeta"}, mock.AnythingOfType("*v1alpha1.Account")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						obj.(*accountv1alpha1.Account).Spec.Type = accountv1alpha1.AccountTypeOrg
+						obj.(*corev1alpha1.Account).Spec.Type = corev1alpha1.AccountTypeOrg
 						return nil
 					}).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "zeta"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
@@ -297,11 +296,11 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				orgsClient.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).Return(nil).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "zeta"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						idp := obj.(*secopv1alpha1.IdentityProviderConfiguration)
-						idp.Spec.Clients = []secopv1alpha1.IdentityProviderClientConfig{{ClientName: "zeta"}, {ClientName: kubectlClientName}}
+						idp := obj.(*corev1alpha1.IdentityProviderConfiguration)
+						idp.Spec.Clients = []corev1alpha1.IdentityProviderClientConfig{{ClientName: "zeta"}, {ClientName: kubectlClientName}}
 						idp.Status.Conditions = []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue}}
 						// Only "zeta" in managed clients — "kubectl" is missing
-						idp.Status.ManagedClients = map[string]secopv1alpha1.ManagedClient{"zeta": {ClientID: "zeta-id"}}
+						idp.Status.ManagedClients = map[string]corev1alpha1.ManagedClient{"zeta": {ClientID: "zeta-id"}}
 						return nil
 					}).Once()
 			},
@@ -318,7 +317,7 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				kcpHelper.EXPECT().NewClientForLogicalCluster(mock.Anything, "root:orgs").Return(orgsClient, nil).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "eta"}, mock.AnythingOfType("*v1alpha1.Account")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						obj.(*accountv1alpha1.Account).Spec.Type = accountv1alpha1.AccountTypeOrg
+						obj.(*corev1alpha1.Account).Spec.Type = corev1alpha1.AccountTypeOrg
 						return nil
 					}).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "eta"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
@@ -326,10 +325,10 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				orgsClient.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).Return(nil).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "eta"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						idp := obj.(*secopv1alpha1.IdentityProviderConfiguration)
-						idp.Spec.Clients = []secopv1alpha1.IdentityProviderClientConfig{{ClientName: "eta"}, {ClientName: kubectlClientName}}
+						idp := obj.(*corev1alpha1.IdentityProviderConfiguration)
+						idp.Spec.Clients = []corev1alpha1.IdentityProviderClientConfig{{ClientName: "eta"}, {ClientName: kubectlClientName}}
 						idp.Status.Conditions = []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue}}
-						idp.Status.ManagedClients = map[string]secopv1alpha1.ManagedClient{
+						idp.Status.ManagedClients = map[string]corev1alpha1.ManagedClient{
 							"eta":             {ClientID: ""},
 							kubectlClientName: {ClientID: "kubectl-id"},
 						}
@@ -350,7 +349,7 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				cluster.EXPECT().GetClient().Return(orgsClient).Maybe()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "theta"}, mock.AnythingOfType("*v1alpha1.Account")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						obj.(*accountv1alpha1.Account).Spec.Type = accountv1alpha1.AccountTypeOrg
+						obj.(*corev1alpha1.Account).Spec.Type = corev1alpha1.AccountTypeOrg
 						return nil
 					}).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "theta"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
@@ -358,10 +357,10 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				orgsClient.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).Return(nil).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "theta"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						idp := obj.(*secopv1alpha1.IdentityProviderConfiguration)
-						idp.Spec.Clients = []secopv1alpha1.IdentityProviderClientConfig{{ClientName: "theta"}, {ClientName: kubectlClientName}}
+						idp := obj.(*corev1alpha1.IdentityProviderConfiguration)
+						idp.Spec.Clients = []corev1alpha1.IdentityProviderClientConfig{{ClientName: "theta"}, {ClientName: kubectlClientName}}
 						idp.Status.Conditions = []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue}}
-						idp.Status.ManagedClients = map[string]secopv1alpha1.ManagedClient{
+						idp.Status.ManagedClients = map[string]corev1alpha1.ManagedClient{
 							"theta":           {ClientID: "theta-id"},
 							kubectlClientName: {ClientID: "kubectl-id"},
 						}
@@ -384,7 +383,7 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				cluster.EXPECT().GetClient().Return(orgsClient).Maybe()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "iota"}, mock.AnythingOfType("*v1alpha1.Account")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						obj.(*accountv1alpha1.Account).Spec.Type = accountv1alpha1.AccountTypeOrg
+						obj.(*corev1alpha1.Account).Spec.Type = corev1alpha1.AccountTypeOrg
 						return nil
 					}).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "iota"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
@@ -392,10 +391,10 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				orgsClient.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).Return(nil).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "iota"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						idp := obj.(*secopv1alpha1.IdentityProviderConfiguration)
-						idp.Spec.Clients = []secopv1alpha1.IdentityProviderClientConfig{{ClientName: "iota"}, {ClientName: kubectlClientName}}
+						idp := obj.(*corev1alpha1.IdentityProviderConfiguration)
+						idp.Spec.Clients = []corev1alpha1.IdentityProviderClientConfig{{ClientName: "iota"}, {ClientName: kubectlClientName}}
 						idp.Status.Conditions = []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue}}
-						idp.Status.ManagedClients = map[string]secopv1alpha1.ManagedClient{
+						idp.Status.ManagedClients = map[string]corev1alpha1.ManagedClient{
 							"iota":            {ClientID: "iota-id"},
 							kubectlClientName: {ClientID: "kubectl-id"},
 						}
@@ -404,9 +403,9 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				// AccountInfo already matches the desired state — no Patch expected
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						obj.(*accountv1alpha1.AccountInfo).Spec.OIDC = &accountv1alpha1.OIDCInfo{
+						obj.(*corev1alpha1.AccountInfo).Spec.OIDC = &corev1alpha1.OIDCInfo{
 							IssuerURL: "https://example.com/keycloak/realms/iota",
-							Clients: map[string]accountv1alpha1.ClientInfo{
+							Clients: map[string]corev1alpha1.ClientInfo{
 								"iota":            {ClientID: "iota-id"},
 								kubectlClientName: {ClientID: "kubectl-id"},
 							},
@@ -428,7 +427,7 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				cluster.EXPECT().GetClient().Return(orgsClient).Maybe()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "kappa"}, mock.AnythingOfType("*v1alpha1.Account")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						obj.(*accountv1alpha1.Account).Spec.Type = accountv1alpha1.AccountTypeOrg
+						obj.(*corev1alpha1.Account).Spec.Type = corev1alpha1.AccountTypeOrg
 						return nil
 					}).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "kappa"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
@@ -436,10 +435,10 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				orgsClient.EXPECT().Create(mock.Anything, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).Return(nil).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "kappa"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						idp := obj.(*secopv1alpha1.IdentityProviderConfiguration)
-						idp.Spec.Clients = []secopv1alpha1.IdentityProviderClientConfig{{ClientName: "kappa"}, {ClientName: kubectlClientName}}
+						idp := obj.(*corev1alpha1.IdentityProviderConfiguration)
+						idp.Spec.Clients = []corev1alpha1.IdentityProviderClientConfig{{ClientName: "kappa"}, {ClientName: kubectlClientName}}
 						idp.Status.Conditions = []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue}}
-						idp.Status.ManagedClients = map[string]secopv1alpha1.ManagedClient{
+						idp.Status.ManagedClients = map[string]corev1alpha1.ManagedClient{
 							"kappa":           {ClientID: "kappa-id"},
 							kubectlClientName: {ClientID: "kubectl-id"},
 						}
@@ -464,13 +463,13 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				cluster.EXPECT().GetClient().Return(orgsClient).Maybe()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "lambda"}, mock.AnythingOfType("*v1alpha1.Account")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						obj.(*accountv1alpha1.Account).Spec.Type = accountv1alpha1.AccountTypeOrg
+						obj.(*corev1alpha1.Account).Spec.Type = corev1alpha1.AccountTypeOrg
 						return nil
 					}).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "lambda"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						idp := obj.(*secopv1alpha1.IdentityProviderConfiguration)
-						idp.Spec.Clients = []secopv1alpha1.IdentityProviderClientConfig{
+						idp := obj.(*corev1alpha1.IdentityProviderConfiguration)
+						idp.Spec.Clients = []corev1alpha1.IdentityProviderClientConfig{
 							{ClientName: "lambda", RedirectURIs: []string{"https://old.example.com/*"}},
 						}
 						return nil
@@ -479,10 +478,10 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 					Return(nil).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "lambda"}, mock.AnythingOfType("*v1alpha1.IdentityProviderConfiguration")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						idp := obj.(*secopv1alpha1.IdentityProviderConfiguration)
-						idp.Spec.Clients = []secopv1alpha1.IdentityProviderClientConfig{{ClientName: "lambda"}, {ClientName: kubectlClientName}}
+						idp := obj.(*corev1alpha1.IdentityProviderConfiguration)
+						idp.Spec.Clients = []corev1alpha1.IdentityProviderClientConfig{{ClientName: "lambda"}, {ClientName: kubectlClientName}}
 						idp.Status.Conditions = []metav1.Condition{{Type: "Ready", Status: metav1.ConditionTrue}}
-						idp.Status.ManagedClients = map[string]secopv1alpha1.ManagedClient{
+						idp.Status.ManagedClients = map[string]corev1alpha1.ManagedClient{
 							"lambda":          {ClientID: "lambda-id"},
 							kubectlClientName: {ClientID: "kubectl-id"},
 						}
@@ -506,8 +505,8 @@ func TestIDPSubroutine_Initialize(t *testing.T) {
 				kcpHelper.EXPECT().NewClientForLogicalCluster(mock.Anything, "root:orgs").Return(orgsClient, nil).Once()
 				orgsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "gamma"}, mock.AnythingOfType("*v1alpha1.Account")).
 					RunAndReturn(func(_ context.Context, _ types.NamespacedName, obj client.Object, _ ...client.GetOption) error {
-						acc := obj.(*accountv1alpha1.Account)
-						acc.Spec.Type = accountv1alpha1.AccountTypeOrg
+						acc := obj.(*corev1alpha1.Account)
+						acc.Spec.Type = corev1alpha1.AccountTypeOrg
 						return nil
 					}).Once()
 				cluster.EXPECT().GetClient().Return(orgsClient).Maybe()

@@ -19,16 +19,16 @@ import (
 
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/account-operator/internal/config"
-	"github.com/platform-mesh/account-operator/internal/metrics"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/manageaccountinfo"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/workspace"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/workspaceready"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/workspacetype"
 	"github.com/platform-mesh/subroutines"
 	"github.com/platform-mesh/subroutines/conditions"
 	"github.com/platform-mesh/subroutines/lifecycle"
+	"platform-mesh.io/account-operator/internal/config"
+	"platform-mesh.io/account-operator/internal/metrics"
+	"platform-mesh.io/account-operator/pkg/subroutines/manageaccountinfo"
+	"platform-mesh.io/account-operator/pkg/subroutines/workspace"
+	"platform-mesh.io/account-operator/pkg/subroutines/workspaceready"
+	"platform-mesh.io/account-operator/pkg/subroutines/workspacetype"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 
 const (
@@ -85,7 +85,7 @@ func NewAccountReconciler(log *logger.Logger, mgr mcmanager.Manager, cfg config.
 	}
 
 	lc := lifecycle.New(mgr, accountReconcilerName, func() client.Object {
-		return &v1alpha1.Account{}
+		return &corev1alpha1.Account{}
 	}, subs...).WithConditions(conditions.NewManager())
 
 	return &AccountReconciler{
@@ -104,7 +104,7 @@ func (r *AccountReconciler) SetupWithManager(mgr mcmanager.Manager, cfg *platfor
 	predicates := append([]predicate.Predicate{filter.DebugResourcesBehaviourPredicate(cfg.DebugLabelValue)}, eventPredicates...)
 	return mcbuilder.ControllerManagedBy(mgr).
 		Named(accountReconcilerName).
-		For(&v1alpha1.Account{}).
+		For(&corev1alpha1.Account{}).
 		WithOptions(opts).
 		WithEventFilter(predicate.And(predicates...)).
 		Complete(r)
@@ -114,7 +114,7 @@ func (r *AccountReconciler) Reconcile(ctx context.Context, req mcreconcile.Reque
 	accountType := "unknown"
 
 	if clusterRef, err := r.mgr.GetCluster(ctx, req.ClusterName); err == nil {
-		account := &v1alpha1.Account{}
+		account := &corev1alpha1.Account{}
 		if err := clusterRef.GetClient().Get(ctx, req.NamespacedName, account); err == nil {
 			accountType = string(account.Spec.Type)
 		}

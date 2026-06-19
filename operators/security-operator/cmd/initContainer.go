@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/coreos/go-oidc"
-	"github.com/platform-mesh/security-operator/internal/config"
-	"github.com/platform-mesh/security-operator/pkg/clientreg/keycloak"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
+	"platform-mesh.io/security-operator/internal/config"
+	"platform-mesh.io/security-operator/pkg/clientreg/keycloak"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"

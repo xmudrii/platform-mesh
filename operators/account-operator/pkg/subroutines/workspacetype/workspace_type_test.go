@@ -2,6 +2,7 @@ package workspacetype_test
 
 import (
 	"errors"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 	"testing"
 
 	kcptenancyv1alpha "github.com/kcp-dev/sdk/apis/tenancy/v1alpha1"
@@ -15,9 +16,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/mocks"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/workspacetype"
+	"platform-mesh.io/account-operator/pkg/subroutines/mocks"
+	"platform-mesh.io/account-operator/pkg/subroutines/workspacetype"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 
 func TestName(t *testing.T) {
@@ -27,24 +28,24 @@ func TestName(t *testing.T) {
 
 func TestFinalizer(t *testing.T) {
 	s := workspacetype.New(nil)
-	assert.Equal(t, []string{workspacetype.SubroutineFinalizer}, s.Finalizers(&v1alpha1.Account{Spec: v1alpha1.AccountSpec{Type: v1alpha1.AccountTypeOrg}}))
+	assert.Equal(t, []string{workspacetype.SubroutineFinalizer}, s.Finalizers(&corev1alpha1.Account{Spec: corev1alpha1.AccountSpec{Type: corev1alpha1.AccountTypeOrg}}))
 }
 
 func TestFinalize(t *testing.T) {
 	testCases := []struct {
 		name        string
-		obj         *v1alpha1.Account
+		obj         *corev1alpha1.Account
 		k8sMocks    func(client *mocks.Client)
 		expectError bool
 	}{
 		{
 			name: "should delete both workspacetypes",
-			obj: &v1alpha1.Account{
+			obj: &corev1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
 				},
-				Spec: v1alpha1.AccountSpec{
-					Type: v1alpha1.AccountTypeOrg,
+				Spec: corev1alpha1.AccountSpec{
+					Type: corev1alpha1.AccountTypeOrg,
 				},
 			},
 			k8sMocks: func(client *mocks.Client) {
@@ -56,12 +57,12 @@ func TestFinalize(t *testing.T) {
 		},
 		{
 			name: "should ignore not found errors",
-			obj: &v1alpha1.Account{
+			obj: &corev1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
 				},
-				Spec: v1alpha1.AccountSpec{
-					Type: v1alpha1.AccountTypeOrg,
+				Spec: corev1alpha1.AccountSpec{
+					Type: corev1alpha1.AccountTypeOrg,
 				},
 			},
 			k8sMocks: func(client *mocks.Client) {
@@ -73,12 +74,12 @@ func TestFinalize(t *testing.T) {
 		},
 		{
 			name: "should error out in case of other errors",
-			obj: &v1alpha1.Account{
+			obj: &corev1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
 				},
-				Spec: v1alpha1.AccountSpec{
-					Type: v1alpha1.AccountTypeOrg,
+				Spec: corev1alpha1.AccountSpec{
+					Type: corev1alpha1.AccountTypeOrg,
 				},
 			},
 			k8sMocks: func(client *mocks.Client) {
@@ -97,7 +98,7 @@ func TestFinalize(t *testing.T) {
 			if test.k8sMocks != nil {
 				test.k8sMocks(cl)
 			}
-			mgr.EXPECT().GetCluster(mock.Anything, "root:orgs").Return(cluster, nil)
+			mgr.EXPECT().GetCluster(mock.Anything, multicluster.ClusterName("root:orgs")).Return(cluster, nil)
 			cluster.EXPECT().GetClient().Return(cl)
 
 			s := workspacetype.New(mgr)
@@ -118,18 +119,18 @@ func TestFinalize(t *testing.T) {
 func TestProcess(t *testing.T) {
 	testCases := []struct {
 		name        string
-		obj         *v1alpha1.Account
+		obj         *corev1alpha1.Account
 		k8sMocks    func(client *mocks.Client)
 		expectError bool
 	}{
 		{
 			name: "",
-			obj: &v1alpha1.Account{
+			obj: &corev1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test",
 				},
-				Spec: v1alpha1.AccountSpec{
-					Type: v1alpha1.AccountTypeOrg,
+				Spec: corev1alpha1.AccountSpec{
+					Type: corev1alpha1.AccountTypeOrg,
 				},
 			},
 			k8sMocks: func(client *mocks.Client) {
@@ -153,7 +154,7 @@ func TestProcess(t *testing.T) {
 			if test.k8sMocks != nil {
 				test.k8sMocks(cl)
 			}
-			mgr.EXPECT().GetCluster(mock.Anything, "root:orgs").Return(cluster, nil).Twice()
+			mgr.EXPECT().GetCluster(mock.Anything, multicluster.ClusterName("root:orgs")).Return(cluster, nil).Twice()
 			cluster.EXPECT().GetClient().Return(cl).Twice()
 
 			s := workspacetype.New(mgr)
@@ -196,14 +197,14 @@ func TestProcess_PreservesAuthenticationConfigurations(t *testing.T) {
 
 	cluster := mocks.NewCluster(t)
 	mgr := mocks.NewManager(t)
-	mgr.EXPECT().GetCluster(mock.Anything, "root:orgs").Return(cluster, nil).Twice()
+	mgr.EXPECT().GetCluster(mock.Anything, multicluster.ClusterName("root:orgs")).Return(cluster, nil).Twice()
 	cluster.EXPECT().GetClient().Return(fakeClient).Twice()
 
 	s := workspacetype.New(mgr)
 
-	account := &v1alpha1.Account{
+	account := &corev1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{Name: "test"},
-		Spec:       v1alpha1.AccountSpec{Type: v1alpha1.AccountTypeOrg},
+		Spec:       corev1alpha1.AccountSpec{Type: corev1alpha1.AccountTypeOrg},
 	}
 
 	_, err := s.Process(t.Context(), account)

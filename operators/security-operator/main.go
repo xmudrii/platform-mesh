@@ -1,6 +1,6 @@
 package main
 
-import "github.com/platform-mesh/security-operator/cmd"
+import "platform-mesh.io/security-operator/cmd"
 
 func main() {
 	cmd.Execute()

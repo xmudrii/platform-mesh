@@ -12,10 +12,11 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
-	"github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/account-operator/internal/metrics"
-	"github.com/platform-mesh/account-operator/pkg/clusteredname"
+	"platform-mesh.io/account-operator/internal/metrics"
+	"platform-mesh.io/account-operator/pkg/clusteredname"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 
 var _ subroutines.Processor = (*WorkspaceReadySubroutine)(nil)
@@ -31,12 +32,12 @@ const (
 // getting ready).
 type WorkspaceReadySubroutine struct {
 	mgr     mcmanager.Manager
-	limiter workqueue.TypedRateLimiter[*v1alpha1.Account]
+	limiter workqueue.TypedRateLimiter[*corev1alpha1.Account]
 }
 
 // New returns a new WorkspaceReadySubroutine.
 func New(mgr mcmanager.Manager) (*WorkspaceReadySubroutine, error) {
-	limiter, err := ratelimiter.NewStaticThenExponentialRateLimiter[*v1alpha1.Account](
+	limiter, err := ratelimiter.NewStaticThenExponentialRateLimiter[*corev1alpha1.Account](
 		ratelimiter.NewConfig())
 	if err != nil {
 		return nil, fmt.Errorf("creating RateLimiter: %w", err)
@@ -49,10 +50,10 @@ func (r *WorkspaceReadySubroutine) GetName() string {
 }
 
 func (r *WorkspaceReadySubroutine) Process(ctx context.Context, obj client.Object) (subroutines.Result, error) {
-	instance := obj.(*v1alpha1.Account)
+	instance := obj.(*corev1alpha1.Account)
 	cn := clusteredname.MustGetClusteredName(ctx, obj)
 
-	clusterRef, err := r.mgr.GetCluster(ctx, cn.ClusterID.String())
+	clusterRef, err := r.mgr.GetCluster(ctx, multicluster.ClusterName(cn.ClusterID.String()))
 	if err != nil {
 		return subroutines.OK(), fmt.Errorf("getting cluster: %w", err)
 	}

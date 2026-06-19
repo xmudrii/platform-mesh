@@ -7,9 +7,6 @@ import (
 
 	kcptenancyv1alpha "github.com/kcp-dev/sdk/apis/tenancy/v1alpha1"
 	conditionsapi "github.com/kcp-dev/sdk/apis/third_party/conditions/apis/conditions/v1alpha1"
-	corev1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/mocks"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -19,8 +16,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
+	"platform-mesh.io/account-operator/pkg/subroutines/mocks"
+	"platform-mesh.io/account-operator/pkg/subroutines/workspace"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mccontext "sigs.k8s.io/multicluster-runtime/pkg/context"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 )
 
 func TestGetName(t *testing.T) {
@@ -278,7 +279,7 @@ func TestProcess(t *testing.T) {
 			}
 
 			mgr.EXPECT().
-				GetCluster(mock.Anything, "root:orgs").
+				GetCluster(mock.Anything, multicluster.ClusterName("root:orgs")).
 				Return(orgsCluster, nil).
 				Maybe()
 			mgr.EXPECT().

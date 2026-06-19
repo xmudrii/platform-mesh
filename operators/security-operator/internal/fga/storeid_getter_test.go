@@ -8,10 +8,10 @@ import (
 
 	openfgav1 "github.com/openfga/api/proto/openfga/v1"
 	"github.com/platform-mesh/golang-commons/logger/testlogger"
-	"github.com/platform-mesh/security-operator/internal/subroutine/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"platform-mesh.io/security-operator/internal/subroutine/mocks"
 )
 
 func TestCachingStoreIDGetter_Get(t *testing.T) {

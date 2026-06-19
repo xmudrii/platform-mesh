@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	accountv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
 	"github.com/platform-mesh/golang-commons/controller/lifecycle/ratelimiter"
-	"github.com/platform-mesh/security-operator/api/v1alpha1"
-	iclient "github.com/platform-mesh/security-operator/internal/client"
 	"github.com/platform-mesh/subroutines"
 	"github.com/rs/zerolog/log"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	iclient "platform-mesh.io/security-operator/internal/client"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
@@ -77,13 +76,13 @@ func (w *inviteSubroutine) reconcile(ctx context.Context, obj client.Object) (su
 	if err != nil {
 		return subroutines.OK(), fmt.Errorf("getting orgs client: %w", err)
 	}
-	var account accountv1alpha1.Account
+	var account corev1alpha1.Account
 	err = orgsClient.Get(ctx, types.NamespacedName{Name: wsName}, &account)
 	if err != nil {
 		return subroutines.OK(), fmt.Errorf("failed to get account resource %w", err)
 	}
 
-	if account.Spec.Type != accountv1alpha1.AccountTypeOrg {
+	if account.Spec.Type != corev1alpha1.AccountTypeOrg {
 		log.Info().Str("workspace", wsName).Msg("account is not of type organization, skipping invite creation")
 		return subroutines.OK(), nil
 	}
@@ -94,7 +93,7 @@ func (w *inviteSubroutine) reconcile(ctx context.Context, obj client.Object) (su
 	}
 
 	// the Invite resource is created in :root:orgs:<new org> workspace
-	invite := &v1alpha1.Invite{ObjectMeta: metav1.ObjectMeta{Name: wsName}}
+	invite := &corev1alpha1.Invite{ObjectMeta: metav1.ObjectMeta{Name: wsName}}
 	_, err = controllerutil.CreateOrUpdate(ctx, client, invite, func() error {
 		invite.Spec.Email = *account.Spec.Creator
 

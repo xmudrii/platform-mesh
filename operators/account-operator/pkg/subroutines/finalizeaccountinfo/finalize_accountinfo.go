@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
-	"github.com/platform-mesh/account-operator/api/v1alpha1"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 
 var _ subroutines.Finalizer = (*FinalizeAccountInfoSubroutine)(nil)
@@ -25,11 +25,11 @@ const (
 
 type FinalizeAccountInfoSubroutine struct {
 	mgr     mcmanager.Manager
-	limiter workqueue.TypedRateLimiter[*v1alpha1.AccountInfo]
+	limiter workqueue.TypedRateLimiter[*corev1alpha1.AccountInfo]
 }
 
 func New(mgr mcmanager.Manager) (*FinalizeAccountInfoSubroutine, error) {
-	rl, err := ratelimiter.NewStaticThenExponentialRateLimiter[*v1alpha1.AccountInfo](
+	rl, err := ratelimiter.NewStaticThenExponentialRateLimiter[*corev1alpha1.AccountInfo](
 		ratelimiter.NewConfig())
 	if err != nil {
 		return nil, fmt.Errorf("creating RateLimiter: %w", err)
@@ -46,7 +46,7 @@ func (r *FinalizeAccountInfoSubroutine) Finalizers(_ client.Object) []string {
 }
 
 func (r *FinalizeAccountInfoSubroutine) Finalize(ctx context.Context, obj client.Object) (subroutines.Result, error) {
-	instance := obj.(*v1alpha1.AccountInfo)
+	instance := obj.(*corev1alpha1.AccountInfo)
 	log := logger.LoadLoggerFromContext(ctx)
 
 	cluster, err := r.mgr.ClusterFromContext(ctx)
@@ -55,7 +55,7 @@ func (r *FinalizeAccountInfoSubroutine) Finalize(ctx context.Context, obj client
 	}
 	clusterClient := cluster.GetClient()
 
-	list := &v1alpha1.AccountList{}
+	list := &corev1alpha1.AccountList{}
 	if err := clusterClient.List(ctx, list, &client.ListOptions{}); err != nil {
 		if !kerrors.IsNotFound(err) && !meta.IsNoMatchError(err) {
 			return subroutines.OK(), fmt.Errorf("listing child accounts: %w", err)

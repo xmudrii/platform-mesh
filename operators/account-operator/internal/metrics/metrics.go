@@ -13,13 +13,6 @@ var (
 		},
 		[]string{"type", "result"},
 	)
-	WebhookValidations = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "account_operator_webhook_validations_total",
-			Help: "Total number of Account webhook validation requests.",
-		},
-		[]string{"operation", "result", "account_type"},
-	)
 	WorkspaceReadyDuration = prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "account_operator_workspace_ready_duration_seconds",
@@ -48,7 +41,6 @@ var (
 func init() {
 	ctrlmetrics.Registry.MustRegister(
 		AccountsReconciled,
-		WebhookValidations,
 		WorkspaceReadyDuration,
 		WorkspaceTypeOperations,
 		OrgProvisioningDuration,

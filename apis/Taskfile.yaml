@@ -1,0 +1,37 @@
+version: "3"
+
+# Standard component Taskfile for the shared apis module.
+# Exposes the repo-standard targets: lint, test, test-e2e, generate, build.
+#
+# Shared tools (controller-gen, golangci-lint) come from the repository-root
+# bin/ — installed by the root `tools:` tasks, referenced here via ROOT_BIN.
+
+vars:
+  ROOT_BIN:
+    sh: echo "$(git rev-parse --show-toplevel)/bin"
+
+tasks:
+  build:
+    desc: Build the apis module.
+    cmds:
+      - go build ./...
+  fmt:
+    cmds:
+      - go fmt ./...
+  lint:
+    desc: Lint the apis module.
+    cmds:
+      - task: fmt
+      - "{{.ROOT_BIN}}/golangci-lint run --timeout 15m ./..."
+  generate:
+    desc: Regenerate deepcopy code for the apis types.
+    cmds:
+      - GOWORK=off {{.ROOT_BIN}}/controller-gen object paths=./...
+  test:
+    desc: Run apis unit tests.
+    cmds:
+      - go test -count=1 ./...
+  test-e2e:
+    desc: No e2e tests for the apis module.
+    cmds:
+      - 'echo "apis: no e2e tests"'

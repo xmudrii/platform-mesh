@@ -1,0 +1,58 @@
+version: "3"
+
+# Shared developer tooling for the monorepo.
+#
+# These go-installable tools are installed ONCE into the repository-root bin/
+# and shared by every component, instead of each component maintaining its own
+# copy. The bin path is resolved from the git top level, so the tools land in
+# the same place no matter which directory a task is invoked from.
+#
+# Included by the root Taskfile as the `tools:` namespace. Components reference
+# the binaries from the root bin (see each component's ROOT_BIN var) and depend
+# on these tasks via the root's per-component targets.
+#
+# Note: e2e assets (kcp, gomplate, setup-envtest) are intentionally NOT here —
+# the operators' envtest suites load kcp from their own ./bin (hardcoded
+# BinaryAssetsDirectory), so those stay component-local.
+
+vars:
+  BIN:
+    sh: echo "$(git rev-parse --show-toplevel)/bin"
+  CONTROLLER_TOOLS_VERSION: v0.16.4
+  GOLANGCI_LINT_VERSION: v2.8.0
+  MOCKERY_VERSION: v3.7.0
+  KCP_APIGEN_VERSION: v0.30.1
+
+tasks:
+  # `task tools` installs everything; `task tools:all` is an explicit alias.
+  default:
+    desc: Install all shared tools into the root bin.
+    deps: [controller-gen, golangci-lint, mockery, apigen]
+  all:
+    desc: Install all shared tools into the root bin.
+    deps: [controller-gen, golangci-lint, mockery, apigen]
+
+  controller-gen:
+    desc: Install controller-gen into the root bin.
+    cmds:
+      - GOBIN={{.BIN}} GOWORK=off go install sigs.k8s.io/controller-tools/cmd/controller-gen@{{.CONTROLLER_TOOLS_VERSION}}
+    status:
+      - test -s {{.BIN}}/controller-gen
+  golangci-lint:
+    desc: Install golangci-lint into the root bin.
+    cmds:
+      - GOBIN={{.BIN}} GOWORK=off go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}}
+    status:
+      - test -s {{.BIN}}/golangci-lint
+  mockery:
+    desc: Install mockery into the root bin.
+    cmds:
+      - GOBIN={{.BIN}} GOWORK=off go install github.com/vektra/mockery/v3@{{.MOCKERY_VERSION}}
+    status:
+      - test -s {{.BIN}}/mockery
+  apigen:
+    desc: Install kcp apigen into the root bin.
+    cmds:
+      - GOBIN={{.BIN}} GOWORK=off go install github.com/kcp-dev/sdk/cmd/apigen@{{.KCP_APIGEN_VERSION}}
+    status:
+      - test -s {{.BIN}}/apigen

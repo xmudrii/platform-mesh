@@ -13,9 +13,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
-	"github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/account-operator/internal/metrics"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/util"
+	"platform-mesh.io/account-operator/internal/metrics"
+	"platform-mesh.io/account-operator/pkg/subroutines/util"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 
 var _ subroutines.Processor = (*WorkspaceTypeSubroutine)(nil)
@@ -43,15 +43,15 @@ func New(mgr mcmanager.Manager) *WorkspaceTypeSubroutine {
 }
 
 func (w *WorkspaceTypeSubroutine) Process(ctx context.Context, obj client.Object) (subroutines.Result, error) {
-	instance := obj.(*v1alpha1.Account)
+	instance := obj.(*corev1alpha1.Account)
 	log := logger.LoadLoggerFromContext(ctx)
 
-	if instance.Spec.Type != v1alpha1.AccountTypeOrg {
+	if instance.Spec.Type != corev1alpha1.AccountTypeOrg {
 		return subroutines.OK(), nil
 	}
 
 	orgWorkspaceTypeName := util.GetWorkspaceTypeName(instance.Name, instance.Spec.Type)
-	accountWorkspaceTypeName := util.GetWorkspaceTypeName(instance.Name, v1alpha1.AccountTypeAccount)
+	accountWorkspaceTypeName := util.GetWorkspaceTypeName(instance.Name, corev1alpha1.AccountTypeAccount)
 
 	orgWst := generateOrgWorkspaceType(orgWorkspaceTypeName, accountWorkspaceTypeName, instance.Name)
 	accWst := generateAccountWorkspaceType(orgWorkspaceTypeName, accountWorkspaceTypeName, instance.Name)
@@ -97,9 +97,9 @@ func (w *WorkspaceTypeSubroutine) createOrPatchWorkspaceType(ctx context.Context
 }
 
 func (w *WorkspaceTypeSubroutine) Finalize(ctx context.Context, obj client.Object) (subroutines.Result, error) {
-	instance := obj.(*v1alpha1.Account)
+	instance := obj.(*corev1alpha1.Account)
 	log := logger.LoadLoggerFromContext(ctx)
-	if instance.Spec.Type != v1alpha1.AccountTypeOrg {
+	if instance.Spec.Type != corev1alpha1.AccountTypeOrg {
 		return subroutines.OK(), nil
 	}
 
@@ -110,7 +110,7 @@ func (w *WorkspaceTypeSubroutine) Finalize(ctx context.Context, obj client.Objec
 	orgsClusterClient := orgsCluster.GetClient()
 
 	orgWorkspaceTypeName := util.GetWorkspaceTypeName(instance.Name, instance.Spec.Type)
-	accountWorkspaceTypeName := util.GetWorkspaceTypeName(instance.Name, v1alpha1.AccountTypeAccount)
+	accountWorkspaceTypeName := util.GetWorkspaceTypeName(instance.Name, corev1alpha1.AccountTypeAccount)
 
 	if err := orgsClusterClient.Delete(ctx, &kcptenancyv1alpha.WorkspaceType{ObjectMeta: metav1.ObjectMeta{Name: orgWorkspaceTypeName}}); err != nil {
 		if !kerrors.IsNotFound(err) {
@@ -134,8 +134,8 @@ func (w *WorkspaceTypeSubroutine) GetName() string {
 }
 
 func (w *WorkspaceTypeSubroutine) Finalizers(obj client.Object) []string {
-	account := obj.(*v1alpha1.Account)
-	if account.Spec.Type != v1alpha1.AccountTypeOrg {
+	account := obj.(*corev1alpha1.Account)
+	if account.Spec.Type != corev1alpha1.AccountTypeOrg {
 		return []string{}
 	}
 

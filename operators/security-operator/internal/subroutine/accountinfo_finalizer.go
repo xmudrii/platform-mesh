@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	accountv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
 	"github.com/platform-mesh/golang-commons/logger"
 	"github.com/platform-mesh/subroutines"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
@@ -41,7 +41,7 @@ func (a *AccountInfoFinalizerSubroutine) Finalizers(_ client.Object) []string {
 
 func (a *AccountInfoFinalizerSubroutine) Finalize(ctx context.Context, obj client.Object) (subroutines.Result, error) {
 	log := logger.LoadLoggerFromContext(ctx)
-	_ = obj.(*accountv1alpha1.AccountInfo)
+	_ = obj.(*corev1alpha1.AccountInfo)
 
 	cluster, err := a.mgr.ClusterFromContext(ctx)
 	if err != nil {

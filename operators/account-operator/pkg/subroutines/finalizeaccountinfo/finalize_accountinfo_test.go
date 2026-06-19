@@ -15,11 +15,11 @@ import (
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
-	"github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/finalizeaccountinfo"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/mocks"
 	"github.com/platform-mesh/golang-commons/logger"
 	"github.com/platform-mesh/golang-commons/logger/testlogger"
+	"platform-mesh.io/account-operator/pkg/subroutines/finalizeaccountinfo"
+	"platform-mesh.io/account-operator/pkg/subroutines/mocks"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 
 var _ multicluster.Provider = &Provider{}
@@ -28,8 +28,8 @@ type Provider struct {
 	clusters map[string]cluster.Cluster
 }
 
-func (p *Provider) Get(_ context.Context, clusterName string) (cluster.Cluster, error) {
-	cluster, ok := p.clusters[clusterName]
+func (p *Provider) Get(_ context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error) {
+	cluster, ok := p.clusters[string(clusterName)]
 	if !ok {
 		return nil, fmt.Errorf("cluster not found: %s", clusterName)
 	}
@@ -55,14 +55,14 @@ func TestFinalizeAccountInfoFinalizers(t *testing.T) {
 func TestFinalizeAccountInfoFinalize(t *testing.T) {
 	testCases := []struct {
 		name          string
-		obj           *v1alpha1.AccountInfo
+		obj           *corev1alpha1.AccountInfo
 		clusters      map[string]cluster.Cluster
 		expectError   bool
 		expectRequeue bool
 	}{
 		{
 			name: "should requeue if child accounts exist",
-			obj: &v1alpha1.AccountInfo{
+			obj: &corev1alpha1.AccountInfo{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "account",
 					Finalizers: []string{finalizeaccountinfo.AccountInfoFinalizer},
@@ -74,8 +74,8 @@ func TestFinalizeAccountInfoFinalize(t *testing.T) {
 					cl := mocks.NewClient(t)
 					cl.EXPECT().List(mock.Anything, mock.Anything, mock.Anything).
 						RunAndReturn(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) error {
-							accountList := list.(*v1alpha1.AccountList)
-							accountList.Items = []v1alpha1.Account{{}}
+							accountList := list.(*corev1alpha1.AccountList)
+							accountList.Items = []corev1alpha1.Account{{}}
 							return nil
 						}).Once()
 					c.EXPECT().GetClient().Return(cl)
@@ -86,7 +86,7 @@ func TestFinalizeAccountInfoFinalize(t *testing.T) {
 		},
 		{
 			name: "should complete finalization when no accounts and only our finalizer",
-			obj: &v1alpha1.AccountInfo{
+			obj: &corev1alpha1.AccountInfo{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "account",
 					Finalizers: []string{finalizeaccountinfo.AccountInfoFinalizer},
@@ -98,8 +98,8 @@ func TestFinalizeAccountInfoFinalize(t *testing.T) {
 					cl := mocks.NewClient(t)
 					cl.EXPECT().List(mock.Anything, mock.Anything, mock.Anything).
 						RunAndReturn(func(_ context.Context, list client.ObjectList, _ ...client.ListOption) error {
-							accountList := list.(*v1alpha1.AccountList)
-							accountList.Items = []v1alpha1.Account{}
+							accountList := list.(*corev1alpha1.AccountList)
+							accountList.Items = []corev1alpha1.Account{}
 							return nil
 						}).Once()
 					c.EXPECT().GetClient().Return(cl)
@@ -110,7 +110,7 @@ func TestFinalizeAccountInfoFinalize(t *testing.T) {
 		},
 		{
 			name: "should error if listing accounts fails",
-			obj: &v1alpha1.AccountInfo{
+			obj: &corev1alpha1.AccountInfo{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:       "account",
 					Finalizers: []string{finalizeaccountinfo.AccountInfoFinalizer},

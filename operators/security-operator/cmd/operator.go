@@ -6,18 +6,17 @@ import (
 	"fmt"
 
 	openfgav1 "github.com/openfga/api/proto/openfga/v1"
-	accountsv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
 	platformeshcontext "github.com/platform-mesh/golang-commons/context"
 	"github.com/platform-mesh/golang-commons/sentry"
-	corev1alpha1 "github.com/platform-mesh/security-operator/api/v1alpha1"
-	iclient "github.com/platform-mesh/security-operator/internal/client"
-	"github.com/platform-mesh/security-operator/internal/controller"
-	fga2 "github.com/platform-mesh/security-operator/internal/fga"
-	"github.com/platform-mesh/security-operator/internal/predicates"
-	internalwebhook "github.com/platform-mesh/security-operator/internal/webhook"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	iclient "platform-mesh.io/security-operator/internal/client"
+	"platform-mesh.io/security-operator/internal/controller"
+	fga2 "platform-mesh.io/security-operator/internal/fga"
+	"platform-mesh.io/security-operator/internal/predicates"
+	internalwebhook "platform-mesh.io/security-operator/internal/webhook"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -243,6 +242,6 @@ func init() {
 	utilruntime.Must(kcpapisv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(kcpapisv1alpha2.AddToScheme(scheme))
 	utilruntime.Must(kcpcorev1alpha1.AddToScheme(scheme))
-	utilruntime.Must(accountsv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(corev1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }

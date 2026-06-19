@@ -6,8 +6,8 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	corev1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/account-operator/pkg/clusteredname"
+	"platform-mesh.io/account-operator/pkg/clusteredname"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 
 func TestGetClusteredName_NoClusterInContext(t *testing.T) {

@@ -12,8 +12,8 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/account-operator/internal/config"
+	"platform-mesh.io/account-operator/internal/config"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 
 var (
@@ -29,7 +29,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	utilruntime.Must(corev1alpha1.AddToScheme(scheme))
 	utilruntime.Must(kcpapisv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(kcpcorev1alpha1.AddToScheme(scheme))
 	utilruntime.Must(kcptenancyv1alphav1.AddToScheme(scheme))

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/platform-mesh/account-operator/cmd"
+	"platform-mesh.io/account-operator/cmd"
 )
 
 func main() {

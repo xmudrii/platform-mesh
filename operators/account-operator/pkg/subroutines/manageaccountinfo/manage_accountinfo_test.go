@@ -19,11 +19,11 @@ import (
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
-	"github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/manageaccountinfo"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/mocks"
 	"github.com/platform-mesh/golang-commons/logger"
 	"github.com/platform-mesh/golang-commons/logger/testlogger"
+	"platform-mesh.io/account-operator/pkg/subroutines/manageaccountinfo"
+	"platform-mesh.io/account-operator/pkg/subroutines/mocks"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 
 var _ multicluster.Provider = &Provider{}
@@ -34,8 +34,8 @@ type Provider struct {
 }
 
 // Get implements multicluster.Provider.
-func (p *Provider) Get(_ context.Context, clusterName string) (cluster.Cluster, error) {
-	cluster, ok := p.clusters[clusterName]
+func (p *Provider) Get(_ context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error) {
+	cluster, ok := p.clusters[string(clusterName)]
 	if !ok {
 		return nil, fmt.Errorf("cluster not found: %s", clusterName)
 	}
@@ -52,16 +52,16 @@ func TestManageAccountInfoGetName(t *testing.T) {
 }
 
 func TestManageAccountInfoProcess(t *testing.T) {
-	accountObj := func(tp v1alpha1.AccountType) *v1alpha1.Account {
-		return &v1alpha1.Account{
+	accountObj := func(tp corev1alpha1.AccountType) *corev1alpha1.Account {
+		return &corev1alpha1.Account{
 			ObjectMeta: metav1.ObjectMeta{Name: "acc"},
-			Spec:       v1alpha1.AccountSpec{Type: tp},
+			Spec:       corev1alpha1.AccountSpec{Type: tp},
 		}
 	}
 
 	testCases := []struct {
 		name          string
-		obj           *v1alpha1.Account
+		obj           *corev1alpha1.Account
 		clusters      map[string]cluster.Cluster
 		expectError   bool
 		expectRequeue bool
@@ -93,19 +93,19 @@ func TestManageAccountInfoProcess(t *testing.T) {
 
 					cl.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything, mock.Anything).
 						RunAndReturn(func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
-							pa := obj.(*v1alpha1.AccountInfo)
+							pa := obj.(*corev1alpha1.AccountInfo)
 
-							*pa = v1alpha1.AccountInfo{
-								Spec: v1alpha1.AccountInfoSpec{
-									FGA: v1alpha1.FGAInfo{
-										Store: v1alpha1.StoreInfo{
+							*pa = corev1alpha1.AccountInfo{
+								Spec: corev1alpha1.AccountInfoSpec{
+									FGA: corev1alpha1.FGAInfo{
+										Store: corev1alpha1.StoreInfo{
 											Id: "fga-store-id",
 										},
 									},
-									Account: v1alpha1.AccountLocation{
+									Account: corev1alpha1.AccountLocation{
 										Name: "parent-account",
 									},
-									Organization: v1alpha1.AccountLocation{
+									Organization: corev1alpha1.AccountLocation{
 										Name: "org-account",
 									},
 								},
@@ -130,11 +130,11 @@ func TestManageAccountInfoProcess(t *testing.T) {
 					return c
 				}(),
 			},
-			obj: &v1alpha1.Account{
+			obj: &corev1alpha1.Account{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-account",
 				},
-				Spec: v1alpha1.AccountSpec{
+				Spec: corev1alpha1.AccountSpec{
 					Type: "account",
 				},
 			},
@@ -142,7 +142,7 @@ func TestManageAccountInfoProcess(t *testing.T) {
 		{
 			name:        "current cluster get fails",
 			clusters:    map[string]cluster.Cluster{}, // context set, but cluster not registered
-			obj:         accountObj(v1alpha1.AccountTypeAccount),
+			obj:         accountObj(corev1alpha1.AccountTypeAccount),
 			expectError: true,
 		},
 		{
@@ -159,7 +159,7 @@ func TestManageAccountInfoProcess(t *testing.T) {
 					return c
 				}(),
 			},
-			obj:         accountObj(v1alpha1.AccountTypeAccount),
+			obj:         accountObj(corev1alpha1.AccountTypeAccount),
 			expectError: true,
 		},
 		{
@@ -187,7 +187,7 @@ func TestManageAccountInfoProcess(t *testing.T) {
 					return c
 				}(),
 			},
-			obj:           accountObj(v1alpha1.AccountTypeAccount),
+			obj:           accountObj(corev1alpha1.AccountTypeAccount),
 			expectRequeue: true,
 		},
 		{
@@ -215,7 +215,7 @@ func TestManageAccountInfoProcess(t *testing.T) {
 					return c
 				}(),
 			},
-			obj:         accountObj(v1alpha1.AccountTypeAccount),
+			obj:         accountObj(corev1alpha1.AccountTypeAccount),
 			expectError: true,
 		},
 		{
@@ -243,7 +243,7 @@ func TestManageAccountInfoProcess(t *testing.T) {
 					return c
 				}(),
 			},
-			obj:         accountObj(v1alpha1.AccountTypeAccount),
+			obj:         accountObj(corev1alpha1.AccountTypeAccount),
 			expectError: true,
 		},
 		{
@@ -271,7 +271,7 @@ func TestManageAccountInfoProcess(t *testing.T) {
 					return c
 				}(),
 			},
-			obj:         accountObj(v1alpha1.AccountTypeAccount),
+			obj:         accountObj(corev1alpha1.AccountTypeAccount),
 			expectError: true,
 		},
 		{
@@ -310,7 +310,7 @@ func TestManageAccountInfoProcess(t *testing.T) {
 					return c
 				}(),
 			},
-			obj:           accountObj(v1alpha1.AccountTypeAccount),
+			obj:           accountObj(corev1alpha1.AccountTypeAccount),
 			expectRequeue: true,
 		},
 		{
@@ -350,7 +350,7 @@ func TestManageAccountInfoProcess(t *testing.T) {
 					return c
 				}(),
 			},
-			obj: accountObj(v1alpha1.AccountTypeOrg),
+			obj: accountObj(corev1alpha1.AccountTypeOrg),
 		},
 	}
 	for _, test := range testCases {

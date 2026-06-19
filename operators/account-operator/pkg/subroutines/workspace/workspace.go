@@ -17,11 +17,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
-	"github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/account-operator/pkg/clusteredname"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/manageaccountinfo"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/util"
+	"platform-mesh.io/account-operator/pkg/clusteredname"
+	"platform-mesh.io/account-operator/pkg/subroutines/manageaccountinfo"
+	"platform-mesh.io/account-operator/pkg/subroutines/util"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 
 var _ subroutines.Processor = (*WorkspaceSubroutine)(nil)
@@ -35,11 +36,11 @@ const (
 
 type WorkspaceSubroutine struct {
 	mgr     mcmanager.Manager
-	limiter workqueue.TypedRateLimiter[*v1alpha1.Account]
+	limiter workqueue.TypedRateLimiter[*corev1alpha1.Account]
 }
 
 func New(mgr mcmanager.Manager) (*WorkspaceSubroutine, error) {
-	rl, err := ratelimiter.NewStaticThenExponentialRateLimiter[*v1alpha1.Account](
+	rl, err := ratelimiter.NewStaticThenExponentialRateLimiter[*corev1alpha1.Account](
 		ratelimiter.NewConfig())
 	if err != nil {
 		return nil, fmt.Errorf("creating RateLimiter: %w", err)
@@ -59,10 +60,10 @@ func (r *WorkspaceSubroutine) Finalizers(_ client.Object) []string {
 }
 
 func (r *WorkspaceSubroutine) Finalize(ctx context.Context, obj client.Object) (subroutines.Result, error) {
-	instance := obj.(*v1alpha1.Account)
+	instance := obj.(*corev1alpha1.Account)
 	cn := clusteredname.MustGetClusteredName(ctx, obj)
 
-	clusterName := cn.ClusterID.String()
+	clusterName := multicluster.ClusterName(cn.ClusterID.String())
 
 	cluster, err := r.mgr.GetCluster(ctx, clusterName)
 	if err != nil {
@@ -92,10 +93,10 @@ func (r *WorkspaceSubroutine) Finalize(ctx context.Context, obj client.Object) (
 }
 
 func (r *WorkspaceSubroutine) Process(ctx context.Context, obj client.Object) (subroutines.Result, error) {
-	instance := obj.(*v1alpha1.Account)
+	instance := obj.(*corev1alpha1.Account)
 	cn := clusteredname.MustGetClusteredName(ctx, obj)
 
-	clusterName := cn.ClusterID.String()
+	clusterName := multicluster.ClusterName(cn.ClusterID.String())
 
 	clusterRef, err := r.mgr.GetCluster(ctx, clusterName)
 	if err != nil {
@@ -104,8 +105,8 @@ func (r *WorkspaceSubroutine) Process(ctx context.Context, obj client.Object) (s
 	clusterClient := clusterRef.GetClient()
 
 	workspaceTypeName := util.GetWorkspaceTypeName(instance.Name, instance.Spec.Type)
-	if instance.Spec.Type != v1alpha1.AccountTypeOrg {
-		accountInfo := &v1alpha1.AccountInfo{}
+	if instance.Spec.Type != corev1alpha1.AccountTypeOrg {
+		accountInfo := &corev1alpha1.AccountInfo{}
 		if err := clusterClient.Get(ctx, client.ObjectKey{Name: manageaccountinfo.DefaultAccountInfoName}, accountInfo); err != nil {
 			if kerrors.IsNotFound(err) {
 				return subroutines.StopWithRequeue(r.limiter.When(instance), "AccountInfo not found yet"), nil

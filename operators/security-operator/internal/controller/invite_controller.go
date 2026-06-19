@@ -9,13 +9,13 @@ import (
 	"github.com/platform-mesh/golang-commons/controller/filter"
 	"github.com/platform-mesh/golang-commons/controller/lifecycle/ratelimiter"
 	"github.com/platform-mesh/golang-commons/logger"
-	"github.com/platform-mesh/security-operator/api/v1alpha1"
-	iclient "github.com/platform-mesh/security-operator/internal/client"
-	"github.com/platform-mesh/security-operator/internal/config"
-	"github.com/platform-mesh/security-operator/internal/metrics"
-	"github.com/platform-mesh/security-operator/internal/subroutine/invite"
 	"github.com/platform-mesh/subroutines/conditions"
 	"github.com/platform-mesh/subroutines/lifecycle"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	iclient "platform-mesh.io/security-operator/internal/client"
+	"platform-mesh.io/security-operator/internal/config"
+	"platform-mesh.io/security-operator/internal/metrics"
+	"platform-mesh.io/security-operator/internal/subroutine/invite"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -45,7 +45,7 @@ func NewInviteReconciler(ctx context.Context, mgr mcmanager.Manager, cfg *config
 	}
 
 	lc := lifecycle.New(mgr, "InviteReconciler", func() client.Object {
-		return &v1alpha1.Invite{}
+		return &corev1alpha1.Invite{}
 	}, inviteSubroutine).
 		WithConditions(conditions.NewManager())
 
@@ -76,7 +76,7 @@ func (r *InviteReconciler) SetupWithManager(mgr mcmanager.Manager, cfg *platform
 	predicates := []predicate.Predicate{filter.DebugResourcesBehaviourPredicate(cfg.DebugLabelValue)}
 	return mcbuilder.ControllerManagedBy(mgr).
 		Named("invite").
-		For(&v1alpha1.Invite{}).
+		For(&corev1alpha1.Invite{}).
 		WithOptions(opts).
 		WithEventFilter(predicate.And(predicates...)).
 		Complete(r)

@@ -17,10 +17,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
-	"github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/account-operator/internal/metrics"
-	"github.com/platform-mesh/account-operator/pkg/clusteredname"
+	"platform-mesh.io/account-operator/internal/metrics"
+	"platform-mesh.io/account-operator/pkg/clusteredname"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 
 var _ subroutines.Processor = (*ManageAccountInfoSubroutine)(nil)
@@ -33,11 +34,11 @@ const (
 type ManageAccountInfoSubroutine struct {
 	mgr      mcmanager.Manager
 	serverCA string
-	limiter  workqueue.TypedRateLimiter[*v1alpha1.Account]
+	limiter  workqueue.TypedRateLimiter[*corev1alpha1.Account]
 }
 
 func New(mgr mcmanager.Manager, serverCA string) (*ManageAccountInfoSubroutine, error) {
-	rl, err := ratelimiter.NewStaticThenExponentialRateLimiter[*v1alpha1.Account](
+	rl, err := ratelimiter.NewStaticThenExponentialRateLimiter[*corev1alpha1.Account](
 		ratelimiter.NewConfig(
 			ratelimiter.WithRequeueDelay(1*time.Second),
 			ratelimiter.WithStaticWindow(1*time.Second),
@@ -55,12 +56,12 @@ func (r *ManageAccountInfoSubroutine) GetName() string {
 }
 
 func (r *ManageAccountInfoSubroutine) Process(ctx context.Context, obj client.Object) (subroutines.Result, error) {
-	instance := obj.(*v1alpha1.Account)
+	instance := obj.(*corev1alpha1.Account)
 
 	log := logger.LoadLoggerFromContext(ctx)
 	cn := clusteredname.MustGetClusteredName(ctx, obj)
 
-	clusterRef, err := r.mgr.GetCluster(ctx, string(cn.ClusterID))
+	clusterRef, err := r.mgr.GetCluster(ctx, multicluster.ClusterName(cn.ClusterID))
 	if err != nil {
 		return subroutines.OK(), fmt.Errorf("getting cluster: %w", err)
 	}
@@ -82,7 +83,7 @@ func (r *ManageAccountInfoSubroutine) Process(ctx context.Context, obj client.Ob
 		return subroutines.OK(), err
 	}
 
-	selfAccountLocation := v1alpha1.AccountLocation{
+	selfAccountLocation := corev1alpha1.AccountLocation{
 		Name:               instance.Name,
 		GeneratedClusterId: accountWorkspace.Spec.Cluster,
 		OriginClusterId:    string(cn.ClusterID),
@@ -91,15 +92,15 @@ func (r *ManageAccountInfoSubroutine) Process(ctx context.Context, obj client.Ob
 		URL:                currentWorkspaceUrl,
 	}
 
-	accountCluster, err := r.mgr.GetCluster(ctx, accountWorkspace.Spec.Cluster)
+	accountCluster, err := r.mgr.GetCluster(ctx, multicluster.ClusterName(accountWorkspace.Spec.Cluster))
 	if err != nil {
 		return subroutines.OK(), err
 	}
 	accountClusterClient := accountCluster.GetClient()
 
 	// Create AccountInfo for an organization
-	if instance.Spec.Type == v1alpha1.AccountTypeOrg {
-		accountInfo := &v1alpha1.AccountInfo{ObjectMeta: v1.ObjectMeta{Name: DefaultAccountInfoName}}
+	if instance.Spec.Type == corev1alpha1.AccountTypeOrg {
+		accountInfo := &corev1alpha1.AccountInfo{ObjectMeta: v1.ObjectMeta{Name: DefaultAccountInfoName}}
 		if _, err := controllerutil.CreateOrPatch(ctx, accountClusterClient, accountInfo, func() error {
 			// the .Spec.FGA.Store.ID is set from an external workspace initializer
 			accountInfo.Spec.Account = selfAccountLocation
@@ -119,7 +120,7 @@ func (r *ManageAccountInfoSubroutine) Process(ctx context.Context, obj client.Ob
 
 	// Create AccountInfo for a non-organization Account based on its parent's
 	// AccountInfo
-	var parentAccountInfo v1alpha1.AccountInfo
+	var parentAccountInfo corev1alpha1.AccountInfo
 	if err := clusterClient.Get(ctx, client.ObjectKey{Name: DefaultAccountInfoName}, &parentAccountInfo); err != nil {
 		if kerrors.IsNotFound(err) {
 			// todo(simontesar): is there really a situation where a parent AccountInfo does not exist YET?
@@ -128,7 +129,7 @@ func (r *ManageAccountInfoSubroutine) Process(ctx context.Context, obj client.Ob
 		return subroutines.OK(), fmt.Errorf("getting parent AccountInfo: %w", err)
 	}
 
-	accountInfo := &v1alpha1.AccountInfo{ObjectMeta: v1.ObjectMeta{Name: DefaultAccountInfoName}}
+	accountInfo := &corev1alpha1.AccountInfo{ObjectMeta: v1.ObjectMeta{Name: DefaultAccountInfoName}}
 	if _, err := controllerutil.CreateOrUpdate(ctx, accountClusterClient, accountInfo, func() error {
 		accountInfo.Spec.Account = selfAccountLocation
 		accountInfo.Spec.ParentAccount = &parentAccountInfo.Spec.Account

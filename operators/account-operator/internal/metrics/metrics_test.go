@@ -6,7 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/platform-mesh/account-operator/internal/metrics"
+	"platform-mesh.io/account-operator/internal/metrics"
 )
 
 type MetricsTestSuite struct {
@@ -32,23 +32,6 @@ func (s *MetricsTestSuite) TestAccountsReconciled() {
 	before = testutil.ToFloat64(metrics.AccountsReconciled.WithLabelValues("account", "requeue"))
 	metrics.AccountsReconciled.WithLabelValues("account", "requeue").Inc()
 	s.Require().Equal(before+1, testutil.ToFloat64(metrics.AccountsReconciled.WithLabelValues("account", "requeue")))
-}
-
-// TestWebhookValidations verifies that the WebhookValidations counter increments
-// correctly for each label combination (operation, result, account_type). It covers
-// allowed and denied outcomes for both create and update webhook calls.
-func (s *MetricsTestSuite) TestWebhookValidations() {
-	before := testutil.ToFloat64(metrics.WebhookValidations.WithLabelValues("create", "allowed", "org"))
-	metrics.WebhookValidations.WithLabelValues("create", "allowed", "org").Inc()
-	s.Require().Equal(before+1, testutil.ToFloat64(metrics.WebhookValidations.WithLabelValues("create", "allowed", "org")))
-
-	before = testutil.ToFloat64(metrics.WebhookValidations.WithLabelValues("create", "denied", "org"))
-	metrics.WebhookValidations.WithLabelValues("create", "denied", "org").Inc()
-	s.Require().Equal(before+1, testutil.ToFloat64(metrics.WebhookValidations.WithLabelValues("create", "denied", "org")))
-
-	before = testutil.ToFloat64(metrics.WebhookValidations.WithLabelValues("update", "allowed", "account"))
-	metrics.WebhookValidations.WithLabelValues("update", "allowed", "account").Inc()
-	s.Require().Equal(before+1, testutil.ToFloat64(metrics.WebhookValidations.WithLabelValues("update", "allowed", "account")))
 }
 
 // TestWorkspaceReadyDuration verifies that the WorkspaceReadyDuration histogram

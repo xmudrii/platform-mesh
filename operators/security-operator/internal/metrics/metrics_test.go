@@ -3,9 +3,9 @@ package metrics_test
 import (
 	"testing"
 
-	"github.com/platform-mesh/security-operator/internal/metrics"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/suite"
+	"platform-mesh.io/security-operator/internal/metrics"
 )
 
 type MetricsTestSuite struct {

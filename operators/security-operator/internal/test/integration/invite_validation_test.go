@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	securityv1alpha1 "github.com/platform-mesh/security-operator/api/v1alpha1"
 	"github.com/stretchr/testify/require"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,11 +39,11 @@ func (suite *IntegrationSuite) TestInviteEmailValidation() {
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			invite := &securityv1alpha1.Invite{
+			invite := &corev1alpha1.Invite{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "email-validation-" + strings.ToLower(tt.name) + "-",
 				},
-				Spec: securityv1alpha1.InviteSpec{Email: tt.email},
+				Spec: corev1alpha1.InviteSpec{Email: tt.email},
 			}
 
 			err := suite.platformMeshSystemClient.Create(ctx, invite)

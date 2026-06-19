@@ -6,10 +6,10 @@ import (
 	"fmt"
 
 	platformeshcontext "github.com/platform-mesh/golang-commons/context"
-	securityv1alpha1 "github.com/platform-mesh/security-operator/api/v1alpha1"
-	iclient "github.com/platform-mesh/security-operator/internal/client"
-	"github.com/platform-mesh/security-operator/internal/controller"
 	"github.com/spf13/cobra"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	iclient "platform-mesh.io/security-operator/internal/client"
+	"platform-mesh.io/security-operator/internal/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -65,7 +65,7 @@ var modelGeneratorCmd = &cobra.Command{
 		}
 		runtimeScheme := runtime.NewScheme()
 		utilruntime.Must(appsv1.AddToScheme(runtimeScheme))
-		utilruntime.Must(securityv1alpha1.AddToScheme(runtimeScheme))
+		utilruntime.Must(corev1alpha1.AddToScheme(runtimeScheme))
 
 		if mgrOpts.Scheme == nil {
 			log.Error().Err(fmt.Errorf("scheme should not be nil")).Msg("scheme should not be nil")

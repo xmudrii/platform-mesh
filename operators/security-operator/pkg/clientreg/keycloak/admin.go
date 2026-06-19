@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/platform-mesh/security-operator/pkg/clientreg"
+	"platform-mesh.io/security-operator/pkg/clientreg"
 )
 
 const maxErrorBodySize = 4096

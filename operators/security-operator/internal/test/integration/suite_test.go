@@ -8,15 +8,14 @@ import (
 	"testing"
 	"time"
 
-	accountv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
 	platformeshconfig "github.com/platform-mesh/golang-commons/config"
 	"github.com/platform-mesh/golang-commons/logger"
-	securityv1alpha1 "github.com/platform-mesh/security-operator/api/v1alpha1"
-	iclient "github.com/platform-mesh/security-operator/internal/client"
-	"github.com/platform-mesh/security-operator/internal/config"
-	"github.com/platform-mesh/security-operator/internal/controller"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	iclient "platform-mesh.io/security-operator/internal/client"
+	"platform-mesh.io/security-operator/internal/config"
+	"platform-mesh.io/security-operator/internal/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
@@ -35,7 +34,7 @@ import (
 	apisv1alpha1 "github.com/kcp-dev/sdk/apis/apis/v1alpha1"
 	apisv1alpha2 "github.com/kcp-dev/sdk/apis/apis/v1alpha2"
 	"github.com/kcp-dev/sdk/apis/core"
-	corev1alpha1 "github.com/kcp-dev/sdk/apis/core/v1alpha1"
+	kcpcorev1alpha1 "github.com/kcp-dev/sdk/apis/core/v1alpha1"
 	tenancyv1alpha1 "github.com/kcp-dev/sdk/apis/tenancy/v1alpha1"
 
 	_ "embed"
@@ -75,10 +74,9 @@ var (
 
 func init() {
 	utilruntime.Must(apisv1alpha1.AddToScheme(scheme.Scheme))
-	utilruntime.Must(corev1alpha1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(kcpcorev1alpha1.AddToScheme(scheme.Scheme))
 	utilruntime.Must(tenancyv1alpha1.AddToScheme(scheme.Scheme))
-	utilruntime.Must(accountv1alpha1.AddToScheme(scheme.Scheme))
-	utilruntime.Must(securityv1alpha1.AddToScheme(scheme.Scheme))
+	utilruntime.Must(corev1alpha1.AddToScheme(scheme.Scheme))
 	utilruntime.Must(apisv1alpha2.AddToScheme(scheme.Scheme))
 }
 
@@ -260,12 +258,12 @@ func (suite *IntegrationSuite) setupControllers(defaultCfg *platformeshconfig.Co
 	})
 }
 
-func (suite *IntegrationSuite) createAccount(ctx context.Context, client client.Client, accountName string, accountType accountv1alpha1.AccountType, t *testing.T) {
-	account := &accountv1alpha1.Account{
+func (suite *IntegrationSuite) createAccount(ctx context.Context, client client.Client, accountName string, accountType corev1alpha1.AccountType, t *testing.T) {
+	account := &corev1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: accountName,
 		},
-		Spec: accountv1alpha1.AccountSpec{
+		Spec: corev1alpha1.AccountSpec{
 			Type: accountType,
 		},
 	}
@@ -277,27 +275,27 @@ func (suite *IntegrationSuite) createAccount(ctx context.Context, client client.
 }
 
 func (suite *IntegrationSuite) createAccountInfo(ctx context.Context, accountClient client.Client, accountName, orgName string, accountPath, orgPath logicalcluster.Path, t *testing.T) {
-	accountInfo := &accountv1alpha1.AccountInfo{
+	accountInfo := &corev1alpha1.AccountInfo{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "account",
 		},
-		Spec: accountv1alpha1.AccountInfoSpec{
-			Organization: accountv1alpha1.AccountLocation{
+		Spec: corev1alpha1.AccountInfoSpec{
+			Organization: corev1alpha1.AccountLocation{
 				Name:               orgName,
 				GeneratedClusterId: orgPath.String(),
 				OriginClusterId:    orgPath.String(),
 				Path:               orgPath.String(),
-				Type:               accountv1alpha1.AccountTypeOrg,
+				Type:               corev1alpha1.AccountTypeOrg,
 			},
-			Account: accountv1alpha1.AccountLocation{
+			Account: corev1alpha1.AccountLocation{
 				Name:               accountName,
 				GeneratedClusterId: accountPath.String(),
 				OriginClusterId:    accountPath.String(),
 				Path:               accountPath.String(),
-				Type:               accountv1alpha1.AccountTypeAccount,
+				Type:               corev1alpha1.AccountTypeAccount,
 			},
-			FGA: accountv1alpha1.FGAInfo{
-				Store: accountv1alpha1.StoreInfo{
+			FGA: corev1alpha1.FGAInfo{
+				Store: corev1alpha1.StoreInfo{
 					Id: "test-store-id",
 				},
 			},

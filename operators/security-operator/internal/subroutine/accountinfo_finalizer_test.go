@@ -5,12 +5,12 @@ import (
 	"testing"
 	"time"
 
-	accountv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/security-operator/internal/subroutine"
-	"github.com/platform-mesh/security-operator/internal/subroutine/mocks"
 	"github.com/platform-mesh/subroutines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	"platform-mesh.io/security-operator/internal/subroutine"
+	"platform-mesh.io/security-operator/internal/subroutine/mocks"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -177,7 +177,7 @@ func TestAccountInfoFinalizerSubroutine_Finalize(t *testing.T) {
 			}
 
 			sub := subroutine.NewAccountInfoFinalizerSubroutine(manager)
-			result, err := sub.Finalize(context.Background(), &accountv1alpha1.AccountInfo{})
+			result, err := sub.Finalize(context.Background(), &corev1alpha1.AccountInfo{})
 
 			if test.expectError {
 				assert.NotNil(t, err)

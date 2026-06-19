@@ -1,0 +1,136 @@
+version: "3"
+
+# Root Taskfile for the platform-mesh monorepo.
+#
+# Structure:
+#   * Global targets (`lint`, `test`, `test-e2e`, `generate`, `build`) run the
+#     matching target for EVERY component.
+#   * Per-component targets (`lint-<name>`, `test-<name>`, ...) run it for ONE
+#     component, e.g. `task lint-account-operator`.
+#
+# Every component (module/service) must expose the standard targets in its own
+# Taskfile: lint, test, test-e2e, generate, build. The root simply fans out to
+# them, so component-specific setup (kcp/envtest, codegen tools, ...) lives with
+# the component.
+#
+# The components below are linked locally through the repository-root go.work
+# file. Add a component by listing its name here; its directory is discovered
+# under ./, ./operators/ or ./services/.
+
+includes:
+  # Shared go-installable tooling (controller-gen, golangci-lint, mockery,
+  # apigen), installed once into the root bin/ and reused by every component.
+  tools:
+    taskfile: tools/Taskfile.yaml
+    dir: .
+
+vars:
+  COMPONENTS: apis account-operator security-operator
+
+tasks:
+  default:
+    cmds:
+      - task --list
+
+  # ---------------------------------------------------------------------------
+  # Global fan-out targets: run the standard target across all components.
+  # ---------------------------------------------------------------------------
+  lint:
+    desc: Lint every component.
+    cmds:
+      - for: {var: COMPONENTS}
+        cmd: task lint-{{.ITEM}}
+  test:
+    desc: Run unit tests for every component.
+    cmds:
+      - for: {var: COMPONENTS}
+        cmd: task test-{{.ITEM}}
+  test-e2e:
+    desc: Run e2e/integration tests for every component.
+    cmds:
+      - for: {var: COMPONENTS}
+        cmd: task test-e2e-{{.ITEM}}
+  generate:
+    desc: Run code generation for every component.
+    cmds:
+      - for: {var: COMPONENTS}
+        cmd: task generate-{{.ITEM}}
+  build:
+    desc: Build every component.
+    cmds:
+      - for: {var: COMPONENTS}
+        cmd: task build-{{.ITEM}}
+
+  # ---------------------------------------------------------------------------
+  # Per-component targets. Each delegates to the component's own Taskfile.
+  # `test-e2e-*` is declared before `test-*` so the more specific pattern wins.
+  # ---------------------------------------------------------------------------
+  "test-e2e-*":
+    desc: "Run e2e tests for one component (e.g. task test-e2e-account-operator)."
+    cmds:
+      - task: _run
+        vars: {COMPONENT: "{{index .MATCH 0}}", TARGET: test-e2e}
+  "test-*":
+    desc: "Run unit tests for one component (e.g. task test-account-operator)."
+    cmds:
+      - task: _run
+        vars: {COMPONENT: "{{index .MATCH 0}}", TARGET: test}
+  "lint-*":
+    desc: "Lint one component (e.g. task lint-account-operator)."
+    deps: [tools:golangci-lint]
+    cmds:
+      - task: _run
+        vars: {COMPONENT: "{{index .MATCH 0}}", TARGET: lint}
+  "generate-*":
+    desc: "Run code generation for one component (e.g. task generate-account-operator)."
+    deps: [tools:controller-gen, tools:apigen, tools:mockery]
+    cmds:
+      - task: _run
+        vars: {COMPONENT: "{{index .MATCH 0}}", TARGET: generate}
+  "build-*":
+    desc: "Build one component (e.g. task build-account-operator)."
+    cmds:
+      - task: _run
+        vars: {COMPONENT: "{{index .MATCH 0}}", TARGET: build}
+
+  # Resolve a component name to its directory and delegate to its Taskfile.
+  _run:
+    internal: true
+    silent: true
+    cmds:
+      - |
+        comp='{{.COMPONENT}}'; target='{{.TARGET}}'
+        dir=''
+        for p in "$comp" "operators/$comp" "services/$comp"; do
+          if [ -f "$p/Taskfile.yaml" ] || [ -f "$p/Taskfile.yml" ]; then dir="$p"; break; fi
+        done
+        if [ -z "$dir" ]; then
+          echo "unknown component '$comp' (no Taskfile under ./, ./operators/ or ./services/)" >&2
+          exit 1
+        fi
+        task --dir "$dir" "$target"
+
+  # ---------------------------------------------------------------------------
+  # Release: cut a per-component semver tag (cmd/release). The tag triggers
+  # .github/workflows/component-release.yaml, which builds + pushes the image
+  # (and chart, if the component ships one). `apis` tags are go-gettable module
+  # tags only. Pass component + flags after `--`, e.g.:
+  #   task release -- account-operator --minor
+  #   task release -- all --dry-run
+  # ---------------------------------------------------------------------------
+  release:
+    desc: 'Cut a release tag for a component (e.g. task release -- account-operator --minor).'
+    dir: cmd/release
+    env:
+      GOWORK: "off"   # cmd/release is a standalone tool module, not in the workspace.
+    cmds:
+      - go run . {{.CLI_ARGS}}
+
+  # ---------------------------------------------------------------------------
+  # Workspace helpers
+  # ---------------------------------------------------------------------------
+  tidy:
+    desc: Tidy the self-contained apis module and re-sync the workspace.
+    cmds:
+      - cd apis && GOWORK=off go mod tidy
+      - go work sync

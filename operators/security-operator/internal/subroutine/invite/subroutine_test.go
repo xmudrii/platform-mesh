@@ -8,15 +8,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	accountsv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
 	"github.com/platform-mesh/golang-commons/logger/testlogger"
-	"github.com/platform-mesh/security-operator/api/v1alpha1"
-	"github.com/platform-mesh/security-operator/internal/config"
-	"github.com/platform-mesh/security-operator/internal/subroutine/invite"
-	"github.com/platform-mesh/security-operator/internal/subroutine/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/oauth2"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	"platform-mesh.io/security-operator/internal/config"
+	"platform-mesh.io/security-operator/internal/subroutine/invite"
+	"platform-mesh.io/security-operator/internal/subroutine/mocks"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mccontext "sigs.k8s.io/multicluster-runtime/pkg/context"
 
@@ -61,8 +60,8 @@ func TestSubroutineProcess(t *testing.T) {
 	}{
 		{
 			desc: "user created with default password",
-			obj: &v1alpha1.Invite{
-				Spec: v1alpha1.InviteSpec{
+			obj: &corev1alpha1.Invite{
+				Spec: corev1alpha1.InviteSpec{
 					Email: "password@acme.corp",
 				},
 			},
@@ -72,20 +71,20 @@ func TestSubroutineProcess(t *testing.T) {
 			setupK8sMocks: func(m *mocks.MockClient) {
 				m.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo"), mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						accountInfo := &accountsv1alpha1.AccountInfo{
-							Spec: accountsv1alpha1.AccountInfoSpec{
-								Organization: accountsv1alpha1.AccountLocation{
+						accountInfo := &corev1alpha1.AccountInfo{
+							Spec: corev1alpha1.AccountInfoSpec{
+								Organization: corev1alpha1.AccountLocation{
 									Name: "acme",
 								},
-								OIDC: &accountsv1alpha1.OIDCInfo{
+								OIDC: &corev1alpha1.OIDCInfo{
 									IssuerURL: "https://keycloak/realms/acme",
-									Clients: map[string]accountsv1alpha1.ClientInfo{
+									Clients: map[string]corev1alpha1.ClientInfo{
 										"acme": {ClientID: "acme"},
 									},
 								},
 							},
 						}
-						*o.(*accountsv1alpha1.AccountInfo) = *accountInfo
+						*o.(*corev1alpha1.AccountInfo) = *accountInfo
 						return nil
 					}).Once()
 			},
@@ -133,28 +132,28 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "user created and invitation email sent",
-			obj: &v1alpha1.Invite{
-				Spec: v1alpha1.InviteSpec{
+			obj: &corev1alpha1.Invite{
+				Spec: corev1alpha1.InviteSpec{
 					Email: "example@acme.corp",
 				},
 			},
 			setupK8sMocks: func(m *mocks.MockClient) {
 				m.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo"), mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						accountInfo := &accountsv1alpha1.AccountInfo{
-							Spec: accountsv1alpha1.AccountInfoSpec{
-								Organization: accountsv1alpha1.AccountLocation{
+						accountInfo := &corev1alpha1.AccountInfo{
+							Spec: corev1alpha1.AccountInfoSpec{
+								Organization: corev1alpha1.AccountLocation{
 									Name: "acme",
 								},
-								OIDC: &accountsv1alpha1.OIDCInfo{
+								OIDC: &corev1alpha1.OIDCInfo{
 									IssuerURL: "https://keycloak/realms/acme",
-									Clients: map[string]accountsv1alpha1.ClientInfo{
+									Clients: map[string]corev1alpha1.ClientInfo{
 										"acme": {ClientID: "acme"},
 									},
 								},
 							},
 						}
-						*o.(*accountsv1alpha1.AccountInfo) = *accountInfo
+						*o.(*corev1alpha1.AccountInfo) = *accountInfo
 						return nil
 					}).Once()
 			},
@@ -192,8 +191,8 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "error listing users (500 from Keycloak)",
-			obj: &v1alpha1.Invite{
-				Spec: v1alpha1.InviteSpec{
+			obj: &corev1alpha1.Invite{
+				Spec: corev1alpha1.InviteSpec{
 					Email: "error1@acme.corp",
 				},
 			},
@@ -201,14 +200,14 @@ func TestSubroutineProcess(t *testing.T) {
 			setupK8sMocks: func(m *mocks.MockClient) {
 				m.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo"), mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						accountInfo := &accountsv1alpha1.AccountInfo{
-							Spec: accountsv1alpha1.AccountInfoSpec{
-								Organization: accountsv1alpha1.AccountLocation{
+						accountInfo := &corev1alpha1.AccountInfo{
+							Spec: corev1alpha1.AccountInfoSpec{
+								Organization: corev1alpha1.AccountLocation{
 									Name: "acme",
 								},
 							},
 						}
-						*o.(*accountsv1alpha1.AccountInfo) = *accountInfo
+						*o.(*corev1alpha1.AccountInfo) = *accountInfo
 						return nil
 					}).Once()
 			},
@@ -221,8 +220,8 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "error creating user (POST returns 400)",
-			obj: &v1alpha1.Invite{
-				Spec: v1alpha1.InviteSpec{
+			obj: &corev1alpha1.Invite{
+				Spec: corev1alpha1.InviteSpec{
 					Email: "error2@acme.corp",
 				},
 			},
@@ -230,20 +229,20 @@ func TestSubroutineProcess(t *testing.T) {
 			setupK8sMocks: func(m *mocks.MockClient) {
 				m.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo"), mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						accountInfo := &accountsv1alpha1.AccountInfo{
-							Spec: accountsv1alpha1.AccountInfoSpec{
-								Organization: accountsv1alpha1.AccountLocation{
+						accountInfo := &corev1alpha1.AccountInfo{
+							Spec: corev1alpha1.AccountInfoSpec{
+								Organization: corev1alpha1.AccountLocation{
 									Name: "acme",
 								},
-								OIDC: &accountsv1alpha1.OIDCInfo{
+								OIDC: &corev1alpha1.OIDCInfo{
 									IssuerURL: "https://keycloak/realms/acme",
-									Clients: map[string]accountsv1alpha1.ClientInfo{
+									Clients: map[string]corev1alpha1.ClientInfo{
 										"acme": {ClientID: "acme"},
 									},
 								},
 							},
 						}
-						*o.(*accountsv1alpha1.AccountInfo) = *accountInfo
+						*o.(*corev1alpha1.AccountInfo) = *accountInfo
 						return nil
 					}).Once()
 			},
@@ -269,8 +268,8 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "error fetching AccountInfo (not found)",
-			obj: &v1alpha1.Invite{
-				Spec: v1alpha1.InviteSpec{
+			obj: &corev1alpha1.Invite{
+				Spec: corev1alpha1.InviteSpec{
 					Email: "missing@acme.corp",
 				},
 			},
@@ -284,8 +283,8 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "error verifying client (500 from Keycloak)",
-			obj: &v1alpha1.Invite{
-				Spec: v1alpha1.InviteSpec{
+			obj: &corev1alpha1.Invite{
+				Spec: corev1alpha1.InviteSpec{
 					Email: "clienterror@acme.corp",
 				},
 			},
@@ -293,20 +292,20 @@ func TestSubroutineProcess(t *testing.T) {
 			setupK8sMocks: func(m *mocks.MockClient) {
 				m.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo"), mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						accountInfo := &accountsv1alpha1.AccountInfo{
-							Spec: accountsv1alpha1.AccountInfoSpec{
-								Organization: accountsv1alpha1.AccountLocation{
+						accountInfo := &corev1alpha1.AccountInfo{
+							Spec: corev1alpha1.AccountInfoSpec{
+								Organization: corev1alpha1.AccountLocation{
 									Name: "acme",
 								},
-								OIDC: &accountsv1alpha1.OIDCInfo{
+								OIDC: &corev1alpha1.OIDCInfo{
 									IssuerURL: "https://keycloak/realms/acme",
-									Clients: map[string]accountsv1alpha1.ClientInfo{
+									Clients: map[string]corev1alpha1.ClientInfo{
 										"acme": {ClientID: "acme"},
 									},
 								},
 							},
 						}
-						*o.(*accountsv1alpha1.AccountInfo) = *accountInfo
+						*o.(*corev1alpha1.AccountInfo) = *accountInfo
 						return nil
 					}).Once()
 			},
@@ -335,8 +334,8 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "client does not exist yet, should requeue",
-			obj: &v1alpha1.Invite{
-				Spec: v1alpha1.InviteSpec{
+			obj: &corev1alpha1.Invite{
+				Spec: corev1alpha1.InviteSpec{
 					Email: "requeue@acme.corp",
 				},
 			},
@@ -344,20 +343,20 @@ func TestSubroutineProcess(t *testing.T) {
 			setupK8sMocks: func(m *mocks.MockClient) {
 				m.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo"), mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						accountInfo := &accountsv1alpha1.AccountInfo{
-							Spec: accountsv1alpha1.AccountInfoSpec{
-								Organization: accountsv1alpha1.AccountLocation{
+						accountInfo := &corev1alpha1.AccountInfo{
+							Spec: corev1alpha1.AccountInfoSpec{
+								Organization: corev1alpha1.AccountLocation{
 									Name: "acme",
 								},
-								OIDC: &accountsv1alpha1.OIDCInfo{
+								OIDC: &corev1alpha1.OIDCInfo{
 									IssuerURL: "https://keycloak/realms/acme",
-									Clients: map[string]accountsv1alpha1.ClientInfo{
+									Clients: map[string]corev1alpha1.ClientInfo{
 										"acme": {ClientID: "acme"},
 									},
 								},
 							},
 						}
-						*o.(*accountsv1alpha1.AccountInfo) = *accountInfo
+						*o.(*corev1alpha1.AccountInfo) = *accountInfo
 						return nil
 					}).Once()
 			},
@@ -389,8 +388,8 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "organization name is empty in AccountInfo",
-			obj: &v1alpha1.Invite{
-				Spec: v1alpha1.InviteSpec{
+			obj: &corev1alpha1.Invite{
+				Spec: corev1alpha1.InviteSpec{
 					Email: "empty@acme.corp",
 				},
 			},
@@ -398,14 +397,14 @@ func TestSubroutineProcess(t *testing.T) {
 			setupK8sMocks: func(m *mocks.MockClient) {
 				m.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo"), mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						accountInfo := &accountsv1alpha1.AccountInfo{
-							Spec: accountsv1alpha1.AccountInfoSpec{
-								Organization: accountsv1alpha1.AccountLocation{
+						accountInfo := &corev1alpha1.AccountInfo{
+							Spec: corev1alpha1.AccountInfoSpec{
+								Organization: corev1alpha1.AccountLocation{
 									Name: "",
 								},
 							},
 						}
-						*o.(*accountsv1alpha1.AccountInfo) = *accountInfo
+						*o.(*corev1alpha1.AccountInfo) = *accountInfo
 						return nil
 					}).Once()
 			},
@@ -414,8 +413,8 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "AccountInfo OIDC is nil",
-			obj: &v1alpha1.Invite{
-				Spec: v1alpha1.InviteSpec{
+			obj: &corev1alpha1.Invite{
+				Spec: corev1alpha1.InviteSpec{
 					Email: "oidcnil@acme.corp",
 				},
 			},
@@ -423,15 +422,15 @@ func TestSubroutineProcess(t *testing.T) {
 			setupK8sMocks: func(m *mocks.MockClient) {
 				m.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo"), mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						accountInfo := &accountsv1alpha1.AccountInfo{
-							Spec: accountsv1alpha1.AccountInfoSpec{
-								Organization: accountsv1alpha1.AccountLocation{
+						accountInfo := &corev1alpha1.AccountInfo{
+							Spec: corev1alpha1.AccountInfoSpec{
+								Organization: corev1alpha1.AccountLocation{
 									Name: "acme",
 								},
 								OIDC: nil,
 							},
 						}
-						*o.(*accountsv1alpha1.AccountInfo) = *accountInfo
+						*o.(*corev1alpha1.AccountInfo) = *accountInfo
 						return nil
 					}).Once()
 			},
@@ -446,8 +445,8 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "organization not found in OIDC clients",
-			obj: &v1alpha1.Invite{
-				Spec: v1alpha1.InviteSpec{
+			obj: &corev1alpha1.Invite{
+				Spec: corev1alpha1.InviteSpec{
 					Email: "missingorg@acme.corp",
 				},
 			},
@@ -455,18 +454,18 @@ func TestSubroutineProcess(t *testing.T) {
 			setupK8sMocks: func(m *mocks.MockClient) {
 				m.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo"), mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						accountInfo := &accountsv1alpha1.AccountInfo{
-							Spec: accountsv1alpha1.AccountInfoSpec{
-								Organization: accountsv1alpha1.AccountLocation{
+						accountInfo := &corev1alpha1.AccountInfo{
+							Spec: corev1alpha1.AccountInfoSpec{
+								Organization: corev1alpha1.AccountLocation{
 									Name: "acme",
 								},
-								OIDC: &accountsv1alpha1.OIDCInfo{
+								OIDC: &corev1alpha1.OIDCInfo{
 									IssuerURL: "https://keycloak/realms/acme",
-									Clients:   map[string]accountsv1alpha1.ClientInfo{},
+									Clients:   map[string]corev1alpha1.ClientInfo{},
 								},
 							},
 						}
-						*o.(*accountsv1alpha1.AccountInfo) = *accountInfo
+						*o.(*corev1alpha1.AccountInfo) = *accountInfo
 						return nil
 					}).Once()
 			},
@@ -481,13 +480,13 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "user already exists, skipping invite",
-			obj:  &v1alpha1.Invite{Spec: v1alpha1.InviteSpec{Email: "existing@acme.corp"}},
+			obj:  &corev1alpha1.Invite{Spec: corev1alpha1.InviteSpec{Email: "existing@acme.corp"}},
 			setupK8sMocks: func(m *mocks.MockClient) {
 				m.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo"), mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						*o.(*accountsv1alpha1.AccountInfo) = accountsv1alpha1.AccountInfo{
-							Spec: accountsv1alpha1.AccountInfoSpec{
-								Organization: accountsv1alpha1.AccountLocation{Name: "acme"},
+						*o.(*corev1alpha1.AccountInfo) = corev1alpha1.AccountInfo{
+							Spec: corev1alpha1.AccountInfoSpec{
+								Organization: corev1alpha1.AccountLocation{Name: "acme"},
 							},
 						}
 						return nil
@@ -504,13 +503,13 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "GET users returns invalid JSON",
-			obj:  &v1alpha1.Invite{Spec: v1alpha1.InviteSpec{Email: "test@acme.corp"}},
+			obj:  &corev1alpha1.Invite{Spec: corev1alpha1.InviteSpec{Email: "test@acme.corp"}},
 			setupK8sMocks: func(m *mocks.MockClient) {
 				m.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo"), mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						*o.(*accountsv1alpha1.AccountInfo) = accountsv1alpha1.AccountInfo{
-							Spec: accountsv1alpha1.AccountInfoSpec{
-								Organization: accountsv1alpha1.AccountLocation{Name: "acme"},
+						*o.(*corev1alpha1.AccountInfo) = corev1alpha1.AccountInfo{
+							Spec: corev1alpha1.AccountInfoSpec{
+								Organization: corev1alpha1.AccountLocation{Name: "acme"},
 							},
 						}
 						return nil
@@ -527,15 +526,15 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "GET clients returns invalid JSON",
-			obj:  &v1alpha1.Invite{Spec: v1alpha1.InviteSpec{Email: "test@acme.corp"}},
+			obj:  &corev1alpha1.Invite{Spec: corev1alpha1.InviteSpec{Email: "test@acme.corp"}},
 			setupK8sMocks: func(m *mocks.MockClient) {
 				m.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo"), mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						*o.(*accountsv1alpha1.AccountInfo) = accountsv1alpha1.AccountInfo{
-							Spec: accountsv1alpha1.AccountInfoSpec{
-								Organization: accountsv1alpha1.AccountLocation{Name: "acme"},
-								OIDC: &accountsv1alpha1.OIDCInfo{
-									Clients: map[string]accountsv1alpha1.ClientInfo{"acme": {ClientID: "acme"}},
+						*o.(*corev1alpha1.AccountInfo) = corev1alpha1.AccountInfo{
+							Spec: corev1alpha1.AccountInfoSpec{
+								Organization: corev1alpha1.AccountLocation{Name: "acme"},
+								OIDC: &corev1alpha1.OIDCInfo{
+									Clients: map[string]corev1alpha1.ClientInfo{"acme": {ClientID: "acme"}},
 								},
 							},
 						}
@@ -558,15 +557,15 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "POST users returns non-201 status",
-			obj:  &v1alpha1.Invite{Spec: v1alpha1.InviteSpec{Email: "test@acme.corp"}},
+			obj:  &corev1alpha1.Invite{Spec: corev1alpha1.InviteSpec{Email: "test@acme.corp"}},
 			setupK8sMocks: func(m *mocks.MockClient) {
 				m.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo"), mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						*o.(*accountsv1alpha1.AccountInfo) = accountsv1alpha1.AccountInfo{
-							Spec: accountsv1alpha1.AccountInfoSpec{
-								Organization: accountsv1alpha1.AccountLocation{Name: "acme"},
-								OIDC: &accountsv1alpha1.OIDCInfo{
-									Clients: map[string]accountsv1alpha1.ClientInfo{"acme": {ClientID: "acme"}},
+						*o.(*corev1alpha1.AccountInfo) = corev1alpha1.AccountInfo{
+							Spec: corev1alpha1.AccountInfoSpec{
+								Organization: corev1alpha1.AccountLocation{Name: "acme"},
+								OIDC: &corev1alpha1.OIDCInfo{
+									Clients: map[string]corev1alpha1.ClientInfo{"acme": {ClientID: "acme"}},
 								},
 							},
 						}
@@ -592,15 +591,15 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "second GET users returns non-200",
-			obj:  &v1alpha1.Invite{Spec: v1alpha1.InviteSpec{Email: "test@acme.corp"}},
+			obj:  &corev1alpha1.Invite{Spec: corev1alpha1.InviteSpec{Email: "test@acme.corp"}},
 			setupK8sMocks: func(m *mocks.MockClient) {
 				m.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo"), mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						*o.(*accountsv1alpha1.AccountInfo) = accountsv1alpha1.AccountInfo{
-							Spec: accountsv1alpha1.AccountInfoSpec{
-								Organization: accountsv1alpha1.AccountLocation{Name: "acme"},
-								OIDC: &accountsv1alpha1.OIDCInfo{
-									Clients: map[string]accountsv1alpha1.ClientInfo{"acme": {ClientID: "acme"}},
+						*o.(*corev1alpha1.AccountInfo) = corev1alpha1.AccountInfo{
+							Spec: corev1alpha1.AccountInfoSpec{
+								Organization: corev1alpha1.AccountLocation{Name: "acme"},
+								OIDC: &corev1alpha1.OIDCInfo{
+									Clients: map[string]corev1alpha1.ClientInfo{"acme": {ClientID: "acme"}},
 								},
 							},
 						}
@@ -632,15 +631,15 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "second GET users returns invalid JSON",
-			obj:  &v1alpha1.Invite{Spec: v1alpha1.InviteSpec{Email: "test@acme.corp"}},
+			obj:  &corev1alpha1.Invite{Spec: corev1alpha1.InviteSpec{Email: "test@acme.corp"}},
 			setupK8sMocks: func(m *mocks.MockClient) {
 				m.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo"), mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						*o.(*accountsv1alpha1.AccountInfo) = accountsv1alpha1.AccountInfo{
-							Spec: accountsv1alpha1.AccountInfoSpec{
-								Organization: accountsv1alpha1.AccountLocation{Name: "acme"},
-								OIDC: &accountsv1alpha1.OIDCInfo{
-									Clients: map[string]accountsv1alpha1.ClientInfo{"acme": {ClientID: "acme"}},
+						*o.(*corev1alpha1.AccountInfo) = corev1alpha1.AccountInfo{
+							Spec: corev1alpha1.AccountInfoSpec{
+								Organization: corev1alpha1.AccountLocation{Name: "acme"},
+								OIDC: &corev1alpha1.OIDCInfo{
+									Clients: map[string]corev1alpha1.ClientInfo{"acme": {ClientID: "acme"}},
 								},
 							},
 						}
@@ -672,15 +671,15 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "PUT execute-actions-email returns non-204",
-			obj:  &v1alpha1.Invite{Spec: v1alpha1.InviteSpec{Email: "test@acme.corp"}},
+			obj:  &corev1alpha1.Invite{Spec: corev1alpha1.InviteSpec{Email: "test@acme.corp"}},
 			setupK8sMocks: func(m *mocks.MockClient) {
 				m.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.AnythingOfType("*v1alpha1.AccountInfo"), mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						*o.(*accountsv1alpha1.AccountInfo) = accountsv1alpha1.AccountInfo{
-							Spec: accountsv1alpha1.AccountInfoSpec{
-								Organization: accountsv1alpha1.AccountLocation{Name: "acme"},
-								OIDC: &accountsv1alpha1.OIDCInfo{
-									Clients: map[string]accountsv1alpha1.ClientInfo{"acme": {ClientID: "acme"}},
+						*o.(*corev1alpha1.AccountInfo) = corev1alpha1.AccountInfo{
+							Spec: corev1alpha1.AccountInfoSpec{
+								Organization: corev1alpha1.AccountLocation{Name: "acme"},
+								OIDC: &corev1alpha1.OIDCInfo{
+									Clients: map[string]corev1alpha1.ClientInfo{"acme": {ClientID: "acme"}},
 								},
 							},
 						}
@@ -794,7 +793,7 @@ func TestInviteSubroutine_NoClusterInContext(t *testing.T) {
 	// Deliberately omit mccontext.WithCluster so ClusterFrom returns !ok.
 	ctx = l.WithContext(t.Context())
 
-	_, processErr := s.Process(ctx, &v1alpha1.Invite{Spec: v1alpha1.InviteSpec{Email: "test@test.com"}})
+	_, processErr := s.Process(ctx, &corev1alpha1.Invite{Spec: corev1alpha1.InviteSpec{Email: "test@test.com"}})
 	assert.Error(t, processErr)
 	assert.Contains(t, processErr.Error(), "failed to get cluster from context")
 }
@@ -820,7 +819,7 @@ func TestInviteSubroutine_GetClientFails(t *testing.T) {
 	ctx = l.WithContext(t.Context())
 	ctx = mccontext.WithCluster(ctx, "cluster1")
 
-	_, processErr := s.Process(ctx, &v1alpha1.Invite{Spec: v1alpha1.InviteSpec{Email: "test@test.com"}})
+	_, processErr := s.Process(ctx, &corev1alpha1.Invite{Spec: corev1alpha1.InviteSpec{Email: "test@test.com"}})
 	assert.Error(t, processErr)
 	assert.Contains(t, processErr.Error(), "failed to get client for cluster")
 }

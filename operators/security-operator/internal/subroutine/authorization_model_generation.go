@@ -8,11 +8,10 @@ import (
 	"strings"
 	"text/template"
 
-	accountv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
 	"github.com/platform-mesh/golang-commons/logger"
-	securityv1alpha1 "github.com/platform-mesh/security-operator/api/v1alpha1"
-	iclient "github.com/platform-mesh/security-operator/internal/client"
 	"github.com/platform-mesh/subroutines"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	iclient "platform-mesh.io/security-operator/internal/client"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
@@ -116,7 +115,7 @@ func (a *AuthorizationModelGenerationSubroutine) Finalize(ctx context.Context, o
 		return subroutines.OK(), fmt.Errorf("listing APIBindings: %w", err)
 	}
 
-	var toDeleteAccountInfo accountv1alpha1.AccountInfo
+	var toDeleteAccountInfo corev1alpha1.AccountInfo
 	err = bindingCluster.GetClient().Get(ctx, types.NamespacedName{Name: "account"}, &toDeleteAccountInfo)
 	if err != nil {
 		log.Error().Err(err).Msg("unable to get account info for binding deletion")
@@ -134,7 +133,7 @@ func (a *AuthorizationModelGenerationSubroutine) Finalize(ctx context.Context, o
 			return subroutines.OK(), fmt.Errorf("getting cluster for binding: %w", err)
 		}
 
-		var accountInfo accountv1alpha1.AccountInfo
+		var accountInfo corev1alpha1.AccountInfo
 		err = bindingWsCluster.GetClient().Get(ctx, types.NamespacedName{Name: "account"}, &accountInfo)
 		if kerrors.IsNotFound(err) || meta.IsNoMatchError(err) {
 			// If the accountinfo does not exist, skip this binding and continue with others
@@ -181,7 +180,7 @@ func (a *AuthorizationModelGenerationSubroutine) Finalize(ctx context.Context, o
 		}
 
 		authModelName := toK8sName(resourceSchema.Spec.Group, resourceSchema.Spec.Names.Plural, toDeleteAccountInfo.Spec.Organization.Name)
-		err = apiExportClient.Delete(ctx, &securityv1alpha1.AuthorizationModel{
+		err = apiExportClient.Delete(ctx, &corev1alpha1.AuthorizationModel{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: authModelName,
 			},
@@ -231,7 +230,7 @@ func (a *AuthorizationModelGenerationSubroutine) Process(ctx context.Context, ob
 		return subroutines.OK(), fmt.Errorf("getting cluster from context: %w", err)
 	}
 
-	var accountInfo accountv1alpha1.AccountInfo
+	var accountInfo corev1alpha1.AccountInfo
 	err = cluster.GetClient().Get(ctx, types.NamespacedName{Name: "account"}, &accountInfo)
 	if err != nil {
 		return subroutines.OK(), fmt.Errorf("getting AccountInfo: %w", err)
@@ -274,16 +273,16 @@ func (a *AuthorizationModelGenerationSubroutine) Process(ctx context.Context, ob
 			return subroutines.OK(), fmt.Errorf("executing model template: %w", err)
 		}
 
-		model := securityv1alpha1.AuthorizationModel{
+		model := corev1alpha1.AuthorizationModel{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: toK8sName(resourceSchema.Spec.Group, resourceSchema.Spec.Names.Plural, accountInfo.Spec.Organization.Name),
 			},
 		}
 
 		_, err = controllerutil.CreateOrUpdate(ctx, apiExportCluster.GetClient(), &model, func() error {
-			model.Spec = securityv1alpha1.AuthorizationModelSpec{
+			model.Spec = corev1alpha1.AuthorizationModelSpec{
 				Model: buffer.String(),
-				StoreRef: securityv1alpha1.WorkspaceStoreRef{
+				StoreRef: corev1alpha1.WorkspaceStoreRef{
 					Name:    accountInfo.Spec.Organization.Name,
 					Cluster: accountInfo.Spec.Organization.OriginClusterId,
 				},

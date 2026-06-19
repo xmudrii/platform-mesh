@@ -11,11 +11,11 @@ import (
 	openfgav1 "github.com/openfga/api/proto/openfga/v1"
 	language "github.com/openfga/language/pkg/go/transformer"
 	"github.com/platform-mesh/golang-commons/logger"
-	securityv1alpha1 "github.com/platform-mesh/security-operator/api/v1alpha1"
-	iclient "github.com/platform-mesh/security-operator/internal/client"
-	"github.com/platform-mesh/security-operator/internal/util"
 	"github.com/platform-mesh/subroutines"
 	"google.golang.org/protobuf/encoding/protojson"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	iclient "platform-mesh.io/security-operator/internal/client"
+	"platform-mesh.io/security-operator/internal/util"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mccontext "sigs.k8s.io/multicluster-runtime/pkg/context"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
@@ -95,18 +95,18 @@ var _ subroutines.Processor = &authorizationModelSubroutine{}
 
 func (a *authorizationModelSubroutine) GetName() string { return "AuthorizationModel" }
 
-func getRelatedAuthorizationModels(ctx context.Context, lister iclient.Lister, store *securityv1alpha1.Store) (securityv1alpha1.AuthorizationModelList, error) {
+func getRelatedAuthorizationModels(ctx context.Context, lister iclient.Lister, store *corev1alpha1.Store) (corev1alpha1.AuthorizationModelList, error) {
 	storeClusterKey, ok := mccontext.ClusterFrom(ctx)
 	if !ok {
-		return securityv1alpha1.AuthorizationModelList{}, fmt.Errorf("unable to get cluster key from context")
+		return corev1alpha1.AuthorizationModelList{}, fmt.Errorf("unable to get cluster key from context")
 	}
 
-	allAuthorizationModels := securityv1alpha1.AuthorizationModelList{}
+	allAuthorizationModels := corev1alpha1.AuthorizationModelList{}
 	if err := lister.List(ctx, &allAuthorizationModels); err != nil {
-		return securityv1alpha1.AuthorizationModelList{}, err
+		return corev1alpha1.AuthorizationModelList{}, err
 	}
 
-	var extendingModules securityv1alpha1.AuthorizationModelList
+	var extendingModules corev1alpha1.AuthorizationModelList
 	for _, model := range allAuthorizationModels.Items {
 		if model.Spec.StoreRef.Name != store.Name || model.Spec.StoreRef.Cluster != string(storeClusterKey) {
 			continue
@@ -119,7 +119,7 @@ func getRelatedAuthorizationModels(ctx context.Context, lister iclient.Lister, s
 
 func (a *authorizationModelSubroutine) Process(ctx context.Context, obj client.Object) (subroutines.Result, error) {
 	log := logger.LoadLoggerFromContext(ctx)
-	store := obj.(*securityv1alpha1.Store)
+	store := obj.(*corev1alpha1.Store)
 
 	extendingModules, err := getRelatedAuthorizationModels(ctx, a.lister, store)
 	if err != nil {

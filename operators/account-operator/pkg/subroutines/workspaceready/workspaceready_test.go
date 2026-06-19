@@ -7,14 +7,14 @@ import (
 
 	kcpcorev1alpha "github.com/kcp-dev/sdk/apis/core/v1alpha1"
 	kcptenancyv1alpha "github.com/kcp-dev/sdk/apis/tenancy/v1alpha1"
-	corev1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/mocks"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/workspaceready"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"platform-mesh.io/account-operator/pkg/subroutines/mocks"
+	"platform-mesh.io/account-operator/pkg/subroutines/workspaceready"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mccontext "sigs.k8s.io/multicluster-runtime/pkg/context"
 )

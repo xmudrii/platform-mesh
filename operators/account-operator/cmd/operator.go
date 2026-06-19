@@ -37,8 +37,8 @@ import (
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
-	"github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/account-operator/internal/controller"
+	"platform-mesh.io/account-operator/internal/controller"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 
 var operatorCmd = &cobra.Command{
@@ -149,13 +149,13 @@ func RunController(_ *cobra.Command, _ []string) { // coverage-ignore
 			}
 		}
 
-		accountTypeAllowList := []v1alpha1.AccountType{v1alpha1.AccountTypeOrg}
+		accountTypeAllowList := []corev1alpha1.AccountType{corev1alpha1.AccountTypeOrg}
 		for _, additionalType := range operatorCfg.Webhooks.AdditionalAccountTypes {
-			accountTypeAllowList = append(accountTypeAllowList, v1alpha1.AccountType(additionalType))
+			accountTypeAllowList = append(accountTypeAllowList, corev1alpha1.AccountType(additionalType))
 		}
 
 		log.Info().Strs("deniedNames", denyList).Msg("webhooks are enabled")
-		if err := v1alpha1.SetupAccountWebhookWithManager(mgr.GetLocalManager(), denyList, accountTypeAllowList); err != nil {
+		if err := corev1alpha1.SetupAccountWebhookWithManager(mgr.GetLocalManager(), denyList, accountTypeAllowList); err != nil {
 			log.Fatal().Err(err).Str("webhook", "Account").Msg("unable to create webhook")
 		}
 	}

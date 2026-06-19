@@ -7,13 +7,12 @@ import (
 	"strings"
 
 	openfgav1 "github.com/openfga/api/proto/openfga/v1"
-	accountsv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
 	"github.com/platform-mesh/golang-commons/logger"
-	corev1alpha1 "github.com/platform-mesh/security-operator/api/v1alpha1"
-	iclient "github.com/platform-mesh/security-operator/internal/client"
-	"github.com/platform-mesh/security-operator/internal/config"
-	"github.com/platform-mesh/security-operator/internal/fga"
 	"github.com/platform-mesh/subroutines"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	iclient "platform-mesh.io/security-operator/internal/client"
+	"platform-mesh.io/security-operator/internal/config"
+	"platform-mesh.io/security-operator/internal/fga"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kcpcorev1alpha1 "github.com/kcp-dev/sdk/apis/core/v1alpha1"
@@ -76,13 +75,13 @@ func (a *APIExportPolicySubroutine) Process(ctx context.Context, obj client.Obje
 		// for orgs workspace we need to write 1 tuple in every store
 		// for this we need to get cluster id for every org's workspace
 		if workspacePath == orgsWorkspacePath {
-			var accountInfoList accountsv1alpha1.AccountInfoList
+			var accountInfoList corev1alpha1.AccountInfoList
 			if err := a.lister.List(ctx, &accountInfoList); err != nil {
 				return subroutines.OK(), fmt.Errorf("listing AccountInfo resources: %w", err)
 			}
 
 			for _, ai := range accountInfoList.Items {
-				if ai.Spec.Account.Type != accountsv1alpha1.AccountTypeOrg {
+				if ai.Spec.Account.Type != corev1alpha1.AccountTypeOrg {
 					continue
 				}
 
@@ -113,7 +112,7 @@ func (a *APIExportPolicySubroutine) Process(ctx context.Context, obj client.Obje
 			return subroutines.OK(), fmt.Errorf("getting client for workspace %s: %w", workspacePath, err)
 		}
 
-		var ai accountsv1alpha1.AccountInfo
+		var ai corev1alpha1.AccountInfo
 		if err := cl.Get(ctx, client.ObjectKey{Name: "account"}, &ai); err != nil {
 			return subroutines.OK(), fmt.Errorf("getting AccountInfo for workspace %s: %w", workspacePath, err)
 		}
@@ -242,7 +241,7 @@ func (a *APIExportPolicySubroutine) deleteTuplesForExpression(ctx context.Contex
 	}
 
 	if workspacePath == orgsWorkspacePath {
-		var accountInfoList accountsv1alpha1.AccountInfoList
+		var accountInfoList corev1alpha1.AccountInfoList
 		if err := a.lister.List(ctx, &accountInfoList); err != nil {
 			return fmt.Errorf("listing AccountInfo resources for %s: %w", expression, err)
 		}
@@ -272,7 +271,7 @@ func (a *APIExportPolicySubroutine) deleteTuplesForExpression(ctx context.Contex
 		return fmt.Errorf("getting client for workspace %s: %w", workspacePath, err)
 	}
 
-	var ai accountsv1alpha1.AccountInfo
+	var ai corev1alpha1.AccountInfo
 	if err := cl.Get(ctx, client.ObjectKey{Name: "account"}, &ai); err != nil {
 		return fmt.Errorf("getting AccountInfo for workspace %s: %w", workspacePath, err)
 	}

@@ -5,13 +5,13 @@ import (
 	"testing"
 
 	openfgav1 "github.com/openfga/api/proto/openfga/v1"
-	accountsv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/security-operator/internal/fga"
-	"github.com/platform-mesh/security-operator/internal/subroutine"
-	"github.com/platform-mesh/security-operator/internal/subroutine/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	"platform-mesh.io/security-operator/internal/fga"
+	"platform-mesh.io/security-operator/internal/subroutine"
+	"platform-mesh.io/security-operator/internal/subroutine/mocks"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,7 +64,7 @@ func TestAccountTuplesSubroutine_Process(t *testing.T) {
 	creator := "user@example.com"
 	parentClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "myaccount"}, mock.Anything).
 		RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-			if acc, ok := o.(*accountsv1alpha1.Account); ok {
+			if acc, ok := o.(*corev1alpha1.Account); ok {
 				acc.Spec.Creator = &creator
 			}
 			return nil
@@ -200,7 +200,7 @@ func TestAccountTuplesSubroutine_Initialize(t *testing.T) {
 				creator := "user@example.com"
 				parentClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "myaccount"}, mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						if acc, ok := o.(*accountsv1alpha1.Account); ok {
+						if acc, ok := o.(*corev1alpha1.Account); ok {
 							acc.Spec.Creator = &creator
 						}
 						return nil
@@ -219,7 +219,7 @@ func TestAccountTuplesSubroutine_Initialize(t *testing.T) {
 				creator := "user@example.com"
 				parentClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "myaccount"}, mock.Anything).
 					RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-						if acc, ok := o.(*accountsv1alpha1.Account); ok {
+						if acc, ok := o.(*corev1alpha1.Account); ok {
 							acc.Spec.Creator = &creator
 						}
 						return nil

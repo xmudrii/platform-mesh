@@ -16,10 +16,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/account-operator/internal/config"
-	"github.com/platform-mesh/account-operator/internal/controller"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/finalizeaccountinfo"
+	"platform-mesh.io/account-operator/internal/config"
+	"platform-mesh.io/account-operator/internal/controller"
+	"platform-mesh.io/account-operator/pkg/subroutines/finalizeaccountinfo"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 
 type stubManager struct {
@@ -50,9 +50,9 @@ func TestAccountInfoReconciler_ReconcileAddsFinalizerWhenControllerEnabled(
 	t.Parallel()
 
 	scheme := runtime.NewScheme()
-	require.NoError(t, v1alpha1.AddToScheme(scheme))
+	require.NoError(t, corev1alpha1.AddToScheme(scheme))
 
-	accountInfo := &v1alpha1.AccountInfo{}
+	accountInfo := &corev1alpha1.AccountInfo{}
 	accountInfo.Name = "account-info"
 
 	cl := fake.NewClientBuilder().
@@ -78,7 +78,7 @@ func TestAccountInfoReconciler_ReconcileAddsFinalizerWhenControllerEnabled(
 	})
 	require.NoError(t, err)
 
-	updated := &v1alpha1.AccountInfo{}
+	updated := &corev1alpha1.AccountInfo{}
 	require.NoError(t, cl.Get(context.Background(), types.NamespacedName{Name: accountInfo.Name}, updated))
 	require.Contains(t, updated.Finalizers, finalizeaccountinfo.AccountInfoFinalizer)
 }
@@ -88,9 +88,9 @@ func TestAccountInfoReconciler_ReconcileSkipsFinalizerWhenControllerDisabled(
 	t.Parallel()
 
 	scheme := runtime.NewScheme()
-	require.NoError(t, v1alpha1.AddToScheme(scheme))
+	require.NoError(t, corev1alpha1.AddToScheme(scheme))
 
-	accountInfo := &v1alpha1.AccountInfo{}
+	accountInfo := &corev1alpha1.AccountInfo{}
 	accountInfo.Name = "account-info"
 
 	cl := fake.NewClientBuilder().
@@ -116,7 +116,7 @@ func TestAccountInfoReconciler_ReconcileSkipsFinalizerWhenControllerDisabled(
 	})
 	require.NoError(t, err)
 
-	updated := &v1alpha1.AccountInfo{}
+	updated := &corev1alpha1.AccountInfo{}
 	require.NoError(t, cl.Get(context.Background(), types.NamespacedName{Name: accountInfo.Name}, updated))
 	require.Empty(t, updated.Finalizers)
 }

@@ -6,13 +6,12 @@ import (
 	"strings"
 
 	openfgav1 "github.com/openfga/api/proto/openfga/v1"
-	accountsv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
 	"github.com/platform-mesh/golang-commons/logger"
-	"github.com/platform-mesh/security-operator/api/v1alpha1"
-	iclient "github.com/platform-mesh/security-operator/internal/client"
-	"github.com/platform-mesh/security-operator/internal/fga"
-	platformmeshpath "github.com/platform-mesh/security-operator/internal/platformmesh"
 	"github.com/platform-mesh/subroutines"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	iclient "platform-mesh.io/security-operator/internal/client"
+	"platform-mesh.io/security-operator/internal/fga"
+	platformmeshpath "platform-mesh.io/security-operator/internal/platformmesh"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
@@ -69,7 +68,7 @@ func (s *AccountTuplesSubroutine) reconcile(ctx context.Context, obj client.Obje
 	if err != nil {
 		return subroutines.OK(), fmt.Errorf("getting client for parent account cluster: %w", err)
 	}
-	var acc accountsv1alpha1.Account
+	var acc corev1alpha1.Account
 	if err := parentAccountClient.Get(ctx, client.ObjectKey{
 		Name: accountPath.Base(),
 	}, &acc); err != nil {
@@ -128,7 +127,7 @@ func (s *AccountTuplesSubroutine) Terminate(ctx context.Context, obj client.Obje
 	if err != nil {
 		return subroutines.OK(), fmt.Errorf("listing tuples referencing Account: %w", err)
 	}
-	accountTuples := make([]v1alpha1.Tuple, 0, len(accountReferenceTuples)*2)
+	accountTuples := make([]corev1alpha1.Tuple, 0, len(accountReferenceTuples)*2)
 	accountTuples = append(accountTuples, accountReferenceTuples...)
 
 	// From tuples referencing the account, parse potential roles specific to the account.

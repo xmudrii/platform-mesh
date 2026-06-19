@@ -33,11 +33,11 @@ import (
 
 	"github.com/kcp-dev/logicalcluster/v3"
 	mcenvtest "github.com/kcp-dev/multicluster-provider/envtest"
-	"github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/account-operator/internal/config"
-	"github.com/platform-mesh/account-operator/internal/controller"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/manageaccountinfo"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/workspace"
+	"platform-mesh.io/account-operator/internal/config"
+	"platform-mesh.io/account-operator/internal/controller"
+	"platform-mesh.io/account-operator/pkg/subroutines/manageaccountinfo"
+	"platform-mesh.io/account-operator/pkg/subroutines/workspace"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 
 const (
@@ -83,7 +83,7 @@ func (s *AccountTestSuite) SetupSuite() {
 	s.ctx, s.cancel, _ = platformmeshcontext.StartContext(logger, nil, 0)
 
 	s.scheme = runtime.NewScheme()
-	utilruntime.Must(v1alpha1.AddToScheme(s.scheme))
+	utilruntime.Must(corev1alpha1.AddToScheme(s.scheme))
 	utilruntime.Must(v1.AddToScheme(s.scheme))
 	utilruntime.Must(kcpapisv1alpha1.AddToScheme(s.scheme))
 	utilruntime.Must(kcpapisv1alpha2.AddToScheme(s.scheme))
@@ -119,18 +119,18 @@ func (s *AccountTestSuite) TestAddingFinalizer() {
 	testContext := context.Background()
 	accountName := "test-account-finalizer"
 
-	account := &v1alpha1.Account{
+	account := &corev1alpha1.Account{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: accountName,
 		},
-		Spec: v1alpha1.AccountSpec{
-			Type: v1alpha1.AccountTypeOrg,
+		Spec: corev1alpha1.AccountSpec{
+			Type: corev1alpha1.AccountTypeOrg,
 		},
 	}
 
 	s.Require().NoError(s.rootOrgsDefaultClient.Create(testContext, account))
 
-	createdAccount := v1alpha1.Account{}
+	createdAccount := corev1alpha1.Account{}
 	s.Assert().Eventually(func() bool {
 		err := s.rootOrgsDefaultClient.Get(testContext, types.NamespacedName{Name: accountName, Namespace: defaultNamespace}, &createdAccount)
 
@@ -143,7 +143,7 @@ func (s *AccountTestSuite) TestAddingFinalizer() {
 func (s *AccountTestSuite) TestWorkspaceCreation() {
 	testContext := context.Background()
 	accountName := "test-account-ws-creation"
-	account := &v1alpha1.Account{ObjectMeta: metav1.ObjectMeta{Name: accountName}, Spec: v1alpha1.AccountSpec{Type: v1alpha1.AccountTypeAccount}}
+	account := &corev1alpha1.Account{ObjectMeta: metav1.ObjectMeta{Name: accountName}, Spec: corev1alpha1.AccountSpec{Type: corev1alpha1.AccountTypeAccount}}
 
 	s.Require().NoError(s.rootOrgsDefaultClient.Create(testContext, account))
 
@@ -155,7 +155,7 @@ func (s *AccountTestSuite) TestWorkspaceCreation() {
 		return createdWorkspace.Status.Phase == kcpcorev1alpha.LogicalClusterPhaseReady
 	}, defaultTestTimeout, defaultTickInterval)
 
-	updatedAccount := &v1alpha1.Account{}
+	updatedAccount := &corev1alpha1.Account{}
 	s.Assert().Eventually(func() bool {
 		if err := s.rootOrgsDefaultClient.Get(testContext, types.NamespacedName{Name: accountName}, updatedAccount); err != nil {
 			return false
@@ -170,11 +170,11 @@ func (s *AccountTestSuite) TestWorkspaceCreation() {
 func (s *AccountTestSuite) TestAccountInfoCreationForOrganization() {
 	testContext := context.Background()
 	accountName := "test-org-account"
-	account := &v1alpha1.Account{ObjectMeta: metav1.ObjectMeta{Name: accountName}, Spec: v1alpha1.AccountSpec{Type: v1alpha1.AccountTypeOrg}}
+	account := &corev1alpha1.Account{ObjectMeta: metav1.ObjectMeta{Name: accountName}, Spec: corev1alpha1.AccountSpec{Type: corev1alpha1.AccountTypeOrg}}
 
 	s.Require().NoError(s.rootOrgsClient.Create(testContext, account))
 
-	createdAccount := &v1alpha1.Account{}
+	createdAccount := &corev1alpha1.Account{}
 	s.Assert().Eventually(func() bool {
 		if err := s.rootOrgsClient.Get(testContext, types.NamespacedName{Name: accountName}, createdAccount); err != nil {
 			return false
@@ -182,18 +182,18 @@ func (s *AccountTestSuite) TestAccountInfoCreationForOrganization() {
 		return meta.IsStatusConditionTrue(createdAccount.Status.Conditions, manageaccountinfo.ManageAccountInfoSubroutineName)
 	}, defaultTestTimeout, defaultTickInterval)
 
-	accountInfo := &v1alpha1.AccountInfo{}
+	accountInfo := &corev1alpha1.AccountInfo{}
 	s.Assert().Eventually(func() bool {
 		if err := s.rootOrgsDefaultClient.Get(testContext, client.ObjectKey{Name: manageaccountinfo.DefaultAccountInfoName}, accountInfo); err != nil {
 			return false
 		}
-		return accountInfo.Spec.Account.Type == v1alpha1.AccountTypeOrg
+		return accountInfo.Spec.Account.Type == corev1alpha1.AccountTypeOrg
 	}, defaultTestTimeout, defaultTickInterval)
 }
 
 func (s *AccountTestSuite) TestWorkspaceFinalizerRemovesWorkspace() {
 	accountName := "test-workspace-finalizer"
-	account := &v1alpha1.Account{ObjectMeta: metav1.ObjectMeta{Name: accountName}, Spec: v1alpha1.AccountSpec{Type: v1alpha1.AccountTypeAccount}}
+	account := &corev1alpha1.Account{ObjectMeta: metav1.ObjectMeta{Name: accountName}, Spec: corev1alpha1.AccountSpec{Type: corev1alpha1.AccountTypeAccount}}
 
 	s.Require().NoError(s.rootOrgsDefaultClient.Create(s.ctx, account))
 
@@ -211,7 +211,7 @@ func (s *AccountTestSuite) TestWorkspaceFinalizerRemovesWorkspace() {
 	}, defaultTestTimeout, defaultTickInterval)
 
 	s.Assert().Eventually(func() bool {
-		createdAccount := v1alpha1.Account{}
+		createdAccount := corev1alpha1.Account{}
 		if err := s.rootOrgsDefaultClient.Get(s.ctx, types.NamespacedName{Name: accountName}, &createdAccount); err != nil {
 			s.logger.Err(err).Msg("Waiting for Account to be ready")
 			return false
@@ -240,7 +240,7 @@ func (s *AccountTestSuite) verifyWorkspace(ctx context.Context, orgName, account
 	s.Require().NoError(s.rootOrgsDefaultClient.Get(ctx, types.NamespacedName{Name: accountName}, workspace))
 	s.Equal(accountName, workspace.Name)
 	s.NotNil(workspace.Spec.Type)
-	expectedType := kcptenancyv1alpha.WorkspaceTypeName(fmt.Sprintf("%s-%s", orgName, v1alpha1.AccountTypeAccount))
+	expectedType := kcptenancyv1alpha.WorkspaceTypeName(fmt.Sprintf("%s-%s", orgName, corev1alpha1.AccountTypeAccount))
 	s.Equal(expectedType, workspace.Spec.Type.Name)
 }
 

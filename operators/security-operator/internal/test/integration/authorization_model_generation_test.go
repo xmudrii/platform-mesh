@@ -5,8 +5,7 @@ import (
 	"strings"
 	"time"
 
-	accountv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
-	securityv1alpha1 "github.com/platform-mesh/security-operator/api/v1alpha1"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -51,7 +50,7 @@ func (suite *IntegrationSuite) TestAuthorizationModelGeneration_Process() {
 	_ = suite.createTestAPIBinding(ctx, testAccountClient, apiExportName, suite.platformMeshSysPath.String(), apiExportName)
 
 	expectedModelName := "process-test-example-com-testresources-generator-test-process"
-	var model securityv1alpha1.AuthorizationModel
+	var model corev1alpha1.AuthorizationModel
 	suite.Assert().Eventually(func() bool {
 		err := suite.platformMeshSystemClient.Get(ctx, client.ObjectKey{Name: expectedModelName}, &model)
 		return err == nil
@@ -84,8 +83,8 @@ func (suite *IntegrationSuite) TestAuthorizationModelGeneration_Finalize() {
 	_, testOrgPath := envtest.NewWorkspaceFixture(suite.T(), cli, orgsPath, envtest.WithName(testOrgName), envtest.WithType(core.RootCluster.Path(), "org"))
 	testClient := cli.Cluster(testOrgPath)
 
-	suite.createAccount(ctx, testClient, testAccount1Name, accountv1alpha1.AccountTypeAccount, suite.T())
-	suite.createAccount(ctx, testClient, testAccount2Name, accountv1alpha1.AccountTypeAccount, suite.T())
+	suite.createAccount(ctx, testClient, testAccount1Name, corev1alpha1.AccountTypeAccount, suite.T())
+	suite.createAccount(ctx, testClient, testAccount2Name, corev1alpha1.AccountTypeAccount, suite.T())
 
 	_, testAccount1Path := envtest.NewWorkspaceFixture(suite.T(), cli, testOrgPath, envtest.WithName(testAccount1Name), envtest.WithType(core.RootCluster.Path(), "account"))
 	_, testAccount2Path := envtest.NewWorkspaceFixture(suite.T(), cli, testOrgPath, envtest.WithName(testAccount2Name), envtest.WithType(core.RootCluster.Path(), "account"))
@@ -113,7 +112,7 @@ func (suite *IntegrationSuite) TestAuthorizationModelGeneration_Finalize() {
 	}, 10*time.Second, 200*time.Millisecond, "APIBindings should be bound before checking finalizers")
 
 	expectedModelName := "generator-test-example-com-testresources-generator-test-finalize"
-	var model securityv1alpha1.AuthorizationModel
+	var model corev1alpha1.AuthorizationModel
 	suite.Assert().Eventually(func() bool {
 		err := suite.platformMeshSystemClient.Get(ctx, client.ObjectKey{Name: expectedModelName}, &model)
 		return err == nil
@@ -147,7 +146,7 @@ func (suite *IntegrationSuite) TestAuthorizationModelGeneration_Finalize() {
 	}, 10*time.Second, 200*time.Millisecond, "APIBinding1 should be deleted")
 
 	suite.Assert().Eventually(func() bool {
-		var authModel securityv1alpha1.AuthorizationModel
+		var authModel corev1alpha1.AuthorizationModel
 		err := suite.platformMeshSystemClient.Get(ctx, client.ObjectKey{Name: expectedModelName}, &authModel)
 		return err == nil && authModel.DeletionTimestamp.IsZero()
 	}, 10*time.Second, 200*time.Millisecond, "authorizationModel should still exist after deleting first binding")
@@ -162,7 +161,7 @@ func (suite *IntegrationSuite) TestAuthorizationModelGeneration_Finalize() {
 	}, 10*time.Second, 200*time.Millisecond, "APIBinding2 should be deleted")
 
 	suite.Assert().Eventually(func() bool {
-		var authModel securityv1alpha1.AuthorizationModel
+		var authModel corev1alpha1.AuthorizationModel
 		err := suite.platformMeshSystemClient.Get(ctx, client.ObjectKey{Name: expectedModelName}, &authModel)
 		return kerrors.IsNotFound(err)
 	}, 10*time.Second, 200*time.Millisecond, "authorizationModel should be deleted after deleting both bindings")

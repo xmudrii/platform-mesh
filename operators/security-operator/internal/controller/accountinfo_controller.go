@@ -4,13 +4,13 @@ import (
 	"context"
 	"time"
 
-	accountv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
 	platformeshconfig "github.com/platform-mesh/golang-commons/config"
 	"github.com/platform-mesh/golang-commons/controller/filter"
 	"github.com/platform-mesh/golang-commons/logger"
-	"github.com/platform-mesh/security-operator/internal/metrics"
-	"github.com/platform-mesh/security-operator/internal/subroutine"
 	"github.com/platform-mesh/subroutines/lifecycle"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	"platform-mesh.io/security-operator/internal/metrics"
+	"platform-mesh.io/security-operator/internal/subroutine"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -27,7 +27,7 @@ type AccountInfoReconciler struct {
 
 func NewAccountInfoReconciler(log *logger.Logger, mcMgr mcmanager.Manager) *AccountInfoReconciler {
 	lc := lifecycle.New(mcMgr, "AccountInfoReconciler", func() client.Object {
-		return &accountv1alpha1.AccountInfo{}
+		return &corev1alpha1.AccountInfo{}
 	}, subroutine.NewAccountInfoFinalizerSubroutine(mcMgr))
 
 	return &AccountInfoReconciler{
@@ -55,7 +55,7 @@ func (r *AccountInfoReconciler) SetupWithManager(mgr mcmanager.Manager, cfg *pla
 	predicates := append([]predicate.Predicate{filter.DebugResourcesBehaviourPredicate(cfg.DebugLabelValue)}, evp...)
 	return mcbuilder.ControllerManagedBy(mgr).
 		Named("accountinfo").
-		For(&accountv1alpha1.AccountInfo{}).
+		For(&corev1alpha1.AccountInfo{}).
 		WithOptions(opts).
 		WithEventFilter(predicate.And(predicates...)).
 		Complete(r)

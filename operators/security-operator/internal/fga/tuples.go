@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	openfgav1 "github.com/openfga/api/proto/openfga/v1"
-	"github.com/platform-mesh/security-operator/api/v1alpha1"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 
 type BaseTuplesInput struct {
@@ -30,12 +30,12 @@ type InitialTuplesForAccountInput struct {
 
 // InitialTuplesForAccount returns FGA tuples for an account not of type
 // organization.
-func InitialTuplesForAccount(in InitialTuplesForAccountInput) ([]v1alpha1.Tuple, error) {
+func InitialTuplesForAccount(in InitialTuplesForAccountInput) ([]corev1alpha1.Tuple, error) {
 	base, err := baseTuples(in.BaseTuplesInput)
 	if err != nil {
 		return nil, err
 	}
-	tuples := append(base, v1alpha1.Tuple{
+	tuples := append(base, corev1alpha1.Tuple{
 		User:     renderAccountEntity(in.ObjectType, in.ParentOriginClusterID, in.ParentName),
 		Relation: in.ParentRelation,
 		Object:   renderAccountEntity(in.ObjectType, in.AccountOriginClusterID, in.AccountName),
@@ -44,14 +44,14 @@ func InitialTuplesForAccount(in InitialTuplesForAccountInput) ([]v1alpha1.Tuple,
 }
 
 // TuplesForOrganization returns FGA tuples for an Account of type organization.
-func TuplesForOrganization(in TuplesForOrganizationInput) ([]v1alpha1.Tuple, error) {
+func TuplesForOrganization(in TuplesForOrganizationInput) ([]corev1alpha1.Tuple, error) {
 	return baseTuples(in.BaseTuplesInput)
 }
 
 // IsTupleOfAccountFilter returns a filter determining whether a tuple is tied
 // to the given account, i.e. contains its cluster id.
 func IsTupleOfAccountFilter(generatedClusterID string) TupleFilter {
-	return func(t v1alpha1.Tuple) bool {
+	return func(t corev1alpha1.Tuple) bool {
 		return generatedClusterID != "" && (strings.Contains(t.Object, generatedClusterID) || strings.Contains(t.User, generatedClusterID))
 	}
 }
@@ -72,12 +72,12 @@ func ReferencingOwnerRoleTupleKey(objectType, accountOriginClusterID, accountNam
 	}
 }
 
-func baseTuples(in BaseTuplesInput) ([]v1alpha1.Tuple, error) {
+func baseTuples(in BaseTuplesInput) ([]corev1alpha1.Tuple, error) {
 	if in.Creator == "" {
 		return nil, errors.New("account creator is empty")
 	}
 
-	return []v1alpha1.Tuple{
+	return []corev1alpha1.Tuple{
 		{
 			User:     renderCreatorUser(in.Creator),
 			Relation: "assignee",

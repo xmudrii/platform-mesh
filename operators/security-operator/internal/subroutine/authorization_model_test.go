@@ -8,13 +8,13 @@ import (
 	language "github.com/openfga/language/pkg/go/transformer"
 	"github.com/platform-mesh/golang-commons/errors"
 	"github.com/platform-mesh/golang-commons/logger/testlogger"
-	securityv1alpha1 "github.com/platform-mesh/security-operator/api/v1alpha1"
-	"github.com/platform-mesh/security-operator/internal/subroutine"
-	"github.com/platform-mesh/security-operator/internal/subroutine/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/encoding/protojson"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	"platform-mesh.io/security-operator/internal/subroutine"
+	"platform-mesh.io/security-operator/internal/subroutine/mocks"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mccontext "sigs.k8s.io/multicluster-runtime/pkg/context"
 	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
@@ -90,7 +90,7 @@ func TestAuthorizationModelGetName(t *testing.T) {
 func TestAuthorizationModelProcess(t *testing.T) {
 	tests := []struct {
 		name           string
-		store          *securityv1alpha1.Store
+		store          *corev1alpha1.Store
 		fgaMocks       func(*mocks.MockOpenFGAServiceClient)
 		kcpHelperMocks func(*mocks.MockLister)
 		mgrMocks       func(*mocks.MockManager)
@@ -99,26 +99,26 @@ func TestAuthorizationModelProcess(t *testing.T) {
 	}{
 		{
 			name: "should reconcile and apply the merged model",
-			store: &securityv1alpha1.Store{
+			store: &corev1alpha1.Store{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "store",
 				},
-				Spec: securityv1alpha1.StoreSpec{
+				Spec: corev1alpha1.StoreSpec{
 					CoreModule: coreModule,
 				},
-				Status: securityv1alpha1.StoreStatus{
+				Status: corev1alpha1.StoreStatus{
 					StoreID: "id",
 				},
 			},
 			kcpHelperMocks: func(kcpHelper *mocks.MockLister) {
 				kcpHelper.EXPECT().List(mock.Anything, mock.Anything).RunAndReturn(
 					func(ctx context.Context, ol client.ObjectList, lo ...client.ListOption) error {
-						am := ol.(*securityv1alpha1.AuthorizationModelList)
-						am.Items = []securityv1alpha1.AuthorizationModel{
+						am := ol.(*corev1alpha1.AuthorizationModelList)
+						am.Items = []corev1alpha1.AuthorizationModel{
 							{
-								Spec: securityv1alpha1.AuthorizationModelSpec{
+								Spec: corev1alpha1.AuthorizationModelSpec{
 									Model: extensionModel,
-									StoreRef: securityv1alpha1.WorkspaceStoreRef{
+									StoreRef: corev1alpha1.WorkspaceStoreRef{
 										Name:    "store",
 										Cluster: "path",
 									},
@@ -155,14 +155,14 @@ func TestAuthorizationModelProcess(t *testing.T) {
 		},
 		{
 			name: "should reconcile and not patch the model in case they are equal",
-			store: &securityv1alpha1.Store{
+			store: &corev1alpha1.Store{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "store",
 				},
-				Spec: securityv1alpha1.StoreSpec{
+				Spec: corev1alpha1.StoreSpec{
 					CoreModule: coreModule,
 				},
-				Status: securityv1alpha1.StoreStatus{
+				Status: corev1alpha1.StoreStatus{
 					StoreID:              "id",
 					AuthorizationModelID: "id",
 				},
@@ -170,12 +170,12 @@ func TestAuthorizationModelProcess(t *testing.T) {
 			kcpHelperMocks: func(kcpHelper *mocks.MockLister) {
 				kcpHelper.EXPECT().List(mock.Anything, mock.Anything).RunAndReturn(
 					func(ctx context.Context, ol client.ObjectList, lo ...client.ListOption) error {
-						am := ol.(*securityv1alpha1.AuthorizationModelList)
-						am.Items = []securityv1alpha1.AuthorizationModel{
+						am := ol.(*corev1alpha1.AuthorizationModelList)
+						am.Items = []corev1alpha1.AuthorizationModel{
 							{
-								Spec: securityv1alpha1.AuthorizationModelSpec{
+								Spec: corev1alpha1.AuthorizationModelSpec{
 									Model: extensionModel,
-									StoreRef: securityv1alpha1.WorkspaceStoreRef{
+									StoreRef: corev1alpha1.WorkspaceStoreRef{
 										Name:    "store",
 										Cluster: "path",
 									},
@@ -236,14 +236,14 @@ type core_namespace
 		},
 		{
 			name: "should stop reconciliation if the authorization model is not found",
-			store: &securityv1alpha1.Store{
+			store: &corev1alpha1.Store{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "store",
 				},
-				Spec: securityv1alpha1.StoreSpec{
+				Spec: corev1alpha1.StoreSpec{
 					CoreModule: coreModule,
 				},
-				Status: securityv1alpha1.StoreStatus{
+				Status: corev1alpha1.StoreStatus{
 					StoreID:              "id",
 					AuthorizationModelID: "id",
 				},
@@ -251,12 +251,12 @@ type core_namespace
 			kcpHelperMocks: func(kcpHelper *mocks.MockLister) {
 				kcpHelper.EXPECT().List(mock.Anything, mock.Anything).RunAndReturn(
 					func(ctx context.Context, ol client.ObjectList, lo ...client.ListOption) error {
-						am := ol.(*securityv1alpha1.AuthorizationModelList)
-						am.Items = []securityv1alpha1.AuthorizationModel{
+						am := ol.(*corev1alpha1.AuthorizationModelList)
+						am.Items = []corev1alpha1.AuthorizationModel{
 							{
-								Spec: securityv1alpha1.AuthorizationModelSpec{
+								Spec: corev1alpha1.AuthorizationModelSpec{
 									Model: extensionModel,
-									StoreRef: securityv1alpha1.WorkspaceStoreRef{
+									StoreRef: corev1alpha1.WorkspaceStoreRef{
 										Name:    "store",
 										Cluster: "path",
 									},
@@ -274,23 +274,23 @@ type core_namespace
 		},
 		{
 			name: "should stop reconciliation for invalid model",
-			store: &securityv1alpha1.Store{
+			store: &corev1alpha1.Store{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "store",
 				},
-				Status: securityv1alpha1.StoreStatus{
+				Status: corev1alpha1.StoreStatus{
 					StoreID: "id",
 				},
 			},
 			kcpHelperMocks: func(kcpHelper *mocks.MockLister) {
 				kcpHelper.EXPECT().List(mock.Anything, mock.Anything).RunAndReturn(
 					func(ctx context.Context, ol client.ObjectList, lo ...client.ListOption) error {
-						am := ol.(*securityv1alpha1.AuthorizationModelList)
-						am.Items = []securityv1alpha1.AuthorizationModel{
+						am := ol.(*corev1alpha1.AuthorizationModelList)
+						am.Items = []corev1alpha1.AuthorizationModel{
 							{
-								Spec: securityv1alpha1.AuthorizationModelSpec{
+								Spec: corev1alpha1.AuthorizationModelSpec{
 									Model: extensionModel,
-									StoreRef: securityv1alpha1.WorkspaceStoreRef{
+									StoreRef: corev1alpha1.WorkspaceStoreRef{
 										Name:    "store",
 										Cluster: "path",
 									},
@@ -305,26 +305,26 @@ type core_namespace
 		},
 		{
 			name: "should stop reconciliation for failing write",
-			store: &securityv1alpha1.Store{
+			store: &corev1alpha1.Store{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "store",
 				},
-				Spec: securityv1alpha1.StoreSpec{
+				Spec: corev1alpha1.StoreSpec{
 					CoreModule: coreModule,
 				},
-				Status: securityv1alpha1.StoreStatus{
+				Status: corev1alpha1.StoreStatus{
 					StoreID: "id",
 				},
 			},
 			kcpHelperMocks: func(kcpHelper *mocks.MockLister) {
 				kcpHelper.EXPECT().List(mock.Anything, mock.Anything).RunAndReturn(
 					func(ctx context.Context, ol client.ObjectList, lo ...client.ListOption) error {
-						am := ol.(*securityv1alpha1.AuthorizationModelList)
-						am.Items = []securityv1alpha1.AuthorizationModel{
+						am := ol.(*corev1alpha1.AuthorizationModelList)
+						am.Items = []corev1alpha1.AuthorizationModel{
 							{
-								Spec: securityv1alpha1.AuthorizationModelSpec{
+								Spec: corev1alpha1.AuthorizationModelSpec{
 									Model: extensionModel,
-									StoreRef: securityv1alpha1.WorkspaceStoreRef{
+									StoreRef: corev1alpha1.WorkspaceStoreRef{
 										Name:    "store",
 										Cluster: "path",
 									},
@@ -342,20 +342,20 @@ type core_namespace
 		},
 		{
 			name: "non-matching authorization model is filtered",
-			store: &securityv1alpha1.Store{
+			store: &corev1alpha1.Store{
 				ObjectMeta: metav1.ObjectMeta{Name: "orgs"},
-				Spec:       securityv1alpha1.StoreSpec{CoreModule: coreModule},
-				Status:     securityv1alpha1.StoreStatus{StoreID: "id"},
+				Spec:       corev1alpha1.StoreSpec{CoreModule: coreModule},
+				Status:     corev1alpha1.StoreStatus{StoreID: "id"},
 			},
 			kcpHelperMocks: func(kcpHelper *mocks.MockLister) {
 				kcpHelper.EXPECT().List(mock.Anything, mock.Anything).RunAndReturn(
 					func(ctx context.Context, ol client.ObjectList, lo ...client.ListOption) error {
-						am := ol.(*securityv1alpha1.AuthorizationModelList)
-						am.Items = []securityv1alpha1.AuthorizationModel{
+						am := ol.(*corev1alpha1.AuthorizationModelList)
+						am.Items = []corev1alpha1.AuthorizationModel{
 							{
-								Spec: securityv1alpha1.AuthorizationModelSpec{
+								Spec: corev1alpha1.AuthorizationModelSpec{
 									Model: extensionModel,
-									StoreRef: securityv1alpha1.WorkspaceStoreRef{
+									StoreRef: corev1alpha1.WorkspaceStoreRef{
 										Name:    "different-store",
 										Cluster: "path",
 									},
@@ -376,10 +376,10 @@ type core_namespace
 		},
 		{
 			name: "discovery returns namespaced and grouped resources",
-			store: &securityv1alpha1.Store{
+			store: &corev1alpha1.Store{
 				ObjectMeta: metav1.ObjectMeta{Name: "store"},
-				Spec:       securityv1alpha1.StoreSpec{CoreModule: coreModule},
-				Status:     securityv1alpha1.StoreStatus{StoreID: "id"},
+				Spec:       corev1alpha1.StoreSpec{CoreModule: coreModule},
+				Status:     corev1alpha1.StoreStatus{StoreID: "id"},
 			},
 			kcpHelperMocks: func(kcpHelper *mocks.MockLister) {
 				kcpHelper.EXPECT().List(mock.Anything, mock.Anything).RunAndReturn(
@@ -402,10 +402,10 @@ type core_namespace
 		},
 		{
 			name: "core discoverAndRender fails",
-			store: &securityv1alpha1.Store{
+			store: &corev1alpha1.Store{
 				ObjectMeta: metav1.ObjectMeta{Name: "store"},
-				Spec:       securityv1alpha1.StoreSpec{CoreModule: coreModule},
-				Status:     securityv1alpha1.StoreStatus{StoreID: "id"},
+				Spec:       corev1alpha1.StoreSpec{CoreModule: coreModule},
+				Status:     corev1alpha1.StoreStatus{StoreID: "id"},
 			},
 			kcpHelperMocks: func(kcpHelper *mocks.MockLister) {
 				kcpHelper.EXPECT().List(mock.Anything, mock.Anything).RunAndReturn(
@@ -421,10 +421,10 @@ type core_namespace
 		},
 		{
 			name: "privileged discoverAndRender fails",
-			store: &securityv1alpha1.Store{
+			store: &corev1alpha1.Store{
 				ObjectMeta: metav1.ObjectMeta{Name: "store"},
-				Spec:       securityv1alpha1.StoreSpec{CoreModule: coreModule},
-				Status:     securityv1alpha1.StoreStatus{StoreID: "id"},
+				Spec:       corev1alpha1.StoreSpec{CoreModule: coreModule},
+				Status:     corev1alpha1.StoreStatus{StoreID: "id"},
 			},
 			kcpHelperMocks: func(kcpHelper *mocks.MockLister) {
 				kcpHelper.EXPECT().List(mock.Anything, mock.Anything).RunAndReturn(
@@ -442,10 +442,10 @@ type core_namespace
 		},
 		{
 			name: "ParseGroupVersion fails for returned resource list",
-			store: &securityv1alpha1.Store{
+			store: &corev1alpha1.Store{
 				ObjectMeta: metav1.ObjectMeta{Name: "store"},
-				Spec:       securityv1alpha1.StoreSpec{CoreModule: coreModule},
-				Status:     securityv1alpha1.StoreStatus{StoreID: "id"},
+				Spec:       corev1alpha1.StoreSpec{CoreModule: coreModule},
+				Status:     corev1alpha1.StoreStatus{StoreID: "id"},
 			},
 			kcpHelperMocks: func(kcpHelper *mocks.MockLister) {
 				kcpHelper.EXPECT().List(mock.Anything, mock.Anything).RunAndReturn(

@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	accountsv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
-	iclient "github.com/platform-mesh/security-operator/internal/client"
-	"github.com/platform-mesh/security-operator/internal/config"
 	"github.com/platform-mesh/subroutines"
 	"github.com/rs/zerolog/log"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	iclient "platform-mesh.io/security-operator/internal/client"
+	"platform-mesh.io/security-operator/internal/config"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
@@ -77,7 +77,7 @@ func (r *workspaceAuthSubroutine) reconcile(ctx context.Context, obj client.Obje
 		return subroutines.OK(), fmt.Errorf("failed to get cluster from context %w", err)
 	}
 
-	var accountInfo accountsv1alpha1.AccountInfo
+	var accountInfo corev1alpha1.AccountInfo
 	err = cluster.GetClient().Get(ctx, types.NamespacedName{Name: "account"}, &accountInfo)
 	if err != nil {
 		return subroutines.OK(), fmt.Errorf("failed to get AccountInfo: %w", err)

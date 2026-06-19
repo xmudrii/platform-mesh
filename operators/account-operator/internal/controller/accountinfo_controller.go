@@ -18,11 +18,11 @@ import (
 
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/account-operator/internal/config"
-	"github.com/platform-mesh/account-operator/pkg/subroutines/finalizeaccountinfo"
 	"github.com/platform-mesh/subroutines"
 	"github.com/platform-mesh/subroutines/lifecycle"
+	"platform-mesh.io/account-operator/internal/config"
+	"platform-mesh.io/account-operator/pkg/subroutines/finalizeaccountinfo"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 
 const accountInfoReconcilerName = "AccountInfoReconciler"
@@ -51,7 +51,7 @@ func NewAccountInfoReconciler(log *logger.Logger, mgr mcmanager.Manager, cfg con
 	}
 
 	lc := lifecycle.New(mgr, accountInfoReconcilerName, func() client.Object {
-		return &v1alpha1.AccountInfo{}
+		return &corev1alpha1.AccountInfo{}
 	}, subs...)
 
 	return &AccountInfoReconciler{
@@ -69,7 +69,7 @@ func (r *AccountInfoReconciler) SetupWithManager(mgr mcmanager.Manager, cfg *pla
 	predicates := append([]predicate.Predicate{filter.DebugResourcesBehaviourPredicate(cfg.DebugLabelValue)}, eventPredicates...)
 	return mcbuilder.ControllerManagedBy(mgr).
 		Named(accountInfoReconcilerName).
-		For(&v1alpha1.AccountInfo{}).
+		For(&corev1alpha1.AccountInfo{}).
 		WithOptions(opts).
 		WithEventFilter(predicate.And(predicates...)).
 		Complete(r)

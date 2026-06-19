@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	"github.com/coreos/go-oidc"
-	"github.com/platform-mesh/security-operator/api/v1alpha1"
-	"github.com/platform-mesh/security-operator/internal/config"
-	"github.com/platform-mesh/security-operator/pkg/clientreg"
-	"github.com/platform-mesh/security-operator/pkg/clientreg/keycloak"
 	"golang.org/x/oauth2/clientcredentials"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	"platform-mesh.io/security-operator/internal/config"
+	"platform-mesh.io/security-operator/pkg/clientreg"
+	"platform-mesh.io/security-operator/pkg/clientreg/keycloak"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -31,7 +31,7 @@ func SetupIdentityProviderConfigurationValidatingWebhookWithManager(ctx context.
 	realmDenyList := slices.Clone(cfg.IDP.RealmDenyList)
 
 	return mcruntime.NewWebhookManagedBy(mgr).
-		For(&v1alpha1.IdentityProviderConfiguration{}).
+		For(&corev1alpha1.IdentityProviderConfiguration{}).
 		WithValidator(&identityProviderConfigurationValidator{keycloakClient: keycloakClient, realmDenyList: realmDenyList}).
 		Complete()
 }
@@ -49,7 +49,7 @@ type realmChecker interface {
 }
 
 func (v *identityProviderConfigurationValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	idp := obj.(*v1alpha1.IdentityProviderConfiguration)
+	idp := obj.(*corev1alpha1.IdentityProviderConfiguration)
 
 	realmName := strings.TrimSpace(idp.GetName())
 	if realmName == "" {

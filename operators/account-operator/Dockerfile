@@ -1,27 +1,31 @@
-# Build the manager binary
+# Build the manager binary.
+#
+# NOTE: the build context is the repository ROOT, not this directory.
+# The operator module is linked to the shared ./apis module through the
+# repository-root go.work file, so the workspace and apis source must be
+# present in the build:
+#   docker build -f operators/account-operator/Dockerfile .
 FROM --platform=$BUILDPLATFORM golang:1.26.4-bookworm@sha256:5f68ec6805843bd3981a951ffada82a26a0bd2631045c8f7dba483fa868f5ec5 AS builder
 ARG TARGETARCH
 
 WORKDIR /workspace
 
-# Copy the Go Modules manifests
-COPY go.mod go.mod
-COPY go.sum go.sum
+# Go workspace + the modules this image needs.
+COPY go.work go.work
+COPY go.work.sum go.work.sum
+COPY apis/ apis/
+COPY operators/account-operator/ operators/account-operator/
 
-# cache deps before building and copying source so that we don't need to re-download as much
-# and so that source changes don't invalidate our downloaded layer
+# Drop sibling workspace modules so the workspace resolves with only what we copied.
+RUN go work edit -dropuse ./operators/security-operator
+
+WORKDIR /workspace/operators/account-operator
+
+# cache deps before building so that source changes don't invalidate the layer
 RUN go mod download
 
-# Copy the go source
-COPY main.go main.go
-COPY cmd/ cmd/
-COPY api/ api/
-COPY internal/ internal/
-COPY pkg/ pkg/
-
-
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -ldflags '-w -s' -o manager main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -ldflags '-w -s' -o /workspace/manager main.go
 
 FROM scratch
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo

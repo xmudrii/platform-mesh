@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	accountv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/security-operator/internal/subroutine"
-	"github.com/platform-mesh/security-operator/internal/subroutine/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	"platform-mesh.io/security-operator/internal/subroutine"
+	"platform-mesh.io/security-operator/internal/subroutine/mocks"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
@@ -44,7 +44,7 @@ func bindingWithApiExportCluster(name, path, exportCluster string) *kcpapisv1alp
 
 func mockAccountInfo(cl *mocks.MockClient, orgName, originCluster string) {
 	cl.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-		if acc, ok := o.(*accountv1alpha1.AccountInfo); ok {
+		if acc, ok := o.(*corev1alpha1.AccountInfo); ok {
 			acc.Spec.Organization.Name = orgName
 			acc.Spec.Organization.OriginClusterId = originCluster
 		}
@@ -86,7 +86,7 @@ func TestAuthorizationModelGeneration_Process(t *testing.T) {
 				manager.EXPECT().ClusterFromContext(mock.Anything).Return(cluster, nil)
 				cluster.EXPECT().GetClient().Return(kcpClient)
 				kcpClient.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					if _, ok := o.(*accountv1alpha1.AccountInfo); ok {
+					if _, ok := o.(*corev1alpha1.AccountInfo); ok {
 						return nil
 					}
 					return nil
@@ -103,7 +103,7 @@ func TestAuthorizationModelGeneration_Process(t *testing.T) {
 				manager.EXPECT().ClusterFromContext(mock.Anything).Return(cluster, nil)
 				cluster.EXPECT().GetClient().Return(kcpClient)
 				kcpClient.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					if _, ok := o.(*accountv1alpha1.AccountInfo); ok {
+					if _, ok := o.(*corev1alpha1.AccountInfo); ok {
 						return nil
 					}
 					return nil
@@ -333,7 +333,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 					return nil
 				})
 				bindingClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -341,7 +341,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 				manager.EXPECT().GetCluster(mock.Anything, multicluster.ClusterName("cluster1")).Return(bindingWsCluster, nil)
 				bindingWsCluster.EXPECT().GetClient().Return(bindingWsClient)
 				bindingWsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -416,14 +416,14 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 					return nil
 				})
 				bindingClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
 				})
 				manager.EXPECT().GetCluster(mock.Anything, multicluster.ClusterName("cluster1")).Return(bindingCluster, nil)
 				bindingClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -464,7 +464,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 					return nil
 				})
 				bindingClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -472,7 +472,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 				manager.EXPECT().GetCluster(mock.Anything, multicluster.ClusterName("cluster1")).Return(bindingWsCluster1, nil)
 				bindingWsCluster1.EXPECT().GetClient().Return(bindingWsClient1)
 				bindingWsClient1.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -480,7 +480,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 				manager.EXPECT().GetCluster(mock.Anything, multicluster.ClusterName("cluster2")).Return(bindingWsCluster2, nil)
 				bindingWsCluster2.EXPECT().GetClient().Return(bindingWsClient2)
 				bindingWsClient2.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -511,7 +511,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 					return nil
 				})
 				bindingClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -519,7 +519,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 				manager.EXPECT().GetCluster(mock.Anything, multicluster.ClusterName("cluster1")).Return(bindingWsCluster, nil)
 				bindingWsCluster.EXPECT().GetClient().Return(bindingWsClient)
 				bindingWsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -563,7 +563,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 					return nil
 				})
 				bindingClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -571,7 +571,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 				manager.EXPECT().GetCluster(mock.Anything, multicluster.ClusterName("cluster1")).Return(bindingWsCluster, nil)
 				bindingWsCluster.EXPECT().GetClient().Return(bindingWsClient)
 				bindingWsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -649,7 +649,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 					return nil
 				})
 				bindingClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -657,7 +657,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 				manager.EXPECT().GetCluster(mock.Anything, multicluster.ClusterName("cluster1")).Return(bindingWsCluster1, nil)
 				bindingWsCluster1.EXPECT().GetClient().Return(bindingWsClient1)
 				bindingWsClient1.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -697,7 +697,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 					return nil
 				})
 				bindingClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -724,7 +724,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 					return nil
 				})
 				bindingClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -755,7 +755,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 					return nil
 				})
 				bindingClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -763,7 +763,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 				manager.EXPECT().GetCluster(mock.Anything, multicluster.ClusterName("cluster1")).Return(bindingWsCluster, nil)
 				bindingWsCluster.EXPECT().GetClient().Return(bindingWsClient)
 				bindingWsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "different-org-id"
 					return nil
@@ -802,7 +802,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 					return nil
 				})
 				bindingClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -810,7 +810,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 				manager.EXPECT().GetCluster(mock.Anything, multicluster.ClusterName("cluster1")).Return(bindingWsCluster, nil)
 				bindingWsCluster.EXPECT().GetClient().Return(bindingWsClient)
 				bindingWsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -839,7 +839,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 					return nil
 				})
 				bindingClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -847,7 +847,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 				manager.EXPECT().GetCluster(mock.Anything, multicluster.ClusterName("cluster1")).Return(bindingWsCluster, nil)
 				bindingWsCluster.EXPECT().GetClient().Return(bindingWsClient)
 				bindingWsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -878,7 +878,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 					return nil
 				})
 				bindingClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil
@@ -886,7 +886,7 @@ func TestAuthorizationModelGeneration_Finalize(t *testing.T) {
 				manager.EXPECT().GetCluster(mock.Anything, multicluster.ClusterName("cluster1")).Return(bindingWsCluster, nil)
 				bindingWsCluster.EXPECT().GetClient().Return(bindingWsClient)
 				bindingWsClient.EXPECT().Get(mock.Anything, types.NamespacedName{Name: "account"}, mock.Anything).RunAndReturn(func(ctx context.Context, nn types.NamespacedName, o client.Object, opts ...client.GetOption) error {
-					acc := o.(*accountv1alpha1.AccountInfo)
+					acc := o.(*corev1alpha1.AccountInfo)
 					acc.Spec.Organization.Name = "org"
 					acc.Spec.Organization.GeneratedClusterId = "org-id"
 					return nil

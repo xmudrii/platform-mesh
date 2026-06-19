@@ -9,13 +9,13 @@ import (
 
 	"github.com/coreos/go-oidc"
 	"github.com/platform-mesh/golang-commons/logger"
-	"github.com/platform-mesh/security-operator/api/v1alpha1"
-	iclient "github.com/platform-mesh/security-operator/internal/client"
-	"github.com/platform-mesh/security-operator/internal/config"
-	"github.com/platform-mesh/security-operator/pkg/clientreg"
-	"github.com/platform-mesh/security-operator/pkg/clientreg/keycloak"
 	"github.com/platform-mesh/subroutines"
 	"golang.org/x/oauth2/clientcredentials"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	iclient "platform-mesh.io/security-operator/internal/client"
+	"platform-mesh.io/security-operator/internal/config"
+	"platform-mesh.io/security-operator/pkg/clientreg"
+	"platform-mesh.io/security-operator/pkg/clientreg/keycloak"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
@@ -74,7 +74,7 @@ func (s *subroutine) newOIDCClient(realmName string) (clientreg.Client, *keycloa
 }
 
 func (s *subroutine) Finalize(ctx context.Context, obj client.Object) (subroutines.Result, error) {
-	idpToDelete := obj.(*v1alpha1.IdentityProviderConfiguration)
+	idpToDelete := obj.(*corev1alpha1.IdentityProviderConfiguration)
 	log := logger.LoadLoggerFromContext(ctx)
 	realmName := idpToDelete.Name
 
@@ -137,7 +137,7 @@ func (s *subroutine) Finalizers(_ client.Object) []string {
 func (s *subroutine) GetName() string { return "IdentityProviderConfiguration" }
 
 func (s *subroutine) Process(ctx context.Context, obj client.Object) (subroutines.Result, error) {
-	idpConfig := obj.(*v1alpha1.IdentityProviderConfiguration)
+	idpConfig := obj.(*corev1alpha1.IdentityProviderConfiguration)
 	log := logger.LoadLoggerFromContext(ctx)
 
 	cl, err := s.mgr.ClusterFromContext(ctx)
@@ -157,7 +157,7 @@ func (s *subroutine) Process(ctx context.Context, obj client.Object) (subroutine
 		return subroutines.OK(), err
 	}
 
-	managedClients := make(map[string]v1alpha1.ManagedClient)
+	managedClients := make(map[string]corev1alpha1.ManagedClient)
 	for i := range idpConfig.Spec.Clients {
 		clientConfig := &idpConfig.Spec.Clients[i]
 
@@ -170,7 +170,7 @@ func (s *subroutine) Process(ctx context.Context, obj client.Object) (subroutine
 			return subroutines.OK(), fmt.Errorf("failed to create or update kubernetes secret: %w", err)
 		}
 
-		managedClients[clientConfig.ClientName] = v1alpha1.ManagedClient{
+		managedClients[clientConfig.ClientName] = corev1alpha1.ManagedClient{
 			ClientID:              clientInfo.ClientID,
 			RegistrationClientURI: clientInfo.RegistrationClientURI,
 			SecretRef:             clientConfig.SecretRef,
@@ -231,10 +231,10 @@ func (s *subroutine) ensureRealm(ctx context.Context, adminClient *keycloak.Admi
 	return nil
 }
 
-func (s *subroutine) deleteRemovedClients(ctx context.Context, idpConfig *v1alpha1.IdentityProviderConfiguration, oidcClient clientreg.Client, log *logger.Logger) error {
+func (s *subroutine) deleteRemovedClients(ctx context.Context, idpConfig *corev1alpha1.IdentityProviderConfiguration, oidcClient clientreg.Client, log *logger.Logger) error {
 	for clientName, managedClient := range idpConfig.Status.ManagedClients {
 		exists := slices.ContainsFunc(idpConfig.Spec.Clients,
-			func(c v1alpha1.IdentityProviderClientConfig) bool {
+			func(c corev1alpha1.IdentityProviderClientConfig) bool {
 				return c.ClientName == clientName
 			},
 		)
@@ -275,14 +275,14 @@ func (s *subroutine) deleteRemovedClients(ctx context.Context, idpConfig *v1alph
 	return nil
 }
 
-func (s *subroutine) registerOrUpdateClient(ctx context.Context, ipc *v1alpha1.IdentityProviderConfiguration, clientConfig *v1alpha1.IdentityProviderClientConfig, realmName string, oidcClient clientreg.Client, adminClient *keycloak.AdminClient) (clientreg.ClientInformation, error) {
+func (s *subroutine) registerOrUpdateClient(ctx context.Context, ipc *corev1alpha1.IdentityProviderConfiguration, clientConfig *corev1alpha1.IdentityProviderClientConfig, realmName string, oidcClient clientreg.Client, adminClient *keycloak.AdminClient) (clientreg.ClientInformation, error) {
 	existingClient, err := adminClient.GetClientByName(ctx, clientConfig.ClientName)
 	if err != nil {
 		return clientreg.ClientInformation{}, fmt.Errorf("failed to check if client exists: %w", err)
 	}
 
 	authMethod := clientreg.TokenEndpointAuthMethodClientSecretBasic
-	if clientConfig.ClientType == v1alpha1.IdentityProviderClientTypePublic {
+	if clientConfig.ClientType == corev1alpha1.IdentityProviderClientTypePublic {
 		authMethod = clientreg.TokenEndpointAuthMethodNone
 	}
 
@@ -330,7 +330,7 @@ func (s *subroutine) readRegistrationAccessToken(ctx context.Context, secretRef 
 	return string(secret.Data["registration_access_token"]), nil
 }
 
-func (s *subroutine) createOrUpdateSecret(ctx context.Context, clientConfig *v1alpha1.IdentityProviderClientConfig, clientInfo clientreg.ClientInformation, idpName string) error {
+func (s *subroutine) createOrUpdateSecret(ctx context.Context, clientConfig *corev1alpha1.IdentityProviderClientConfig, clientInfo clientreg.ClientInformation, idpName string) error {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clientConfig.SecretRef.Name,

@@ -9,15 +9,15 @@ import (
 	"testing"
 
 	"github.com/platform-mesh/golang-commons/logger/testlogger"
-	"github.com/platform-mesh/security-operator/api/v1alpha1"
-	iclient "github.com/platform-mesh/security-operator/internal/client"
-	"github.com/platform-mesh/security-operator/internal/config"
-	"github.com/platform-mesh/security-operator/internal/subroutine/idp"
-	"github.com/platform-mesh/security-operator/internal/subroutine/mocks"
 	"github.com/platform-mesh/subroutines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/oauth2"
+	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
+	iclient "platform-mesh.io/security-operator/internal/client"
+	"platform-mesh.io/security-operator/internal/config"
+	"platform-mesh.io/security-operator/internal/subroutine/idp"
+	"platform-mesh.io/security-operator/internal/subroutine/mocks"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
@@ -58,7 +58,7 @@ func configureOIDCProvider(t *testing.T, mux *http.ServeMux, baseURL string) {
 func getTestScheme() *runtime.Scheme {
 	scheme := runtime.NewScheme()
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(v1alpha1.AddToScheme(scheme))
+	utilruntime.Must(corev1alpha1.AddToScheme(scheme))
 	return scheme
 }
 
@@ -67,7 +67,7 @@ func setupManagerAndCluster(t *testing.T, orgsClient client.Client, initialObjec
 
 	kcpClient := fake.NewClientBuilder().
 		WithScheme(scheme).
-		WithStatusSubresource(&v1alpha1.IdentityProviderConfiguration{}).
+		WithStatusSubresource(&corev1alpha1.IdentityProviderConfiguration{}).
 		WithObjects(initialObjects...).
 		Build()
 
@@ -109,15 +109,15 @@ func TestSubroutineProcess(t *testing.T) {
 	}{
 		{
 			desc: "realm and client created successfully without SMTP",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-realm",
 				},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{
 						{
 							ClientName:   "test-realm",
-							ClientType:   v1alpha1.IdentityProviderClientTypeConfidential,
+							ClientType:   corev1alpha1.IdentityProviderClientTypeConfidential,
 							RedirectURIs: []string{"https://test.example.com/*"},
 							SecretRef: corev1.SecretReference{
 								Name:      "portal-client-secret-test-realm",
@@ -167,15 +167,15 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "realm already exists",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "existing-realm",
 				},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{
 						{
 							ClientName:   "existing-realm",
-							ClientType:   v1alpha1.IdentityProviderClientTypeConfidential,
+							ClientType:   corev1alpha1.IdentityProviderClientTypeConfidential,
 							RedirectURIs: []string{"https://test.example.com/*"},
 							SecretRef: corev1.SecretReference{
 								Name:      "portal-client-secret-existing-realm",
@@ -228,15 +228,15 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "client already exists - update path",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-realm",
 				},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{
 						{
 							ClientName:   "test-realm",
-							ClientType:   v1alpha1.IdentityProviderClientTypeConfidential,
+							ClientType:   corev1alpha1.IdentityProviderClientTypeConfidential,
 							RedirectURIs: []string{"https://test.example.com/*"},
 							SecretRef: corev1.SecretReference{
 								Name:      "portal-client-secret-test-realm",
@@ -245,8 +245,8 @@ func TestSubroutineProcess(t *testing.T) {
 						},
 					},
 				},
-				Status: v1alpha1.IdentityProviderConfigurationStatus{
-					ManagedClients: map[string]v1alpha1.ManagedClient{
+				Status: corev1alpha1.IdentityProviderConfigurationStatus{
+					ManagedClients: map[string]corev1alpha1.ManagedClient{
 						"test-realm": {
 							ClientID:              "existing-client-id",
 							RegistrationClientURI: "http://localhost/realms/test-realm/clients-registrations/openid-connect/existing-client-id",
@@ -309,15 +309,15 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "update client with 401 retry",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-realm",
 				},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{
 						{
 							ClientName:   "test-realm",
-							ClientType:   v1alpha1.IdentityProviderClientTypeConfidential,
+							ClientType:   corev1alpha1.IdentityProviderClientTypeConfidential,
 							RedirectURIs: []string{"https://test.example.com/*"},
 							SecretRef: corev1.SecretReference{
 								Name:      "portal-client-secret-test-realm",
@@ -326,8 +326,8 @@ func TestSubroutineProcess(t *testing.T) {
 						},
 					},
 				},
-				Status: v1alpha1.IdentityProviderConfigurationStatus{
-					ManagedClients: map[string]v1alpha1.ManagedClient{
+				Status: corev1alpha1.IdentityProviderConfigurationStatus{
+					ManagedClients: map[string]corev1alpha1.ManagedClient{
 						"test-realm": {
 							ClientID:              "existing-client-id",
 							RegistrationClientURI: "http://localhost/realms/test-realm/clients-registrations/openid-connect/existing-client-id",
@@ -401,15 +401,15 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "client in status but not in spec - deletion",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-realm",
 				},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{
 						{
 							ClientName:   "new-client",
-							ClientType:   v1alpha1.IdentityProviderClientTypeConfidential,
+							ClientType:   corev1alpha1.IdentityProviderClientTypeConfidential,
 							RedirectURIs: []string{"https://test.example.com/*"},
 							SecretRef: corev1.SecretReference{
 								Name:      "portal-client-secret-new-client",
@@ -418,8 +418,8 @@ func TestSubroutineProcess(t *testing.T) {
 						},
 					},
 				},
-				Status: v1alpha1.IdentityProviderConfigurationStatus{
-					ManagedClients: map[string]v1alpha1.ManagedClient{
+				Status: corev1alpha1.IdentityProviderConfigurationStatus{
+					ManagedClients: map[string]corev1alpha1.ManagedClient{
 						"old-client": {
 							ClientID:              "old-client-id",
 							RegistrationClientURI: "",
@@ -492,15 +492,15 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "error deleting client in status but not in spec",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-realm",
 				},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{},
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{},
 				},
-				Status: v1alpha1.IdentityProviderConfigurationStatus{
-					ManagedClients: map[string]v1alpha1.ManagedClient{
+				Status: corev1alpha1.IdentityProviderConfigurationStatus{
+					ManagedClients: map[string]corev1alpha1.ManagedClient{
 						"old-client": {
 							ClientID:              "old-client-id",
 							RegistrationClientURI: "http://localhost/realms/test-realm/clients-registrations/openid-connect/old-client-id",
@@ -532,15 +532,15 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "error creating realm",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "error-realm",
 				},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{
 						{
 							ClientName:   "error-realm",
-							ClientType:   v1alpha1.IdentityProviderClientTypeConfidential,
+							ClientType:   corev1alpha1.IdentityProviderClientTypeConfidential,
 							RedirectURIs: []string{"https://test.example.com/*"},
 							SecretRef: corev1.SecretReference{
 								Name:      "portal-client-secret-error-realm",
@@ -568,15 +568,15 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "error getting client ID",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-realm",
 				},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{
 						{
 							ClientName:   "test-realm",
-							ClientType:   v1alpha1.IdentityProviderClientTypeConfidential,
+							ClientType:   corev1alpha1.IdentityProviderClientTypeConfidential,
 							RedirectURIs: []string{"https://test.example.com/*"},
 							SecretRef: corev1.SecretReference{
 								Name:      "portal-client-secret-test-realm",
@@ -606,15 +606,15 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "error getting Initial Access Token",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-realm",
 				},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{
 						{
 							ClientName:   "test-realm",
-							ClientType:   v1alpha1.IdentityProviderClientTypeConfidential,
+							ClientType:   corev1alpha1.IdentityProviderClientTypeConfidential,
 							RedirectURIs: []string{"https://test.example.com/*"},
 							SecretRef: corev1.SecretReference{
 								Name:      "portal-client-secret-test-realm",
@@ -651,12 +651,12 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "error updating realm when conflict",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{Name: "conflict-realm"},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{{
 						ClientName:   "conflict-realm",
-						ClientType:   v1alpha1.IdentityProviderClientTypeConfidential,
+						ClientType:   corev1alpha1.IdentityProviderClientTypeConfidential,
 						RedirectURIs: []string{"https://test.example.com/*"},
 						SecretRef:    corev1.SecretReference{Name: "portal-client-secret-conflict-realm", Namespace: "default"},
 					}},
@@ -672,15 +672,15 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "error regenerating registration access token",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-realm",
 				},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{
 						{
 							ClientName:   "test-realm",
-							ClientType:   v1alpha1.IdentityProviderClientTypeConfidential,
+							ClientType:   corev1alpha1.IdentityProviderClientTypeConfidential,
 							RedirectURIs: []string{"https://test.example.com/*"},
 							SecretRef: corev1.SecretReference{
 								Name:      "portal-client-secret-test-realm",
@@ -718,15 +718,15 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "error client registration non-201 status",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-realm",
 				},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{
 						{
 							ClientName:   "test-realm",
-							ClientType:   v1alpha1.IdentityProviderClientTypeConfidential,
+							ClientType:   corev1alpha1.IdentityProviderClientTypeConfidential,
 							RedirectURIs: []string{"https://test.example.com/*"},
 							SecretRef: corev1.SecretReference{
 								Name:      "portal-client-secret-test-realm",
@@ -768,12 +768,12 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "error unmarshaling updateClient response",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-realm"},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{{
 						ClientName:   "test-realm",
-						ClientType:   v1alpha1.IdentityProviderClientTypeConfidential,
+						ClientType:   corev1alpha1.IdentityProviderClientTypeConfidential,
 						RedirectURIs: []string{"https://test.example.com/*"},
 						SecretRef:    corev1.SecretReference{Name: "portal-client-secret-test-realm", Namespace: "default"},
 					}},
@@ -814,7 +814,7 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc:               "error cluster from context",
-			obj:                &v1alpha1.IdentityProviderConfiguration{ObjectMeta: metav1.ObjectMeta{Name: "test-realm"}, Spec: v1alpha1.IdentityProviderConfigurationSpec{}},
+			obj:                &corev1alpha1.IdentityProviderConfiguration{ObjectMeta: metav1.ObjectMeta{Name: "test-realm"}, Spec: corev1alpha1.IdentityProviderConfigurationSpec{}},
 			cfg:                &config.Config{Keycloak: config.KeycloakConfig{BaseURL: "http://localhost", ClientID: "security-operator"}},
 			expectErr:          true,
 			setupK8sMocks:      func(m *mocks.MockClient, kcpClient client.Client) {},
@@ -827,11 +827,11 @@ func TestSubroutineProcess(t *testing.T) {
 		},
 		{
 			desc: "error creating secret",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-realm"},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{{
-						ClientName: "test-realm", ClientType: v1alpha1.IdentityProviderClientTypeConfidential,
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{{
+						ClientName: "test-realm", ClientType: corev1alpha1.IdentityProviderClientTypeConfidential,
 						RedirectURIs: []string{"https://test.example.com/*"},
 						SecretRef:    corev1.SecretReference{Name: "portal-client-secret-test-realm", Namespace: "default"},
 					}},
@@ -882,13 +882,13 @@ func TestSubroutineProcess(t *testing.T) {
 			cfg := getTestConfig(test.cfg, srv.URL)
 
 			var initialObjects []client.Object
-			if idpObj, ok := test.obj.(*v1alpha1.IdentityProviderConfiguration); ok {
+			if idpObj, ok := test.obj.(*corev1alpha1.IdentityProviderConfiguration); ok {
 				for clientName, managedClient := range idpObj.Status.ManagedClients {
 					if managedClient.ClientID != "" {
 						if idpObj.Status.ManagedClients == nil {
-							idpObj.Status.ManagedClients = make(map[string]v1alpha1.ManagedClient)
+							idpObj.Status.ManagedClients = make(map[string]corev1alpha1.ManagedClient)
 						}
-						idpObj.Status.ManagedClients[clientName] = v1alpha1.ManagedClient{
+						idpObj.Status.ManagedClients[clientName] = corev1alpha1.ManagedClient{
 							ClientID:              managedClient.ClientID,
 							RegistrationClientURI: fmt.Sprintf("%s/realms/%s/clients-registrations/openid-connect/%s", srv.URL, idpObj.Name, managedClient.ClientID),
 							SecretRef:             managedClient.SecretRef,
@@ -941,12 +941,12 @@ func TestFinalize(t *testing.T) {
 	}{
 		{
 			desc: "finalize deletes client and realm successfully",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-realm",
 				},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{
 						{
 							ClientName: "test-realm",
 							SecretRef: corev1.SecretReference{
@@ -956,8 +956,8 @@ func TestFinalize(t *testing.T) {
 						},
 					},
 				},
-				Status: v1alpha1.IdentityProviderConfigurationStatus{
-					ManagedClients: map[string]v1alpha1.ManagedClient{
+				Status: corev1alpha1.IdentityProviderConfigurationStatus{
+					ManagedClients: map[string]corev1alpha1.ManagedClient{
 						"test-realm": {
 							ClientID:              "client-id-123",
 							RegistrationClientURI: "http://localhost/realms/test-realm/clients-registrations/openid-connect/client-id-123",
@@ -1004,16 +1004,16 @@ func TestFinalize(t *testing.T) {
 		},
 		{
 			desc: "finalize error reading secret",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-realm"},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{{
 						ClientName: "test-realm",
 						SecretRef:  corev1.SecretReference{Name: "portal-client-secret-test-realm", Namespace: "default"},
 					}},
 				},
-				Status: v1alpha1.IdentityProviderConfigurationStatus{
-					ManagedClients: map[string]v1alpha1.ManagedClient{
+				Status: corev1alpha1.IdentityProviderConfigurationStatus{
+					ManagedClients: map[string]corev1alpha1.ManagedClient{
 						"test-realm": {
 							ClientID:              "client-id-123",
 							RegistrationClientURI: "http://localhost/realms/test-realm/clients-registrations/openid-connect/client-id-123",
@@ -1036,16 +1036,16 @@ func TestFinalize(t *testing.T) {
 		},
 		{
 			desc: "finalize error deleting secret",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{Name: "test-realm"},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{{
 						ClientName: "test-realm",
 						SecretRef:  corev1.SecretReference{Name: "portal-client-secret-test-realm", Namespace: "default"},
 					}},
 				},
-				Status: v1alpha1.IdentityProviderConfigurationStatus{
-					ManagedClients: map[string]v1alpha1.ManagedClient{
+				Status: corev1alpha1.IdentityProviderConfigurationStatus{
+					ManagedClients: map[string]corev1alpha1.ManagedClient{
 						"test-realm": {
 							ClientID:              "client-id-123",
 							RegistrationClientURI: "http://localhost/realms/test-realm/clients-registrations/openid-connect/client-id-123",
@@ -1074,12 +1074,12 @@ func TestFinalize(t *testing.T) {
 		},
 		{
 			desc: "finalize error deleting client",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-realm",
 				},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{
 						{
 							ClientName: "test-realm",
 							SecretRef: corev1.SecretReference{
@@ -1089,8 +1089,8 @@ func TestFinalize(t *testing.T) {
 						},
 					},
 				},
-				Status: v1alpha1.IdentityProviderConfigurationStatus{
-					ManagedClients: map[string]v1alpha1.ManagedClient{
+				Status: corev1alpha1.IdentityProviderConfigurationStatus{
+					ManagedClients: map[string]corev1alpha1.ManagedClient{
 						"test-realm": {
 							ClientID:              "client-id-123",
 							RegistrationClientURI: "http://localhost/realms/test-realm/clients-registrations/openid-connect/client-id-123",
@@ -1135,12 +1135,12 @@ func TestFinalize(t *testing.T) {
 		},
 		{
 			desc: "finalize error deleting realm",
-			obj: &v1alpha1.IdentityProviderConfiguration{
+			obj: &corev1alpha1.IdentityProviderConfiguration{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-realm",
 				},
-				Spec: v1alpha1.IdentityProviderConfigurationSpec{
-					Clients: []v1alpha1.IdentityProviderClientConfig{
+				Spec: corev1alpha1.IdentityProviderConfigurationSpec{
+					Clients: []corev1alpha1.IdentityProviderClientConfig{
 						{
 							ClientName: "test-realm",
 							SecretRef: corev1.SecretReference{
@@ -1150,8 +1150,8 @@ func TestFinalize(t *testing.T) {
 						},
 					},
 				},
-				Status: v1alpha1.IdentityProviderConfigurationStatus{
-					ManagedClients: map[string]v1alpha1.ManagedClient{
+				Status: corev1alpha1.IdentityProviderConfigurationStatus{
+					ManagedClients: map[string]corev1alpha1.ManagedClient{
 						"test-realm": {
 							ClientID:              "client-id-123",
 							RegistrationClientURI: "http://localhost/realms/test-realm/clients-registrations/openid-connect/client-id-123",
@@ -1220,7 +1220,7 @@ func TestFinalize(t *testing.T) {
 			}
 
 			// Update RegistrationClientURI with the actual server URL
-			if idpObj, ok := test.obj.(*v1alpha1.IdentityProviderConfiguration); ok {
+			if idpObj, ok := test.obj.(*corev1alpha1.IdentityProviderConfiguration); ok {
 				for clientName, managedClient := range idpObj.Status.ManagedClients {
 					if managedClient.ClientID != "" {
 						managedClient.RegistrationClientURI = fmt.Sprintf("%s/realms/%s/clients-registrations/openid-connect/%s", srv.URL, idpObj.Name, managedClient.ClientID)
@@ -1273,7 +1273,7 @@ func TestHelperFunctions(t *testing.T) {
 	assert.Equal(t, "IdentityProviderConfiguration", s.GetName())
 	assert.Equal(t, []string{"core.platform-mesh.io/idp-finalizer"}, s.Finalizers(nil))
 
-	res, finalizerErr := s.Finalize(ctx, &v1alpha1.IdentityProviderConfiguration{})
+	res, finalizerErr := s.Finalize(ctx, &corev1alpha1.IdentityProviderConfiguration{})
 	assert.Nil(t, finalizerErr)
 	assert.Equal(t, subroutines.OK(), res)
 }

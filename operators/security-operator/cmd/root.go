@@ -6,8 +6,8 @@ import (
 	"github.com/go-logr/logr"
 	platformeshconfig "github.com/platform-mesh/golang-commons/config"
 	"github.com/platform-mesh/golang-commons/logger"
-	"github.com/platform-mesh/security-operator/internal/config"
 	"github.com/spf13/cobra"
+	"platform-mesh.io/security-operator/internal/config"
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	"k8s.io/client-go/rest"
