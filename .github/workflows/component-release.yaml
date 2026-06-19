@@ -50,25 +50,13 @@ jobs:
           [ -d "${DIR}" ] || { echo "unknown component directory ${DIR}"; exit 1; }
           [ -f "${DIR}/Dockerfile" ] || { echo "no Dockerfile in ${DIR}"; exit 1; }
 
-          # Image repo: nested under the monorepo path so everything lives under
-          # one package namespace and needs no extra registry permissions
-          # (ghcr.io/platform-mesh/platform-mesh/<name>).
-          IMAGE="${{ github.repository }}/${NAME}"
-
-          # Build context differs per component: account-operator's Dockerfile
-          # builds from the repo ROOT (it needs go.work + the apis module);
-          # security-operator's builds from its own self-contained module dir.
-          case "${NAME}" in
-            account-operator) CONTEXT="." ;;
-            *)                CONTEXT="${DIR}" ;;
-          esac
-
+          # Image name/context/tags are derived by `task images-<name>`; here we
+          # only surface what the rest of the workflow needs: the component name
+          # (passed to the task), its dir (chart lookup) and the version.
           echo "name=${NAME}"          >> "$GITHUB_OUTPUT"
           echo "dir=${DIR}"            >> "$GITHUB_OUTPUT"
           echo "version=${VERSION}"    >> "$GITHUB_OUTPUT"   # v0.1.0 (chart appVersion + image tag)
           echo "semver=${VERSION#v}"   >> "$GITHUB_OUTPUT"   # 0.1.0  (chart version, OCI convention)
-          echo "image=${IMAGE}"        >> "$GITHUB_OUTPUT"
-          echo "context=${CONTEXT}"    >> "$GITHUB_OUTPUT"
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -80,16 +68,23 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push image
-        uses: docker/build-push-action@v6
+      - name: Install Task
+        uses: arduino/setup-task@v2
         with:
-          context: ${{ steps.tag.outputs.context }}
-          file: ./${{ steps.tag.outputs.dir }}/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ steps.tag.outputs.image }}:${{ steps.tag.outputs.version }}
-            ${{ env.REGISTRY }}/${{ steps.tag.outputs.image }}:${{ steps.tag.outputs.semver }}
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build via the root Taskfile so CI and `task images-<name>` produce the
+      # exact same multi-arch image. The task derives context, Dockerfile and the
+      # vX.Y.Z + X.Y.Z tags itself from the component name and VERSION.
+      - name: Build and push image
+        run: |
+          task images-${{ steps.tag.outputs.name }} \
+            VERSION=${{ steps.tag.outputs.version }} \
+            REGISTRY=${{ env.REGISTRY }} \
+            REPO=${{ github.repository }} \
+            PLATFORMS=linux/amd64,linux/arm64 \
+            PUSH=true
 
       - name: Locate Helm chart
         id: chart

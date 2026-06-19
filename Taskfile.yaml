@@ -25,7 +25,7 @@ includes:
     dir: .
 
 vars:
-  COMPONENTS: apis account-operator security-operator
+  COMPONENTS: apis account-operator security-operator 
 
 tasks:
   default:
@@ -60,6 +60,17 @@ tasks:
     cmds:
       - for: {var: COMPONENTS}
         cmd: task build-{{.ITEM}}
+  images:
+    desc: 'Build container images for every component that ships a Dockerfile (VERSION=, PUSH=, PLATFORMS= to override).'
+    cmds:
+      - for: {var: COMPONENTS}
+        task: images-{{.ITEM}}
+        vars:
+          REGISTRY: '{{.REGISTRY}}'
+          REPO: '{{.REPO}}'
+          VERSION: '{{.VERSION}}'
+          PUSH: '{{.PUSH}}'
+          PLATFORMS: '{{.PLATFORMS}}'
 
   # ---------------------------------------------------------------------------
   # Per-component targets. Each delegates to the component's own Taskfile.
@@ -92,6 +103,26 @@ tasks:
     cmds:
       - task: _run
         vars: {COMPONENT: "{{index .MATCH 0}}", TARGET: build}
+  "images-*":
+    desc: "Build (and optionally push) one component's image (e.g. task images-account-operator VERSION=v0.1.0 PUSH=true)."
+    vars:
+      # Defaults match component-release.yaml; override on the CLI or from CI.
+      REGISTRY: '{{.REGISTRY | default "ghcr.io"}}'
+      REPO: '{{.REPO | default "platform-mesh/platform-mesh"}}'   # ghcr namespace: <registry>/<repo>/<name>
+      VERSION: '{{.VERSION | default "dev"}}'                     # image tag; also pushed without leading "v"
+      PUSH: '{{.PUSH | default "false"}}'                          # true -> buildx --push, false -> --load
+      PLATFORMS: '{{.PLATFORMS | default "linux/amd64"}}'          # multi-arch (e.g. linux/amd64,linux/arm64) requires PUSH=true
+      CONTEXT: '{{.CONTEXT | default "."}}'                         # build context; repo root by default (shared go.work)
+    cmds:
+      - task: _image
+        vars:
+          COMPONENT: "{{index .MATCH 0}}"
+          REGISTRY: "{{.REGISTRY}}"
+          REPO: "{{.REPO}}"
+          VERSION: "{{.VERSION}}"
+          PUSH: "{{.PUSH}}"
+          PLATFORMS: "{{.PLATFORMS}}"
+          CONTEXT: "{{.CONTEXT}}"
 
   # Resolve a component name to its directory and delegate to its Taskfile.
   _run:
@@ -109,6 +140,52 @@ tasks:
           exit 1
         fi
         task --dir "$dir" "$target"
+
+  # Build (and optionally push) a single component image. Centralizes the logic
+  # used by .github/workflows/component-release.yaml so `task images-<name>` and
+  # CI build the exact same image the exact same way.
+  _image:
+    internal: true
+    silent: true
+    cmds:
+      - |
+        set -eu
+        comp='{{.COMPONENT}}'
+        dir=''
+        for p in "$comp" "operators/$comp" "services/$comp"; do
+          if [ -d "$p" ]; then dir="$p"; break; fi
+        done
+        if [ -z "$dir" ]; then
+          echo "unknown component '$comp' (not under ./, ./operators/ or ./services/)" >&2
+          exit 1
+        fi
+        # apis and other code-only modules ship no Dockerfile — skip, don't fail,
+        # so the `images` fan-out can iterate every component.
+        if [ ! -f "$dir/Dockerfile" ]; then
+          echo ">> $comp: no Dockerfile in $dir — skipping image build"
+          exit 0
+        fi
+
+        version='{{.VERSION}}'
+        semver="${version#v}"                       # 0.1.0 alongside v0.1.0
+        image='{{.REGISTRY}}/{{.REPO}}'/"$comp"
+
+        # Build context is the repo ROOT: the operator Dockerfiles use the shared
+        # go.work + apis module, so they COPY root-relative paths. A self-contained
+        # component can override with CONTEXT=<dir>.
+        context='{{.CONTEXT | default "."}}'
+
+        push_flag='--load'
+        [ '{{.PUSH}}' = 'true' ] && push_flag='--push'
+
+        echo ">> building $image:$version (context=$context platforms={{.PLATFORMS}} push={{.PUSH}})"
+        docker buildx build \
+          --file "$dir/Dockerfile" \
+          --platform '{{.PLATFORMS}}' \
+          "$push_flag" \
+          -t "$image:$version" \
+          -t "$image:$semver" \
+          "$context"
 
   # ---------------------------------------------------------------------------
   # Release: cut a per-component semver tag (cmd/release). The tag triggers
