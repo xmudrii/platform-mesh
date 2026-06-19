@@ -1,5 +1,12 @@
 version: "3"
 
+includes:
+  # Shared go-installable tooling (controller-gen, golangci-lint, mockery,
+  # apigen), installed once into the root bin/ and reused by every component.
+  tools:
+    taskfile: ../../tools/Taskfile.yaml
+    dir: .
+
 vars:
   LOCAL_BIN: bin
   # Shared codegen/lint tools come from the repo-root bin (root `tools:` tasks).
@@ -59,7 +66,7 @@ tasks:
   lint:
     cmds:
       - task: fmt
-      - "{{.ROOT_BIN}}/golangci-lint run --timeout 15m ./..."
+      - task: tools:lint
   envtest:
     internal: true
     env:

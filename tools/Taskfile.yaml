@@ -30,12 +30,19 @@ version: "3"
 # BinaryAssetsDirectory), so those stay component-local.
 
 vars:
-  BIN:
-    sh: echo "$(git rev-parse --show-toplevel)/bin"
+  TOPLEVEL:
+    sh: echo "$(git rev-parse --show-toplevel)"
+  BIN: '{{.TOPLEVEL}}/bin'
+  HACK: '{{.TOPLEVEL}}/hack'
   CONTROLLER_TOOLS_VERSION: v0.16.4
-  GOLANGCI_LINT_VERSION: v2.8.0
+  GOLANGCI_LINT_VERSION: 2.12.2
   MOCKERY_VERSION: v3.7.0
   KCP_APIGEN_VERSION: v0.30.1
+
+env:
+  UGET_DIRECTORY: '{{.BIN}}'
+  UGET_CHECKSUMS: '{{.HACK}}/tools.checksums'
+  UGET_VERSIONED_BINARIES: 'true'
 
 tasks:
   # `task tools` installs everything; `task tools:all` is an explicit alias.
@@ -53,11 +60,15 @@ tasks:
     status:
       - test -s {{.BIN}}/controller-gen
   golangci-lint:
+    silent: true
     desc: Install golangci-lint into the root bin.
     cmds:
-      - GOBIN={{.BIN}} GOWORK=off go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@{{.GOLANGCI_LINT_VERSION}}
-    status:
-      - test -s {{.BIN}}/golangci-lint
+      - "{{.HACK}}/uget.sh https://github.com/golangci/golangci-lint/releases/download/v{VERSION}/golangci-lint-{VERSION}-{GOOS}-{GOARCH}.tar.gz golangci-lint {{.GOLANGCI_LINT_VERSION}}"
+  lint:
+    desc: Lint all Go code in the repository using golangci-lint.
+    internal: true
+    cmds:
+      - '"$(UGET_PRINT_PATH=absolute task tools:golangci-lint)" run --timeout 15m ./...'
   mockery:
     desc: Install mockery into the root bin.
     cmds:
@@ -74,3 +85,4 @@ tasks:
     desc: Verifies the boilerplate comment in each source file.
     cmds:
       - ./hack/verify_boilerplate.py --boilerplate-dir hack/boilerplate/
+

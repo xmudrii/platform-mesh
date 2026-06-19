@@ -107,7 +107,6 @@ tasks:
         vars: {COMPONENT: "{{index .MATCH 0}}", TARGET: test}
   "lint-*":
     desc: "Lint one component (e.g. task lint-account-operator)."
-    deps: [tools:golangci-lint]
     cmds:
       - task: _run
         vars: {COMPONENT: "{{index .MATCH 0}}", TARGET: lint}

@@ -20,6 +20,13 @@ version: "3"
 # Shared tools (controller-gen, golangci-lint) come from the repository-root
 # bin/ — installed by the root `tools:` tasks, referenced here via ROOT_BIN.
 
+includes:
+  # Shared go-installable tooling (controller-gen, golangci-lint, mockery,
+  # apigen), installed once into the root bin/ and reused by every component.
+  tools:
+    taskfile: ../tools/Taskfile.yaml
+    dir: .
+
 vars:
   ROOT_BIN:
     sh: echo "$(git rev-parse --show-toplevel)/bin"
@@ -36,7 +43,7 @@ tasks:
     desc: Lint the apis module.
     cmds:
       - task: fmt
-      - "{{.ROOT_BIN}}/golangci-lint run --timeout 15m ./..."
+      - task: tools:lint
   generate:
     desc: Regenerate deepcopy code for the apis types.
     cmds:
