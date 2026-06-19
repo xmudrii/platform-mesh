@@ -162,10 +162,14 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.v.outputs.version }}
+      semver: ${{ steps.v.outputs.semver }}
     steps:
       - name: Derive version from tag
         id: v
-        run: echo "version=${GITHUB_REF#refs/tags/security-operator/}" >> "$GITHUB_OUTPUT"
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/security-operator/}"
+          echo "version=${VERSION}"   >> "$GITHUB_OUTPUT"   # vX.Y.Z — image tag
+          echo "semver=${VERSION#v}"  >> "$GITHUB_OUTPUT"   # X.Y.Z — naked OCM/chart version
 
   docker-build-push:
     if: startsWith(github.ref, 'refs/tags/security-operator/')
@@ -264,7 +268,8 @@ jobs:
     secrets: inherit
     with:
       imageReference: ghcr.io/platform-mesh/platform-mesh/security-operator:${{ needs.version.outputs.version }}
-      appVersion: ${{ needs.version.outputs.version }}
+      # naked semver (no leading v) — OCM/helm convention
+      appVersion: ${{ needs.version.outputs.semver }}
       # The reusable job signs with "<repoName>.platform-mesh" and OCM requires
       # that to equal the signing cert's CN. The monorepo's shared OCM cert has
       # CN "platform-mesh.platform-mesh", so repoName must be platform-mesh. The
