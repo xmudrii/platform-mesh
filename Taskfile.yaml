@@ -1,3 +1,17 @@
+# Copyright The Platform Mesh Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 version: "3"
 
 # Root Taskfile for the platform-mesh monorepo.
@@ -25,7 +39,7 @@ includes:
     dir: .
 
 vars:
-  COMPONENTS: apis account-operator security-operator 
+  COMPONENTS: apis account-operator security-operator
 
 tasks:
   default:
@@ -35,6 +49,11 @@ tasks:
   # ---------------------------------------------------------------------------
   # Global fan-out targets: run the standard target across all components.
   # ---------------------------------------------------------------------------
+  verify:
+    desc: Runs all check targets in sequence.
+    cmds:
+      - task: lint
+      - task: tools:boilerplate
   lint:
     desc: Lint every component.
     cmds:
