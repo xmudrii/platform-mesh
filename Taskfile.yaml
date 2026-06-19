@@ -169,7 +169,6 @@ tasks:
         fi
 
         version='{{.VERSION}}'
-        semver="${version#v}"                       # 0.1.0 alongside v0.1.0
         image='{{.REGISTRY}}/{{.REPO}}'/"$comp"
 
         # Build context is the repo ROOT: the operator Dockerfiles use the shared
@@ -180,10 +179,8 @@ tasks:
         push_flag='--load'
         [ '{{.PUSH}}' = 'true' ] && push_flag='--push'
 
-        # Tag image:VERSION, plus the bare-semver alias only when VERSION carries
-        # a leading "v" (so latest/pr-N/dev produce a single tag, not a dup).
+        # Single tag: image:VERSION (e.g. v0.1.0, latest, pr-N, dev).
         set -- -t "$image:$version"
-        [ "$semver" != "$version" ] && set -- "$@" -t "$image:$semver"
 
         # Optional: emit buildx metadata (incl. containerimage.digest) so callers
         # like the release workflow can cosign-sign the pushed image by digest.
