@@ -106,7 +106,7 @@ tasks:
   "images-*":
     desc: "Build (and optionally push) one component's image (e.g. task images-account-operator VERSION=v0.1.0 PUSH=true)."
     vars:
-      # Defaults match component-release.yaml; override on the CLI or from CI.
+      # Defaults match the release pipeline's image naming; override on the CLI.
       REGISTRY: '{{.REGISTRY | default "ghcr.io"}}'
       REPO: '{{.REPO | default "platform-mesh/platform-mesh"}}'   # ghcr namespace: <registry>/<repo>/<name>
       VERSION: '{{.VERSION | default "dev"}}'                     # image tag; also pushed without leading "v"
@@ -141,9 +141,9 @@ tasks:
         fi
         task --dir "$dir" "$target"
 
-  # Build (and optionally push) a single component image. Centralizes the logic
-  # used by .github/workflows/component-release.yaml so `task images-<name>` and
-  # CI build the exact same image the exact same way.
+  # Build (and optionally push) a single component image. Mirrors how the release
+  # workflows build the operator images (root context + shared go.work), so a
+  # local `task images-<name>` reproduces the CI image.
   _image:
     internal: true
     silent: true
@@ -188,10 +188,11 @@ tasks:
           "$context"
 
   # ---------------------------------------------------------------------------
-  # Release: cut a per-component semver tag (cmd/release). The tag triggers
-  # .github/workflows/component-release.yaml, which builds + pushes the image
-  # (and chart, if the component ships one). `apis` tags are go-gettable module
-  # tags only. Pass component + flags after `--`, e.g.:
+  # Release: cut a per-component semver tag (cmd/release). The tag (<name>/v*)
+  # triggers that component's release workflow (e.g. account-operator.yml), which
+  # builds + signs the image, cuts a GitHub release, bumps the chart and publishes
+  # SBOM + OCM. `apis` tags are go-gettable module tags only. Pass component +
+  # flags after `--`, e.g.:
   #   task release -- account-operator --minor
   #   task release -- all --dry-run
   # ---------------------------------------------------------------------------
