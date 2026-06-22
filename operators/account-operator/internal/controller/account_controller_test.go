@@ -49,10 +49,10 @@ import (
 
 	"github.com/kcp-dev/logicalcluster/v3"
 	mcenvtest "github.com/kcp-dev/multicluster-provider/envtest"
-	"platform-mesh.io/account-operator/internal/config"
-	"platform-mesh.io/account-operator/internal/controller"
-	"platform-mesh.io/account-operator/pkg/subroutines/manageaccountinfo"
-	"platform-mesh.io/account-operator/pkg/subroutines/workspace"
+	"go.platform-mesh.io/account-operator/internal/config"
+	"go.platform-mesh.io/account-operator/internal/controller"
+	"go.platform-mesh.io/account-operator/pkg/subroutines/manageaccountinfo"
+	"go.platform-mesh.io/account-operator/pkg/subroutines/workspace"
 	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 

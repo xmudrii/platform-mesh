@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"platform-mesh.io/account-operator/pkg/subroutines/util"
+	"go.platform-mesh.io/account-operator/pkg/subroutines/util"
 	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 

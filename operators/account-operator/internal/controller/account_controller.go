@@ -38,12 +38,12 @@ import (
 	"github.com/platform-mesh/subroutines"
 	"github.com/platform-mesh/subroutines/conditions"
 	"github.com/platform-mesh/subroutines/lifecycle"
-	"platform-mesh.io/account-operator/internal/config"
-	"platform-mesh.io/account-operator/internal/metrics"
-	"platform-mesh.io/account-operator/pkg/subroutines/manageaccountinfo"
-	"platform-mesh.io/account-operator/pkg/subroutines/workspace"
-	"platform-mesh.io/account-operator/pkg/subroutines/workspaceready"
-	"platform-mesh.io/account-operator/pkg/subroutines/workspacetype"
+	"go.platform-mesh.io/account-operator/internal/config"
+	"go.platform-mesh.io/account-operator/internal/metrics"
+	"go.platform-mesh.io/account-operator/pkg/subroutines/manageaccountinfo"
+	"go.platform-mesh.io/account-operator/pkg/subroutines/workspace"
+	"go.platform-mesh.io/account-operator/pkg/subroutines/workspaceready"
+	"go.platform-mesh.io/account-operator/pkg/subroutines/workspacetype"
 	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 

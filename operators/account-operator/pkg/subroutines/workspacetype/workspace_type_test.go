@@ -33,8 +33,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	"platform-mesh.io/account-operator/pkg/subroutines/mocks"
-	"platform-mesh.io/account-operator/pkg/subroutines/workspacetype"
+	"go.platform-mesh.io/account-operator/pkg/subroutines/mocks"
+	"go.platform-mesh.io/account-operator/pkg/subroutines/workspacetype"
 	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 

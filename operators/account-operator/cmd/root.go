@@ -28,7 +28,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"platform-mesh.io/account-operator/internal/config"
+	"go.platform-mesh.io/account-operator/internal/config"
 	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 

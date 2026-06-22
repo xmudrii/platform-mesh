@@ -36,8 +36,8 @@ import (
 
 	"github.com/platform-mesh/subroutines"
 	"github.com/platform-mesh/subroutines/lifecycle"
-	"platform-mesh.io/account-operator/internal/config"
-	"platform-mesh.io/account-operator/pkg/subroutines/finalizeaccountinfo"
+	"go.platform-mesh.io/account-operator/internal/config"
+	"go.platform-mesh.io/account-operator/pkg/subroutines/finalizeaccountinfo"
 	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 

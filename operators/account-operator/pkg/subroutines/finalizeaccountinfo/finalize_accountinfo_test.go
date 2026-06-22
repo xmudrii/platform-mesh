@@ -33,8 +33,8 @@ import (
 
 	"github.com/platform-mesh/golang-commons/logger"
 	"github.com/platform-mesh/golang-commons/logger/testlogger"
-	"platform-mesh.io/account-operator/pkg/subroutines/finalizeaccountinfo"
-	"platform-mesh.io/account-operator/pkg/subroutines/mocks"
+	"go.platform-mesh.io/account-operator/pkg/subroutines/finalizeaccountinfo"
+	"go.platform-mesh.io/account-operator/pkg/subroutines/mocks"
 	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 

@@ -30,8 +30,8 @@ import (
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
-	"platform-mesh.io/account-operator/internal/metrics"
-	"platform-mesh.io/account-operator/pkg/clusteredname"
+	"go.platform-mesh.io/account-operator/internal/metrics"
+	"go.platform-mesh.io/account-operator/pkg/clusteredname"
 	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 

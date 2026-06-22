@@ -17,7 +17,7 @@ limitations under the License.
 package main
 
 import (
-	"platform-mesh.io/account-operator/cmd"
+	"go.platform-mesh.io/account-operator/cmd"
 )
 
 func main() {

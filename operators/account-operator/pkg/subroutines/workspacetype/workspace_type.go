@@ -29,8 +29,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
-	"platform-mesh.io/account-operator/internal/metrics"
-	"platform-mesh.io/account-operator/pkg/subroutines/util"
+	"go.platform-mesh.io/account-operator/internal/metrics"
+	"go.platform-mesh.io/account-operator/pkg/subroutines/util"
 	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 

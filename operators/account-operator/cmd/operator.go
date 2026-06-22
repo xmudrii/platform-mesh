@@ -37,7 +37,7 @@ import (
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
-	"platform-mesh.io/account-operator/internal/controller"
+	"go.platform-mesh.io/account-operator/internal/controller"
 	corev1alpha1 "platform-mesh.io/apis/core/v1alpha1"
 )
 

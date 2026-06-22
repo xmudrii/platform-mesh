@@ -1,4 +1,4 @@
-module platform-mesh.io/account-operator
+module go.platform-mesh.io/account-operator
 
 go 1.26.0
 
