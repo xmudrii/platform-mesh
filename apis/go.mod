@@ -6,12 +6,12 @@ require (
 	github.com/kcp-dev/sdk v0.31.2
 	github.com/platform-mesh/extension-manager-operator/api v0.9.9
 	github.com/platform-mesh/golang-commons v0.17.9
-	github.com/platform-mesh/subroutines v0.4.3
+	github.com/platform-mesh/subroutines v0.4.2
 	github.com/prometheus/client_golang v1.23.2
 	github.com/stretchr/testify v1.11.1
 	k8s.io/api v0.35.4
 	k8s.io/apiextensions-apiserver v0.35.4
-	k8s.io/apimachinery v0.36.0
+	k8s.io/apimachinery v0.35.4
 	k8s.io/client-go v0.35.4
 	k8s.io/kube-openapi v0.0.0-20260618221249-bc653b64f974
 	sigs.k8s.io/controller-runtime v0.23.3
@@ -45,6 +45,7 @@ require (
 	github.com/go-openapi/swag/yamlutils v0.26.0 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/gnostic-models v0.7.1 // indirect
+	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.5 // indirect
