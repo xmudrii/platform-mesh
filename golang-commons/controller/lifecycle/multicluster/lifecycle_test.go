@@ -19,11 +19,11 @@ import (
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 	mcreconcile "sigs.k8s.io/multicluster-runtime/pkg/reconcile"
 
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/runtimeobject"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/subroutine"
-	pmtesting "github.com/platform-mesh/golang-commons/controller/testSupport"
-	operrors "github.com/platform-mesh/golang-commons/errors"
-	"github.com/platform-mesh/golang-commons/logger/testlogger"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/runtimeobject"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/subroutine"
+	pmtesting "go.platform-mesh.io/golang-commons/controller/testSupport"
+	operrors "go.platform-mesh.io/golang-commons/errors"
+	"go.platform-mesh.io/golang-commons/logger/testlogger"
 )
 
 func TestLifecycle(t *testing.T) {

@@ -18,13 +18,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	mccontext "sigs.k8s.io/multicluster-runtime/pkg/context"
 
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/api"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/runtimeobject"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/subroutine"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/util"
-	"github.com/platform-mesh/golang-commons/errors"
-	"github.com/platform-mesh/golang-commons/logger"
-	"github.com/platform-mesh/golang-commons/sentry"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/api"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/runtimeobject"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/subroutine"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/util"
+	"go.platform-mesh.io/golang-commons/errors"
+	"go.platform-mesh.io/golang-commons/logger"
+	"go.platform-mesh.io/golang-commons/sentry"
 )
 
 func Reconcile(ctx context.Context, nName types.NamespacedName, instance runtimeobject.RuntimeObject, cl client.Client, l api.Lifecycle) (ctrl.Result, error) {

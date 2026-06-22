@@ -11,8 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	controllerruntime "sigs.k8s.io/controller-runtime"
 
-	pmtesting "github.com/platform-mesh/golang-commons/controller/testSupport"
-	"github.com/platform-mesh/golang-commons/logger"
+	pmtesting "go.platform-mesh.io/golang-commons/controller/testSupport"
+	"go.platform-mesh.io/golang-commons/logger"
 )
 
 // Test the setReady function with an empty array

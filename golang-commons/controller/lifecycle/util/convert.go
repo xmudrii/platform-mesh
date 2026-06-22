@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/platform-mesh/golang-commons/logger"
-	"github.com/platform-mesh/golang-commons/sentry"
+	"go.platform-mesh.io/golang-commons/logger"
+	"go.platform-mesh.io/golang-commons/sentry"
 )
 
 func ToInterface[T any](instance any, log *logger.Logger) (T, error) {

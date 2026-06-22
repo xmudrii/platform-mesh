@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/platform-mesh/golang-commons/logger"
+	"go.platform-mesh.io/golang-commons/logger"
 )
 
 // CreateMiddleware creates a middleware chain with logging, tracing, and optional authentication.

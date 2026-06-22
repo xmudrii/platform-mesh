@@ -13,7 +13,7 @@ import (
 	"github.com/go-logr/zerologr"
 	"github.com/rs/zerolog"
 
-	"github.com/platform-mesh/golang-commons/context/keys"
+	"go.platform-mesh.io/golang-commons/context/keys"
 )
 
 type Level zerolog.Level

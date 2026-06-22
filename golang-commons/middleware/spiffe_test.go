@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/platform-mesh/golang-commons/context"
-	"github.com/platform-mesh/golang-commons/jwt"
+	"go.platform-mesh.io/golang-commons/context"
+	"go.platform-mesh.io/golang-commons/jwt"
 	"github.com/stretchr/testify/assert"
 )
 

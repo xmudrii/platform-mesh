@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-jose/go-jose/v4"
 
-	pmcontext "github.com/platform-mesh/golang-commons/context"
+	pmcontext "go.platform-mesh.io/golang-commons/context"
 )
 
 const tokenAuthPrefix = "BEARER"

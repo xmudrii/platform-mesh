@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"k8s.io/utils/ptr"
 
-	pmcontext "github.com/platform-mesh/golang-commons/context"
-	"github.com/platform-mesh/golang-commons/logger"
+	pmcontext "go.platform-mesh.io/golang-commons/context"
+	"go.platform-mesh.io/golang-commons/logger"
 )
 
 func TestSetTenantToContextForTechnicalUsers(t *testing.T) {

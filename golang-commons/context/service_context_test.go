@@ -9,9 +9,9 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 
-	pmcontext "github.com/platform-mesh/golang-commons/context"
-	"github.com/platform-mesh/golang-commons/context/keys"
-	pmjwt "github.com/platform-mesh/golang-commons/jwt"
+	pmcontext "go.platform-mesh.io/golang-commons/context"
+	"go.platform-mesh.io/golang-commons/context/keys"
+	pmjwt "go.platform-mesh.io/golang-commons/jwt"
 )
 
 type astruct struct{}

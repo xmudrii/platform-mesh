@@ -9,9 +9,9 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	openfgav1 "github.com/openfga/api/proto/openfga/v1"
-	pmcontext "github.com/platform-mesh/golang-commons/context"
-	"github.com/platform-mesh/golang-commons/fga/helpers"
-	"github.com/platform-mesh/golang-commons/logger"
+	pmcontext "go.platform-mesh.io/golang-commons/context"
+	"go.platform-mesh.io/golang-commons/fga/helpers"
+	"go.platform-mesh.io/golang-commons/logger"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 	"google.golang.org/grpc/metadata"
 )

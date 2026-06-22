@@ -7,8 +7,8 @@ import (
 
 	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/machinebox/graphql"
-	pmcontext "github.com/platform-mesh/golang-commons/context"
-	"github.com/platform-mesh/golang-commons/logger"
+	pmcontext "go.platform-mesh.io/golang-commons/context"
+	"go.platform-mesh.io/golang-commons/logger"
 )
 
 type GraphqlData struct {

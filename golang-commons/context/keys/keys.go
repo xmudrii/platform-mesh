@@ -1,6 +1,6 @@
 package keys
 
-import "github.com/platform-mesh/golang-commons/jwt"
+import "go.platform-mesh.io/golang-commons/jwt"
 
 type ContextKey string
 

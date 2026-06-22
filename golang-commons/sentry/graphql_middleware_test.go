@@ -6,14 +6,14 @@ import (
 	"testing"
 
 	"github.com/99designs/gqlgen/graphql"
-	"github.com/platform-mesh/golang-commons/logger"
+	"go.platform-mesh.io/golang-commons/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 
-	pmcontext "github.com/platform-mesh/golang-commons/context"
-	"github.com/platform-mesh/golang-commons/jwt"
-	testlogger "github.com/platform-mesh/golang-commons/logger/testlogger"
+	pmcontext "go.platform-mesh.io/golang-commons/context"
+	"go.platform-mesh.io/golang-commons/jwt"
+	testlogger "go.platform-mesh.io/golang-commons/logger/testlogger"
 )
 
 func TestGraphQLRecover(t *testing.T) {

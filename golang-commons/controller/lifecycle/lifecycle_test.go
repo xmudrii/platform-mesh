@@ -16,15 +16,15 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/conditions"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/mocks"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/runtimeobject"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/subroutine"
-	pmtesting "github.com/platform-mesh/golang-commons/controller/testSupport"
-	operrors "github.com/platform-mesh/golang-commons/errors"
-	"github.com/platform-mesh/golang-commons/logger"
-	"github.com/platform-mesh/golang-commons/logger/testlogger"
-	"github.com/platform-mesh/golang-commons/sentry"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/conditions"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/mocks"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/runtimeobject"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/subroutine"
+	pmtesting "go.platform-mesh.io/golang-commons/controller/testSupport"
+	operrors "go.platform-mesh.io/golang-commons/errors"
+	"go.platform-mesh.io/golang-commons/logger"
+	"go.platform-mesh.io/golang-commons/logger/testlogger"
+	"go.platform-mesh.io/golang-commons/sentry"
 )
 
 func TestLifecycle(t *testing.T) {

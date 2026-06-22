@@ -14,12 +14,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/ratelimiter"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/runtimeobject"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/subroutine"
-	pmtesting "github.com/platform-mesh/golang-commons/controller/testSupport"
-	"github.com/platform-mesh/golang-commons/errors"
-	"github.com/platform-mesh/golang-commons/logger/testlogger"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/ratelimiter"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/runtimeobject"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/subroutine"
+	pmtesting "go.platform-mesh.io/golang-commons/controller/testSupport"
+	"go.platform-mesh.io/golang-commons/errors"
+	"go.platform-mesh.io/golang-commons/logger/testlogger"
 )
 
 func TestLifecycle(t *testing.T) {

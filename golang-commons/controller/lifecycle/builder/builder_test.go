@@ -8,9 +8,9 @@ import (
 	"k8s.io/client-go/rest"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/ratelimiter"
-	pmtesting "github.com/platform-mesh/golang-commons/controller/testSupport"
-	"github.com/platform-mesh/golang-commons/logger"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/ratelimiter"
+	pmtesting "go.platform-mesh.io/golang-commons/controller/testSupport"
+	"go.platform-mesh.io/golang-commons/logger"
 )
 
 func TestNewBuilder_Defaults(t *testing.T) {

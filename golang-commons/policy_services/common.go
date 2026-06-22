@@ -9,10 +9,10 @@ import (
 	"github.com/machinebox/graphql"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
-	pmcontext "github.com/platform-mesh/golang-commons/context"
-	"github.com/platform-mesh/golang-commons/jwt"
-	"github.com/platform-mesh/golang-commons/logger"
-	"github.com/platform-mesh/golang-commons/middleware"
+	pmcontext "go.platform-mesh.io/golang-commons/context"
+	"go.platform-mesh.io/golang-commons/jwt"
+	"go.platform-mesh.io/golang-commons/logger"
+	"go.platform-mesh.io/golang-commons/middleware"
 )
 
 func createClient(ctx context.Context, iamApiUrl string) *graphql.Client {

@@ -10,7 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	pmerrors "github.com/platform-mesh/golang-commons/errors"
+	pmerrors "go.platform-mesh.io/golang-commons/errors"
 )
 
 func TestIsTerminatingNSError(t *testing.T) {

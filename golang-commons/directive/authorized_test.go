@@ -9,14 +9,14 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/go-jose/go-jose/v4"
 	openfgav1 "github.com/openfga/api/proto/openfga/v1"
-	pmcontext "github.com/platform-mesh/golang-commons/context"
-	"github.com/platform-mesh/golang-commons/context/keys"
-	logger "github.com/platform-mesh/golang-commons/logger/testlogger"
+	pmcontext "go.platform-mesh.io/golang-commons/context"
+	"go.platform-mesh.io/golang-commons/context/keys"
+	logger "go.platform-mesh.io/golang-commons/logger/testlogger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 
-	"github.com/platform-mesh/golang-commons/directive/mocks"
+	"go.platform-mesh.io/golang-commons/directive/mocks"
 )
 
 const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"

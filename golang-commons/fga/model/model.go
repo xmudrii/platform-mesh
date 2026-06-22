@@ -5,7 +5,7 @@ import (
 
 	openfgav1 "github.com/openfga/api/proto/openfga/v1"
 
-	"github.com/platform-mesh/golang-commons/fga/util"
+	"go.platform-mesh.io/golang-commons/fga/util"
 )
 
 // BuildObjectType renders the canonical OpenFGA object type from an API group

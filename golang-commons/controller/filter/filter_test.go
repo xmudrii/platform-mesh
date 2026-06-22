@@ -3,7 +3,7 @@ package filter
 import (
 	"testing"
 
-	"github.com/platform-mesh/golang-commons/controller/testSupport"
+	"go.platform-mesh.io/golang-commons/controller/testSupport"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/event"

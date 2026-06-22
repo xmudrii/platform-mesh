@@ -5,9 +5,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/api"
-	pmtesting "github.com/platform-mesh/golang-commons/controller/testSupport"
-	"github.com/platform-mesh/golang-commons/logger/testlogger"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/api"
+	pmtesting "go.platform-mesh.io/golang-commons/controller/testSupport"
+	"go.platform-mesh.io/golang-commons/logger/testlogger"
 )
 
 func TestToRuntimeObjectSpreadReconcileStatusInterface_Success(t *testing.T) {

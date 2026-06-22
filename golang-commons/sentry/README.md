@@ -4,8 +4,8 @@ The `sentry` package implements some helper functions to use in applications tha
 
 ### Initialization
 
-Init the Sentry connection at the start of our application e.g. in your main function. You need to provide a valid context 
-that is canceled when your application stops. 
+Init the Sentry connection at the start of our application e.g. in your main function. You need to provide a valid context
+that is canceled when your application stops.
 
 ```go
 ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGKILL, syscall.SIGINT)
@@ -50,7 +50,7 @@ errors that should be sent to Sentry and those that should not be sent.
 ```go
 err := errors.New("test error")
 
-// wrap any error to mark it an Sentry worthy error  
+// wrap any error to mark it an Sentry worthy error
 sentryError := SentryError(err)
 
 if IsSentryError(err) {
@@ -58,13 +58,13 @@ if IsSentryError(err) {
 }
 ```
 
-The idea behind this is, that if you collect errors in a central place in an application you can wrap errors 
+The idea behind this is, that if you collect errors in a central place in an application you can wrap errors
 as `sentry.Error` to check if it should be sent to Sentry later. Wrapped errors using `fmt.Errorf` are also supported, so you can
 wrap `sentry.Error` errors like so:
 
 ```go
 err := errors.New("test error")
- 
+
 sentryError := SentryError(err)
 
 // create a wrapped error
@@ -84,10 +84,10 @@ But it uses provided tags and extras if the error is of `sentry.Error` type.
 ### Better Stack Traces
 
 If you create a SentryError from an existing error the current stack trace is added. This is done by wrapping it as an
-`ErrorWithStack` from `github.com/platform-mesh/golang-commons/errors`
+`ErrorWithStack` from `go.platform-mesh.io/golang-commons/errors`
 
-You can use the `github.com/platform-mesh/golang-commons/errors` package as a drop-in replacement for the stdlib `errors` package
-everywhere in your application. This way you get additional stack traces for every wrapped error in the Sentry UI. 
+You can use the `go.platform-mesh.io/golang-commons/errors` package as a drop-in replacement for the stdlib `errors` package
+everywhere in your application. This way you get additional stack traces for every wrapped error in the Sentry UI.
 
 ### GraphQL Error Presenter
 
@@ -96,7 +96,7 @@ It can be used in a GraphQL service like so:
 
 ```go
 import (
-    "github.com/platform-mesh/golang-commons/sentry"
+    "go.platform-mesh.io/golang-commons/sentry"
 )
 
 gqHandler.SetErrorPresenter(sentry.GraphQLErrorPresenter())
@@ -114,29 +114,29 @@ This function can be used in `main()` to record all panics (but not recover from
 functions that are likely to panic (and then recover without crashing). However, if the `Recover()` function is used in `main()` only,
 it prevents not from crashing, it just logs the panic before crashing.
 
-Please note that the `Recover` function has to be called with the `defer` keyword like so: 
+Please note that the `Recover` function has to be called with the `defer` keyword like so:
 ```go
 package main
 import (
 	"context"
 	"os/signal"
 	"syscall"
-	
-    "github.com/platform-mesh/golang-commons/sentry"
-    "github.com/platform-mesh/golang-commons/logger"
+
+    "go.platform-mesh.io/golang-commons/sentry"
+    "go.platform-mesh.io/golang-commons/logger"
 )
 
 func main() {
     ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGKILL, syscall.SIGINT)
     defer cancel()
-	
+
     defer sentry.Recover(logger.StdLogger)
 
     err := sentry.Start(ctx, "sentryDSN", "env", "region", "image", "image tag")
     if err != nil {
         // ...
     }
-    
+
 	// ...
 }
 ```

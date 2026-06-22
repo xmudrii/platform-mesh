@@ -1,9 +1,9 @@
 # Platform Mesh - golang-commons
 
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/platform-mesh/golang-commons/badge)](https://scorecard.dev/viewer/?uri=github.com/platform-mesh/golang-commons)
-![Build Status](https://github.com/platform-mesh/golang-commons/actions/workflows/ci.yml/badge.svg)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/go.platform-mesh.io/golang-commons/badge)](https://scorecard.dev/viewer/?uri=go.platform-mesh.io/golang-commons)
+![Build Status](https://go.platform-mesh.io/golang-commons/actions/workflows/ci.yml/badge.svg)
 [![REUSE status](
-https://api.reuse.software/badge/github.com/platform-mesh/golang-commons)](https://api.reuse.software/info/github.com/platform-mesh/golang-commons)
+https://api.reuse.software/badge/go.platform-mesh.io/golang-commons)](https://api.reuse.software/info/go.platform-mesh.io/golang-commons)
 ## Description
 
 golang-commons contains golang library packages to be reused across microservices and operators/controllers. The scope includes, but is not limited to:
@@ -19,7 +19,7 @@ golang-commons contains golang library packages to be reused across microservice
 Add the dependency to your go module based project like so:
 
 ```
-go get github.com/platform-mesh/golang-commons
+go get go.platform-mesh.io/golang-commons
 ```
 
 ## Releasing

@@ -8,7 +8,7 @@ import (
 	openfgav1 "github.com/openfga/api/proto/openfga/v1"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/platform-mesh/golang-commons/directive/mocks"
+	"go.platform-mesh.io/golang-commons/directive/mocks"
 )
 
 func TestOpenFGAClient_Exists(t *testing.T) {

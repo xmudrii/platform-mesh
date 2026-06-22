@@ -3,7 +3,7 @@ package client
 import (
 	"testing"
 
-	"github.com/platform-mesh/golang-commons/directive/mocks"
+	"go.platform-mesh.io/golang-commons/directive/mocks"
 	"github.com/stretchr/testify/assert"
 )
 

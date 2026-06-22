@@ -6,8 +6,8 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 
-	pmpcontext "github.com/platform-mesh/golang-commons/context"
-	"github.com/platform-mesh/golang-commons/logger"
+	pmpcontext "go.platform-mesh.io/golang-commons/context"
+	"go.platform-mesh.io/golang-commons/logger"
 )
 
 func setTenantToContextForTechnicalUsers(ctx context.Context, l *logger.Logger) (context.Context, error) {

@@ -7,10 +7,10 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/api"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/runtimeobject"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/util"
-	"github.com/platform-mesh/golang-commons/logger"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/api"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/runtimeobject"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/util"
+	"go.platform-mesh.io/golang-commons/logger"
 )
 
 const ReconcileRefreshLabel = "platform-mesh.io/refresh-reconcile"

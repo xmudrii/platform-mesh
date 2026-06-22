@@ -6,9 +6,9 @@ import (
 
 	"github.com/go-jose/go-jose/v4"
 
-	"github.com/platform-mesh/golang-commons/context/keys"
-	"github.com/platform-mesh/golang-commons/jwt"
-	"github.com/platform-mesh/golang-commons/logger"
+	"go.platform-mesh.io/golang-commons/context/keys"
+	"go.platform-mesh.io/golang-commons/jwt"
+	"go.platform-mesh.io/golang-commons/logger"
 )
 
 type ContextKey string

@@ -8,7 +8,7 @@ import (
 	"github.com/go-jose/go-jose/v4"
 	"github.com/golang-jwt/jwt/v5"
 
-	"github.com/platform-mesh/golang-commons/context"
+	"go.platform-mesh.io/golang-commons/context"
 )
 
 // LocalMiddleware returns an HTTP middleware factory that injects a test JWT and tenant ID into each request's context.

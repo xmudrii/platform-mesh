@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/platform-mesh/golang-commons/config"
+	"go.platform-mesh.io/golang-commons/config"
 )
 
 func TestSetConfigInContext(t *testing.T) {

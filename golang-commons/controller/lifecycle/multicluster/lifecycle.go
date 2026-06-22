@@ -16,15 +16,15 @@ import (
 
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/platform-mesh/golang-commons/controller/filter"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/api"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/conditions"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/ratelimiter"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/runtimeobject"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/spread"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/subroutine"
-	"github.com/platform-mesh/golang-commons/logger"
+	"go.platform-mesh.io/golang-commons/controller/filter"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/api"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/conditions"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/ratelimiter"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/runtimeobject"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/spread"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/subroutine"
+	"go.platform-mesh.io/golang-commons/logger"
 )
 
 type ClusterGetter interface {

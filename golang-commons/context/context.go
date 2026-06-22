@@ -8,8 +8,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/platform-mesh/golang-commons/config"
-	"github.com/platform-mesh/golang-commons/logger"
+	"go.platform-mesh.io/golang-commons/config"
+	"go.platform-mesh.io/golang-commons/logger"
 )
 
 // Can be used in StartContext to have a sane default timeout

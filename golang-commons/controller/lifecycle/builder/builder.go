@@ -4,11 +4,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
 
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/controllerruntime"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/multicluster"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/ratelimiter"
-	"github.com/platform-mesh/golang-commons/controller/lifecycle/subroutine"
-	"github.com/platform-mesh/golang-commons/logger"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/controllerruntime"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/multicluster"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/ratelimiter"
+	"go.platform-mesh.io/golang-commons/controller/lifecycle/subroutine"
+	"go.platform-mesh.io/golang-commons/logger"
 )
 
 type Builder struct {

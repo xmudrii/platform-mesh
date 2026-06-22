@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/pflag"
 
-	"github.com/platform-mesh/golang-commons/context/keys"
-	"github.com/platform-mesh/golang-commons/traces"
+	"go.platform-mesh.io/golang-commons/context/keys"
+	"go.platform-mesh.io/golang-commons/traces"
 )
 
 func SetConfigInContext(ctx context.Context, config any) context.Context {

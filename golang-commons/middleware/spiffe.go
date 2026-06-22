@@ -3,8 +3,8 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/platform-mesh/golang-commons/context"
-	"github.com/platform-mesh/golang-commons/jwt"
+	"go.platform-mesh.io/golang-commons/context"
+	"go.platform-mesh.io/golang-commons/jwt"
 )
 
 // StoreSpiffeHeader returns an HTTP middleware that extracts a SPIFFE URL from the request headers

@@ -9,7 +9,7 @@ import (
 	"github.com/go-jose/go-jose/v4"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/machinebox/graphql"
-	pmcontext "github.com/platform-mesh/golang-commons/context"
+	pmcontext "go.platform-mesh.io/golang-commons/context"
 	"github.com/stretchr/testify/assert"
 )
 

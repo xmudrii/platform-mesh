@@ -23,7 +23,7 @@ packages:
       OpenFGAServiceClient:
         config:
           structname: OpenFGAServiceClient
-  github.com/platform-mesh/golang-commons/fga/store:
+  go.platform-mesh.io/golang-commons/fga/store:
     config:
       dir: fga/store/mocks
       pkgname: mocks
@@ -32,7 +32,7 @@ packages:
       FGAStoreHelper:
         config:
           structname: FGAStoreHelper
-  github.com/platform-mesh/golang-commons/policy_services:
+  go.platform-mesh.io/golang-commons/policy_services:
     config:
       dir: fga/policy_services/mocks
       pkgname: mocks

@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 
-	pmcontext "github.com/platform-mesh/golang-commons/context"
+	pmcontext "go.platform-mesh.io/golang-commons/context"
 )
 
 func TestLocalTenantReader(t *testing.T) {

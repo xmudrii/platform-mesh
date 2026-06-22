@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	appctx "github.com/platform-mesh/golang-commons/context"
+	appctx "go.platform-mesh.io/golang-commons/context"
 )
 
 const AuthorizationHeader = "Authorization"
