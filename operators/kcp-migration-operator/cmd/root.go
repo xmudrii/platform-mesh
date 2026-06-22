@@ -38,7 +38,7 @@ var (
 
 var rootCmd = &cobra.Command{
 	Use:   "kcp-migration-operator",
-	Short: "Operator to migrate Kubernetes resources to KCP workspaces",
+	Short: "Operator to migrate Kubernetes resources to kcp workspaces",
 }
 
 func init() {

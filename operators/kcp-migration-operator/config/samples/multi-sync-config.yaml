@@ -1,7 +1,7 @@
 # Sample multi-resource sync configuration
 # This file demonstrates how to configure multiple resource types for synchronization
 
-# KCP kubeconfig for connecting to KCP workspaces
+# kcp kubeconfig for connecting to kcp workspaces
 kcpKubeconfigPath: /etc/kcp/kubeconfig
 
 # Source cluster kubeconfig (optional, uses KUBECONFIG env var if not set)
@@ -13,7 +13,7 @@ templatesDir: .templates
 
 # Resources to synchronize
 resources:
-  # Sync Accounts from source namespace to KCP org workspace
+  # Sync Accounts from source namespace to kcp org workspace
   - name: accounts-to-sap-org
     source:
       apiVersion: fabric.foundation.sap.com/v1alpha1
@@ -28,7 +28,7 @@ resources:
       rateLimitResourcesPerSecond: 100
       rateLimitBurst: 200
 
-  # Sync Spaces to KCP project workspaces
+  # Sync Spaces to kcp project workspaces
   - name: spaces-to-projects
     source:
       apiVersion: fabric.foundation.sap.com/v1alpha1

@@ -75,7 +75,7 @@ var _ = Describe("SyncController", Ordered, func() {
 			syncMgr.GetClient(),
 			log,
 			syncCfg,
-			nil, // No KCP client factory in envtest - will skip KCP sync
+			nil, // No kcp client factory in envtest - will skip kcp sync
 		)
 		err = syncController.SetupWithManager(syncMgr)
 		Expect(err).NotTo(HaveOccurred())

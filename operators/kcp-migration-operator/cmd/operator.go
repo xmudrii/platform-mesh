@@ -31,7 +31,7 @@ import (
 
 var operatorCmd = &cobra.Command{
 	Use:   "operator",
-	Short: "Run the KCP Migration operator",
+	Short: "Run the kcp Migration operator",
 	Run:   RunController,
 }
 

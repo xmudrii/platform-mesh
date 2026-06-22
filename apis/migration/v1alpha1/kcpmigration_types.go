@@ -41,7 +41,7 @@ type KCPMigrationSpec struct {
 	// +kubebuilder:validation:Required
 	Source SourceSpec `json:"source"`
 
-	// Transform defines how source resources are transformed and where they are placed in KCP
+	// Transform defines how source resources are transformed and where they are placed in kcp
 	// +kubebuilder:validation:Required
 	Transform TransformSpec `json:"transform"`
 
@@ -78,7 +78,7 @@ type SourceSpec struct {
 
 // TransformSpec defines how source resources are transformed and where they are placed
 type TransformSpec struct {
-	// TargetWorkspace defines how to derive the target KCP workspace
+	// TargetWorkspace defines how to derive the target kcp workspace
 	// +kubebuilder:validation:Required
 	TargetWorkspace WorkspaceExpression `json:"targetWorkspace"`
 
@@ -93,7 +93,7 @@ type TransformSpec struct {
 	Template *TemplateSpec `json:"template,omitempty"`
 }
 
-// WorkspaceExpression defines how to derive the target KCP workspace
+// WorkspaceExpression defines how to derive the target kcp workspace
 type WorkspaceExpression struct {
 	// Expression is a Go template expression to derive the workspace path
 	// Has access to .Source (full resource), .Source.metadata.namespace, .Source.metadata.name, etc.

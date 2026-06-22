@@ -58,7 +58,7 @@ type SecretsConfig struct {
 	SourceKubeconfig string
 }
 
-// OperatorConfig holds the configuration for the KCP Migration Operator (main mode)
+// OperatorConfig holds the configuration for the kcp Migration Operator (main mode)
 type OperatorConfig struct {
 	Subroutines   SubroutinesConfig
 	ChildOperator ChildOperatorConfig
@@ -109,7 +109,7 @@ func (c *OperatorConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.ChildOperator.Resources.MemoryRequest, "child-operator-memory-request", c.ChildOperator.Resources.MemoryRequest, "Set child operator memory request")
 	fs.StringVar(&c.ChildOperator.Resources.MemoryLimit, "child-operator-memory-limit", c.ChildOperator.Resources.MemoryLimit, "Set child operator memory limit")
 
-	fs.StringVar(&c.Secrets.KCPKubeconfig, "secrets-kcp-kubeconfig", c.Secrets.KCPKubeconfig, "Set secret name containing KCP kubeconfig")
+	fs.StringVar(&c.Secrets.KCPKubeconfig, "secrets-kcp-kubeconfig", c.Secrets.KCPKubeconfig, "Set secret name containing kcp kubeconfig")
 	fs.StringVar(&c.Secrets.SourceKubeconfig, "secrets-source-kubeconfig", c.Secrets.SourceKubeconfig, "Set secret name containing source kubeconfig")
 }
 
@@ -171,7 +171,7 @@ type SyncConfig struct {
 	Transform TransformConfig `yaml:"transform"`
 	// Performance configuration (embedded struct)
 	Performance PerformanceConfig `yaml:"performance"`
-	// KCPKubeconfigPath is the path to the KCP kubeconfig file
+	// KCPKubeconfigPath is the path to the kcp kubeconfig file
 	KCPKubeconfigPath string
 
 	// SourceKubeconfigPath is the path to the source cluster kubeconfig file
@@ -200,12 +200,12 @@ func (c *SyncConfig) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.Source.Namespace, "source-namespace", c.Source.Namespace, "Namespace to watch for source resources (empty = all namespaces)")
 	fs.StringSliceVar(&c.Source.LabelSelectors, "source-label-selectors", c.Source.LabelSelectors, "Label selectors to filter source resources (e.g., 'app=myapp,env=prod')")
 	fs.StringVar(&c.Target.WorkspaceExpression, "target-workspace-expression", c.Target.WorkspaceExpression, "Go template for target workspace")
-	fs.StringVar(&c.Target.Namespace, "target-namespace", c.Target.Namespace, "Target namespace in KCP workspace")
+	fs.StringVar(&c.Target.Namespace, "target-namespace", c.Target.Namespace, "Target namespace in kcp workspace")
 	fs.StringVar(&c.Transform.Template, "template", c.Transform.Template, "Inline transformation template")
 	fs.StringVar(&c.Transform.TemplatePath, "template-path", c.Transform.TemplatePath, "Path to template file (useful for local development)")
 	fs.StringVar(&c.Transform.ConfigMapName, "template-configmap-name", c.Transform.ConfigMapName, "ConfigMap containing template")
 	fs.StringVar(&c.Transform.ConfigMapKey, "template-configmap-key", c.Transform.ConfigMapKey, "Key in ConfigMap for template")
-	fs.StringVar(&c.KCPKubeconfigPath, "kcp-kubeconfig-path", c.KCPKubeconfigPath, "Path to KCP kubeconfig")
+	fs.StringVar(&c.KCPKubeconfigPath, "kcp-kubeconfig-path", c.KCPKubeconfigPath, "Path to kcp kubeconfig")
 	fs.StringVar(&c.SourceKubeconfigPath, "source-kubeconfig-path", c.SourceKubeconfigPath, "Path to source cluster kubeconfig")
 	fs.IntVar(&c.Performance.RateLimitResourcesPerSecond, "rate-limit-resources-per-second", c.Performance.RateLimitResourcesPerSecond, "Max resources to sync per second")
 	fs.IntVar(&c.Performance.RateLimitBurst, "rate-limit-burst", c.Performance.RateLimitBurst, "Rate limiter burst size")
@@ -230,7 +230,7 @@ type ResourceSyncConfig struct {
 // MultiSyncConfig holds configuration for multi-resource sync mode
 // This is loaded from a YAML configuration file
 type MultiSyncConfig struct {
-	// KCPKubeconfigPath is the path to the KCP kubeconfig file
+	// KCPKubeconfigPath is the path to the kcp kubeconfig file
 	KCPKubeconfigPath string `yaml:"kcpKubeconfigPath"`
 	// SourceKubeconfigPath is the path to the source cluster kubeconfig file
 	SourceKubeconfigPath string `yaml:"sourceKubeconfigPath,omitempty"`

@@ -37,7 +37,7 @@ import (
 	"go.platform-mesh.io/kcp-migration-operator/internal/transform"
 )
 
-// SyncController watches source resources and syncs them to KCP workspaces
+// SyncController watches source resources and syncs them to kcp workspaces
 type SyncController struct {
 	client.Client
 	Log                    *logger.Logger
@@ -81,7 +81,7 @@ func parseAPIVersion(apiVersion string) schema.GroupVersion {
 
 //+kubebuilder:rbac:groups=*,resources=*,verbs=get;list;watch
 
-// Reconcile handles reconciliation of source resources for syncing to KCP
+// Reconcile handles reconciliation of source resources for syncing to kcp
 func (s *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := s.Log.With().
 		Str("name", req.Name).
@@ -89,7 +89,7 @@ func (s *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		Str("kind", s.Config.Source.Kind).
 		Logger()
 
-	log.Info().Msg("syncing resource to KCP")
+	log.Info().Msg("syncing resource to kcp")
 
 	// Fetch the source resource
 	source := &unstructured.Unstructured{}
@@ -97,9 +97,9 @@ func (s *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	if err := s.Get(ctx, req.NamespacedName, source); err != nil {
 		if apierrors.IsNotFound(err) {
-			// Resource was deleted - handle deletion from KCP
+			// Resource was deleted - handle deletion from kcp
 			log.Info().Msg("source resource not found, may have been deleted")
-			// TODO: Implement deletion propagation to KCP
+			// TODO: Implement deletion propagation to kcp
 			return ctrl.Result{}, nil
 		}
 		log.Error().Err(err).Msg("failed to get source resource")
@@ -122,15 +122,15 @@ func (s *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	log.Info().Str("workspacePath", workspacePath).Msg("evaluated workspace path")
 
-	// Step 2: Get KCP client for target workspace
+	// Step 2: Get kcp client for target workspace
 	if s.WorkspaceClientFactory == nil {
-		log.Warn().Msg("workspace client factory not configured, skipping sync to KCP")
+		log.Warn().Msg("workspace client factory not configured, skipping sync to kcp")
 		return ctrl.Result{}, nil
 	}
 
 	kcpClient, err := s.WorkspaceClientFactory.GetClient(workspacePath)
 	if err != nil {
-		log.Error().Err(err).Str("workspacePath", workspacePath).Msg("failed to get KCP client")
+		log.Error().Err(err).Str("workspacePath", workspacePath).Msg("failed to get kcp client")
 		return ctrl.Result{}, err
 	}
 
@@ -149,7 +149,7 @@ func (s *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	// Step 4: Create or update resource in target workspace
 	if err := s.syncToKCP(ctx, kcpClient, target, log); err != nil {
-		log.Error().Err(err).Msg("failed to sync resource to KCP")
+		log.Error().Err(err).Msg("failed to sync resource to kcp")
 		return ctrl.Result{}, err
 	}
 
@@ -158,7 +158,7 @@ func (s *SyncController) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return ctrl.Result{}, nil
 }
 
-// prepareTargetResource creates a target resource for KCP from the source
+// prepareTargetResource creates a target resource for kcp from the source
 // If a template is configured, it transforms the source using the template.
 // Otherwise, it uses pass-through mode (copy source with cleaned metadata).
 func (s *SyncController) prepareTargetResource(source *unstructured.Unstructured) (*unstructured.Unstructured, error) {
@@ -200,7 +200,7 @@ func (s *SyncController) prepareTargetResource(source *unstructured.Unstructured
 	return target, nil
 }
 
-// syncToKCP creates or updates the resource in KCP
+// syncToKCP creates or updates the resource in kcp
 func (s *SyncController) syncToKCP(ctx context.Context, kcpClient client.Client, target *unstructured.Unstructured, log zerolog.Logger) error {
 	// Try to get existing resource
 	existing := &unstructured.Unstructured{}
@@ -214,11 +214,11 @@ func (s *SyncController) syncToKCP(ctx context.Context, kcpClient client.Client,
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// Create new resource
-			log.Info().Msg("creating resource in KCP")
+			log.Info().Msg("creating resource in kcp")
 			if err := kcpClient.Create(ctx, target); err != nil {
 				return err
 			}
-			log.Info().Msg("created resource in KCP")
+			log.Info().Msg("created resource in kcp")
 			return nil
 		}
 		return err
@@ -228,7 +228,7 @@ func (s *SyncController) syncToKCP(ctx context.Context, kcpClient client.Client,
 	// Set the resource version from existing for update
 	target.SetResourceVersion(existing.GetResourceVersion())
 
-	log.Info().Msg("updating resource in KCP")
+	log.Info().Msg("updating resource in kcp")
 	if err := kcpClient.Update(ctx, target); err != nil {
 		if apierrors.IsConflict(err) {
 			// Conflict - will be retried
@@ -237,7 +237,7 @@ func (s *SyncController) syncToKCP(ctx context.Context, kcpClient client.Client,
 		}
 		return err
 	}
-	log.Info().Msg("updated resource in KCP")
+	log.Info().Msg("updated resource in kcp")
 	return nil
 }
 

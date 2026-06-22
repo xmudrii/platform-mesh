@@ -4,7 +4,7 @@
 
 ### KCPMigration
 
-The `KCPMigration` CRD defines a synchronization job from a source cluster to a KCP workspace.
+The `KCPMigration` CRD defines a synchronization job from a source cluster to a kcp workspace.
 
 ---
 
@@ -20,7 +20,7 @@ spec:
   source: SourceSpec              # Required: What to watch
   transform: TransformSpec        # Required: How to transform and where to put it
   syncOptions: SyncOptions        # Optional: Rate limiting and sync behavior
-  apiResourceSchema: APIResourceSchemaSpec  # Optional: Create APIResourceSchema in KCP
+  apiResourceSchema: APIResourceSchemaSpec  # Optional: Create APIResourceSchema in kcp
 status:
   phase: string                   # Current phase
   childOperator: ChildOperatorStatus
@@ -90,19 +90,19 @@ This watches `MyApp` resources in the `production` namespace that have:
 
 ### TransformSpec
 
-Defines how source resources are transformed and where they are placed in KCP. This is the core of the migration configuration.
+Defines how source resources are transformed and where they are placed in kcp. This is the core of the migration configuration.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `targetWorkspace` | WorkspaceExpression | Yes | How to determine the target KCP workspace |
+| `targetWorkspace` | WorkspaceExpression | Yes | How to determine the target kcp workspace |
 | `targetNamespace` | string | No | Namespace in target workspace (Go template supported). If not specified, uses source namespace or cluster-scoped |
 | `template` | TemplateSpec | No | Template for the target resource. If not specified, resource is synced as-is |
 
-**Note**: If `template` is not specified, the source resource is copied to KCP without transformation (pass-through mode). The `targetNamespace` field can still be used to control placement.
+**Note**: If `template` is not specified, the source resource is copied to kcp without transformation (pass-through mode). The `targetNamespace` field can still be used to control placement.
 
 #### WorkspaceExpression
 
-Defines how to derive the target KCP workspace from the source resource.
+Defines how to derive the target kcp workspace from the source resource.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -197,7 +197,7 @@ spec:
 
 ### APIResourceSchemaSpec
 
-Optional configuration for creating APIResourceSchemas in KCP. This ensures the target API is available before syncing resources.
+Optional configuration for creating APIResourceSchemas in kcp. This ensures the target API is available before syncing resources.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -219,7 +219,7 @@ One of `fromSourceCRD`, `inline`, or `configMapRef` must be specified when `enab
 
 #### Example: Derive Schema from Source CRD
 
-The operator reads the CRD from the source cluster and creates a corresponding APIResourceSchema in KCP:
+The operator reads the CRD from the source cluster and creates a corresponding APIResourceSchema in kcp:
 
 ```yaml
 spec:
@@ -275,7 +275,7 @@ When `apiResourceSchema.enabled` is true:
 2. **On KCPMigration update**: Operator updates APIResourceSchema if schema source changed
 3. **On KCPMigration deletion**: APIResourceSchema is **retained** (not deleted) to avoid breaking other consumers
 
-**Note**: APIExports and APIBindings are NOT managed by this operator. They should be configured separately as part of your KCP workspace setup (e.g., via workspace types or manual configuration).
+**Note**: APIExports and APIBindings are NOT managed by this operator. They should be configured separately as part of your kcp workspace setup (e.g., via workspace types or manual configuration).
 
 ---
 
@@ -285,7 +285,7 @@ When `apiResourceSchema.enabled` is true:
 
 When a Go template fails to execute for a specific resource (e.g., missing field), the operator:
 
-1. **Skips the resource** - does not write to KCP
+1. **Skips the resource** - does not write to kcp
 2. **Logs the error** - with resource name and error details
 3. **Emits an event** - `TransformationError` event on the KCPMigration
 4. **Continues processing** - other resources are not affected
@@ -295,7 +295,7 @@ This ensures that one malformed resource does not block the entire migration.
 
 ### Sync Errors
 
-When writing to KCP fails:
+When writing to kcp fails:
 
 1. **Retries with backoff** - transient errors are retried
 2. **Logs the error** - with workspace and resource details
@@ -306,25 +306,25 @@ When writing to KCP fails:
 
 ## Deletion Behavior
 
-When a source resource is deleted, the corresponding target resource in KCP is also deleted. This ensures the KCP workspace accurately reflects the source cluster state.
+When a source resource is deleted, the corresponding target resource in kcp is also deleted. This ensures the kcp workspace accurately reflects the source cluster state.
 
-### Manual Deletion in KCP
+### Manual Deletion in kcp
 
-If a synced resource is manually deleted in KCP (not via source deletion):
+If a synced resource is manually deleted in kcp (not via source deletion):
 
 1. The operator detects the missing resource on next reconciliation
 2. The resource is **re-synced** from source
-3. KCP state is restored to match source
+3. kcp state is restored to match source
 
 This ensures the **source cluster remains the source of truth** during migration.
 
 ### Decommissioning Workflow
 
-To stop syncing without deleting resources in KCP, delete the `KCPMigration` CR itself:
+To stop syncing without deleting resources in kcp, delete the `KCPMigration` CR itself:
 
 1. Delete the `KCPMigration` resource
 2. The child operator stops and is removed
-3. All synced resources in KCP remain untouched
+3. All synced resources in kcp remain untouched
 4. Source resources can then be cleaned up independently
 
 This is the recommended approach for migration scenarios where the source cluster will be decommissioned.
@@ -375,7 +375,7 @@ Standard Kubernetes conditions:
 
 ### Example 1: Namespace-to-Workspace Migration
 
-Each source namespace becomes a KCP workspace. Resources are transformed to Platform Mesh types.
+Each source namespace becomes a kcp workspace. Resources are transformed to Platform Mesh types.
 
 ```yaml
 apiVersion: migration.platform-mesh.io/v1alpha1
@@ -410,8 +410,8 @@ spec:
 ```
 
 **Result**:
-- Source `MyApp` in namespace `team-a` → KCP workspace `root:platform-mesh:team-a`
-- Source `MyApp` in namespace `team-b` → KCP workspace `root:platform-mesh:team-b`
+- Source `MyApp` in namespace `team-a` → kcp workspace `root:platform-mesh:team-a`
+- Source `MyApp` in namespace `team-b` → kcp workspace `root:platform-mesh:team-b`
 
 ### Example 2: Label-based Workspace Routing
 
@@ -444,8 +444,8 @@ spec:
 ```
 
 **Result**:
-- Source with label `organization: acme` → KCP workspace `root:acme:configs`
-- Source with label `organization: globex` → KCP workspace `root:globex:configs`
+- Source with label `organization: acme` → kcp workspace `root:acme:configs`
+- Source with label `organization: globex` → kcp workspace `root:globex:configs`
 
 ### Example 3: Filtering with Label Selectors
 

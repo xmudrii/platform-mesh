@@ -30,7 +30,10 @@ tasks:
     desc: Generate CRD manifests
     deps: [tools:controller-gen]
     cmds:
-      - "{{.BIN}}/controller-gen rbac:roleName=manager-role crd paths=./... output:crd:artifacts:config={{.CRD_DIRECTORY}}"
+      - |
+        set -ex
+        cd {{.TOPLEVEL}}/apis
+        {{.BIN}}/controller-gen rbac:roleName=manager-role crd paths=./migration/... output:crd:artifacts:config=../operators/kcp-migration-operator/{{.CRD_DIRECTORY}}
 
   generate:
     desc: Generate code (deepcopy, manifests)
