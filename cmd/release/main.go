@@ -29,6 +29,9 @@ limitations under the License.
 //	extension-manager-operator   extension-manager-operator/v<X.Y.Z>
 //	                                               extension-manager-operator.yml: signed image,
 //	                                               GitHub release, chart bump, SBOM, OCM
+//	kcp-migration-operator   kcp-migration-operator/v<X.Y.Z>
+//	                                               kcp-migration-operator.yml: signed image,
+//	                                               GitHub release, chart bump, SBOM, OCM
 //	security-operator  security-operator/v<X.Y.Z>  security-operator.yml: signed image,
 //	                                               GitHub release, chart bump, SBOM, OCM
 //
@@ -85,6 +88,7 @@ var components = map[string]component{
 	"account-operator":           {"account-operator/v", "account-operator.yml: builds + signs the image, cuts a GitHub release, bumps the chart, publishes SBOM + signed OCM component"},
 	"backup-operator":            {"backup-operator/v", "backup-operator.yml: builds + signs the image, cuts a GitHub release, bumps the chart, publishes SBOM + signed OCM component"},
 	"extension-manager-operator": {"extension-manager-operator/v", "extension-manager-operator.yml: builds + signs the image, cuts a GitHub release, bumps the chart, publishes SBOM + signed OCM component"},
+	"kcp-migration-operator":     {"kcp-migration-operator/v", "kcp-migration-operator.yml: builds + signs the image, cuts a GitHub release, bumps the chart, publishes SBOM + signed OCM component"},
 	"security-operator":          {"security-operator/v", "security-operator.yml: builds + signs the image, cuts a GitHub release, bumps the chart, publishes SBOM + signed OCM component"},
 }
 
@@ -411,6 +415,7 @@ Components:
   account-operator             account-operator/v<X.Y.Z>             (signed image + release + chart + SBOM + OCM)
   backup-operator              backup-operator/v<X.Y.Z>              (signed image + release + chart + SBOM + OCM)
   extension-manager-operator   extension-manager-operator/v<X.Y.Z>   (signed image + release + chart + SBOM + OCM)
+  kcp-migration-operator       kcp-migration-operator/v<X.Y.Z>       (signed image + release + chart + SBOM + OCM)
   security-operator            security-operator/v<X.Y.Z>            (signed image + release + chart + SBOM + OCM)
   all                          every component                       (independent versions)
 

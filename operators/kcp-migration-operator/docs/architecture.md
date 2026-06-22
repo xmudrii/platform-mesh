@@ -2,33 +2,33 @@
 
 ## Overview
 
-The KCP Migration Operator enables synchronization of Kubernetes custom resources from existing clusters to [KCP](https://docs.kcp.io/kcp/main/) workspaces. It uses a dynamic operator spawning pattern where the main operator creates child operators based on user-defined migration configurations.
+The kcp Migration Operator enables synchronization of Kubernetes custom resources from existing clusters to [kcp](https://docs.kcp.io/kcp/main/) workspaces. It uses a dynamic operator spawning pattern where the main operator creates child operators based on user-defined migration configurations.
 
-## KCP Considerations
+## kcp Considerations
 
-[KCP](https://docs.kcp.io/kcp/main/) (Kubernetes Control Plane) differs from standard Kubernetes in important ways:
+[kcp](https://docs.kcp.io/kcp/main/) (Kubernetes Control Plane) differs from standard Kubernetes in important ways:
 
-- **No Workload Execution**: KCP doesn't run Pods - it's an API server for managing resources
+- **No Workload Execution**: kcp doesn't run Pods - it's an API server for managing resources
 - **Workspace Model**: Resources live in hierarchical workspaces (e.g., `root:org:team:project`)
 - **API-First Design**: Focused on API management via APIExports and APIResourceSchemas
 - **Multi-Cluster Sync**: Uses syncers to push resources to physical clusters
 
-### KCP APIs vs Kubernetes CRDs
+### kcp APIs vs Kubernetes CRDs
 
-**Important**: KCP does not use traditional Kubernetes CRDs. Instead, KCP uses:
+**Important**: kcp does not use traditional Kubernetes CRDs. Instead, kcp uses:
 - **APIResourceSchemas**: Define the structure of resources (similar to CRD schemas)
 - **APIExports**: Expose APIs from one workspace to others
 - **APIBindings**: Consume APIs from other workspaces
 
 This operator writes resources using an **unstructured client**, which means:
 - No client-side schema validation is performed
-- The KCP API server validates resources against its APIResourceSchemas
+- The kcp API server validates resources against its APIResourceSchemas
 - If the target API doesn't exist in the workspace, the write will fail
-- **Prerequisite**: Target APIs must be available in the KCP workspace (via APIBinding) before migration
+- **Prerequisite**: Target APIs must be available in the kcp workspace (via APIBinding) before migration
 
 ### APIExport/APIBinding Prerequisites
 
-Before the migration operator can sync resources to a KCP workspace, the target API must be available in that workspace. This requires:
+Before the migration operator can sync resources to a kcp workspace, the target API must be available in that workspace. This requires:
 
 1. **APIResourceSchema**: Defines the resource structure (equivalent to CRD spec)
 2. **APIExport**: Exposes the API from a provider workspace (e.g., `root:platform-mesh-system`)
@@ -69,9 +69,9 @@ This is handled by the retry logic documented in [Workspace Dependency Handling]
 
 ### APIResourceSchema Management
 
-The operator can optionally create APIResourceSchemas in KCP to ensure the target API is available. This is useful when:
-- Migrating to a fresh KCP installation
-- The source CRD schema should be replicated in KCP
+The operator can optionally create APIResourceSchemas in kcp to ensure the target API is available. This is useful when:
+- Migrating to a fresh kcp installation
+- The source CRD schema should be replicated in kcp
 - You want the migration to be self-contained
 
 **Schema Sources**:
@@ -116,18 +116,18 @@ These are typically configured via workspace types or manual setup, as they repr
 2. Updated when schema source changes
 3. **Retained** when KCPMigration is deleted (to avoid breaking other consumers)
 
-This operator targets KCP as the destination, meaning:
+This operator targets kcp as the destination, meaning:
 - Primary use case is **custom resources**, not native K8s objects
 - Transformations often change API groups to Platform Mesh conventions
-- Resources in KCP represent desired state, synced elsewhere for execution
+- Resources in kcp represent desired state, synced elsewhere for execution
 
-## KCP Client Strategy
+## kcp Client Strategy
 
 ### Unstructured Client Approach
 
-The operator uses an **ad-hoc unstructured client** to write resources directly to KCP workspaces:
+The operator uses an **ad-hoc unstructured client** to write resources directly to kcp workspaces:
 
-- **No Virtual Workspaces**: The operator does NOT use KCP's virtual workspace feature
+- **No Virtual Workspaces**: The operator does NOT use kcp's virtual workspace feature
 - **Direct Workspace Access**: Resources are written directly to the target workspace path
 - **Dynamic Client Construction**: For each sync operation, the operator constructs an unstructured client configured for the specific workspace
 
@@ -165,7 +165,7 @@ This operator uses the **golang-commons lifecycle framework** from platform-mesh
 
 ```go
 import (
-    "github.com/platform-mesh/golang-commons/pkg/lifecycle"
+    "go.platform-mesh.io/golang-commons/pkg/lifecycle"
 )
 ```
 
@@ -217,28 +217,28 @@ func (r *KCPMigrationReconciler) GetSubroutines() []lifecycle.Subroutine {
 
 ### 2. Child Operator (Sync Controller)
 
-**Responsibility**: Watch source resources and sync to KCP
+**Responsibility**: Watch source resources and sync to kcp
 
 **Sync Mechanism** (watch-based, no polling):
-1. **Initial Sync**: List all matching resources and sync to KCP workspace
+1. **Initial Sync**: List all matching resources and sync to kcp workspace
 2. **Watch**: Open Kubernetes watch on the source resource kind
-3. **React**: On create/update/delete events, immediately sync changes to KCP
+3. **React**: On create/update/delete events, immediately sync changes to kcp
 
 **Behavior**:
 - Receives configuration via environment variables or ConfigMap
 - Uses Kubernetes informer to watch specified resource kind
 - Applies transformations if configured
-- Creates/updates/deletes resources in target KCP workspace
+- Creates/updates/deletes resources in target kcp workspace
 - Reports status back to main controller via events/conditions
 
 ```
 ┌────────────────────────────────────────────────────────────┐
 │                   Child Operator                           │
 ├────────────────────────────────────────────────────────────┤
-│  Input: Source cluster kubeconfig, target KCP kubeconfig   │
+│  Input: Source cluster kubeconfig, target kcp kubeconfig   │
 │  Watches: Specific resource kind (via Kubernetes watch)    │
 │  Transforms: Optional Go template or CEL transformations   │
-│  Syncs: Resources to KCP workspace in real-time            │
+│  Syncs: Resources to kcp workspace in real-time            │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -305,13 +305,13 @@ kcp-migration-operator --mode=sync \
 │  2. Establishes watch on source cluster                              │
 │  3. For each source resource:                                        │
 │     a. Apply transformation rules                                    │
-│     b. Create/Update in KCP workspace                                │
+│     b. Create/Update in kcp workspace                                │
 │  4. Reports sync status via metrics/events                           │
 └─────────────────────────────────┬────────────────────────────────────┘
                                   │
                                   ▼
 ┌──────────────────────────────────────────────────────────────────────┐
-│                         KCP Workspace                                │
+│                         kcp Workspace                                │
 │                    Resources synchronized                            │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -386,7 +386,7 @@ The main controller creates a Deployment for each `KCPMigration` resource. Each 
 - Runs the same binary in `--mode=sync`
 - Has its own ServiceAccount with RBAC for the specific resource kind
 - Receives sync configuration via ConfigMap
-- Connects to KCP using workspace credentials
+- Connects to kcp using workspace credentials
 
 Implementation details such as resource limits, replica count, and exact deployment structure are internal to the operator and not part of the user-facing API.
 
@@ -404,15 +404,15 @@ Implementation details such as resource limits, replica count, and exact deploym
 
 **Child Operators** require:
 - Watch/List/Get on source resource kinds (granted by main controller)
-- Create/Update/Delete on target resource kinds in KCP
+- Create/Update/Delete on target resource kinds in kcp
 
 ### Secret Management
 
 The operator requires two kubeconfig secrets for operation:
 
 **Required Secrets**:
-1. **`kcp-kubeconfig`**: Admin access credentials for KCP
-   - Provides admin access to KCP workspaces
+1. **`kcp-kubeconfig`**: Admin access credentials for kcp
+   - Provides admin access to kcp workspaces
    - Used to write resources directly to target workspaces
    - Mounted at `/etc/kcp/kubeconfig`
 
@@ -466,7 +466,7 @@ This ensures:
 - Use Kubernetes informers for efficient resource watching
 - **Watch-based sync**: No polling overhead, react to changes in real-time
 - Initial sync uses list operation, then switches to watch for incremental updates
-- Implement rate limiting on sync operations to avoid overwhelming KCP
+- Implement rate limiting on sync operations to avoid overwhelming kcp
 - Support batch operations for bulk initial sync
 
 ### Performance Tuning
@@ -482,11 +482,11 @@ Controls the number of concurrent worker goroutines processing the reconciliatio
 | Small migration (<100 resources) | 1 (default) | Minimal overhead |
 | Medium migration (100-1000 resources) | 3-5 | Good balance of speed and stability |
 | Large migration (>1000 resources) | 5-10 | Higher throughput, monitor resource usage |
-| Very large migration (>10000 resources) | 10+ | Requires good network, monitor KCP load |
+| Very large migration (>10000 resources) | 10+ | Requires good network, monitor kcp load |
 
 #### Rate Limiting
 
-Rate limiting prevents overwhelming the KCP API server during bulk syncs:
+Rate limiting prevents overwhelming the kcp API server during bulk syncs:
 
 - `resourcesPerSecond`: Maximum sync operations per second (default: 50)
 - `burst`: Burst size for handling spikes (default: 100)
@@ -512,7 +512,7 @@ The sync configuration uses reusable struct types for consistent configuration a
 | Section | Fields | Description |
 |---------|--------|-------------|
 | `source` | `apiVersion`, `kind`, `namespace` | Source resource to watch |
-| `target` | `workspaceExpression`, `namespace` | Target KCP workspace and namespace |
+| `target` | `workspaceExpression`, `namespace` | Target kcp workspace and namespace |
 | `transform` | `template`, `templatePath`, `configMapName`, `configMapKey` | Transformation template |
 | `performance` | `maxWorkers`, `rateLimitResourcesPerSecond`, `rateLimitBurst` | Performance tuning |
 
@@ -563,13 +563,13 @@ kcp-migration-operator sync --config=config/sync-config.yaml
 
 ### Workspace Dependency Handling
 
-Some resources create workspaces as a side effect. For example, when an `Account` resource with `type: org` is synced to KCP, it triggers workspace creation (e.g., `root:orgs:sap`). Other resources that target this workspace (like projects or teams) may be synced before the workspace exists.
+Some resources create workspaces as a side effect. For example, when an `Account` resource with `type: org` is synced to kcp, it triggers workspace creation (e.g., `root:orgs:sap`). Other resources that target this workspace (like projects or teams) may be synced before the workspace exists.
 
 **Retry Strategy for Missing Workspaces**:
 
 The operator handles missing workspaces as a **transient condition**, not a fatal error:
 
-1. **Detection**: When writing to KCP fails with "workspace not found" or similar errors
+1. **Detection**: When writing to kcp fails with "workspace not found" or similar errors
 2. **Classification**: Error is classified as **retryable** (not terminal)
 3. **Backoff**: Resource is requeued with exponential backoff
 4. **Status**: Condition is set to `WorkspacePending` with details

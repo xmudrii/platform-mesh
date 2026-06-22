@@ -1,3 +1,19 @@
+/*
+Copyright The Platform Mesh Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package cmd
 
 import (
@@ -17,9 +33,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/yaml"
 
-	"github.com/platform-mesh/kcp-migration-operator/internal/config"
-	"github.com/platform-mesh/kcp-migration-operator/internal/controller"
-	"github.com/platform-mesh/kcp-migration-operator/internal/kcp"
+	"go.platform-mesh.io/kcp-migration-operator/internal/config"
+	"go.platform-mesh.io/kcp-migration-operator/internal/controller"
+	"go.platform-mesh.io/kcp-migration-operator/internal/kcp"
 )
 
 var syncCfg config.SyncConfig
@@ -27,8 +43,8 @@ var syncConfigPath string
 
 var syncCmd = &cobra.Command{
 	Use:   "sync",
-	Short: "Run in sync mode to migrate resources to KCP",
-	Long: `Sync mode watches source resources and synchronizes them to KCP workspaces.
+	Short: "Run in sync mode to migrate resources to kcp",
+	Long: `Sync mode watches source resources and synchronizes them to kcp workspaces.
 
 There are two modes of operation:
 
@@ -186,17 +202,17 @@ func runSingleSync(ctx context.Context) {
 		log.Fatal().Err(err).Msg("unable to create manager")
 	}
 
-	// Create workspace client factory if KCP kubeconfig is configured
+	// Create workspace client factory if kcp kubeconfig is configured
 	var workspaceFactory kcp.WorkspaceClientFactory
 	if syncCfg.KCPKubeconfigPath != "" {
 		var err error
 		workspaceFactory, err = kcp.NewWorkspaceClientFactory(syncCfg.KCPKubeconfigPath, scheme)
 		if err != nil {
-			log.Fatal().Err(err).Str("path", syncCfg.KCPKubeconfigPath).Msg("failed to create KCP workspace client factory")
+			log.Fatal().Err(err).Str("path", syncCfg.KCPKubeconfigPath).Msg("failed to create kcp workspace client factory")
 		}
-		log.Info().Str("path", syncCfg.KCPKubeconfigPath).Msg("KCP workspace client factory created")
+		log.Info().Str("path", syncCfg.KCPKubeconfigPath).Msg("kcp workspace client factory created")
 	} else {
-		log.Warn().Msg("no KCP kubeconfig path configured, sync to KCP will be disabled")
+		log.Warn().Msg("no kcp kubeconfig path configured, sync to kcp will be disabled")
 	}
 
 	syncController := controller.NewSyncController(
@@ -277,17 +293,17 @@ func runMultiSync(ctx context.Context, configPath string) {
 		log.Fatal().Err(err).Msg("unable to create manager")
 	}
 
-	// Create workspace client factory if KCP kubeconfig is configured
+	// Create workspace client factory if kcp kubeconfig is configured
 	var workspaceFactory kcp.WorkspaceClientFactory
 	if multiCfg.KCPKubeconfigPath != "" {
 		var err error
 		workspaceFactory, err = kcp.NewWorkspaceClientFactory(multiCfg.KCPKubeconfigPath, scheme)
 		if err != nil {
-			log.Fatal().Err(err).Str("path", multiCfg.KCPKubeconfigPath).Msg("failed to create KCP workspace client factory")
+			log.Fatal().Err(err).Str("path", multiCfg.KCPKubeconfigPath).Msg("failed to create kcp workspace client factory")
 		}
-		log.Info().Str("path", multiCfg.KCPKubeconfigPath).Msg("KCP workspace client factory created")
+		log.Info().Str("path", multiCfg.KCPKubeconfigPath).Msg("kcp workspace client factory created")
 	} else {
-		log.Warn().Msg("no KCP kubeconfig path configured, sync to KCP will be disabled")
+		log.Warn().Msg("no kcp kubeconfig path configured, sync to kcp will be disabled")
 	}
 
 	// Setup a sync controller for each resource configuration

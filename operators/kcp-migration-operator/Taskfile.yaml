@@ -1,62 +1,57 @@
+# Copyright The Platform Mesh Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 version: '3'
 
+includes:
+  # Shared go-installable tooling (controller-gen, golangci-lint, mockery,
+  # apigen), installed once into the root bin/ and reused by every component.
+  tools:
+    taskfile: ../../tools/Taskfile.yaml
+    dir: .
+
 vars:
-  LOCAL_BIN: bin
-  CONTROLLER_TOOLS_VERSION: v0.19.0
-  ENVTEST_K8S_VERSION: "1.30.x"
-  ENVTEST_VERSION: release-0.19
   CRD_DIRECTORY: config/crd
-  GOARCH:
-    sh: go env GOARCH
-  GOOS:
-    sh: go env GOOS
 
 tasks:
-  ## Setup
-  setup:controller-gen:
-    internal: true
-    cmds:
-      - test -s {{.LOCAL_BIN}}/controller-gen || GOBIN=$(pwd)/{{.LOCAL_BIN}} go install sigs.k8s.io/controller-tools/cmd/controller-gen@{{.CONTROLLER_TOOLS_VERSION}}
-
-  setup:golangci-lint:
-    internal: true
-    cmds:
-      - test -s {{.LOCAL_BIN}}/golangci-lint || GOBIN=$(pwd)/{{.LOCAL_BIN}} go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-
-  setup:envtest:
-    internal: true
-    cmds:
-      - test -s {{.LOCAL_BIN}}/setup-envtest || GOBIN=$(pwd)/{{.LOCAL_BIN}} go install sigs.k8s.io/controller-runtime/tools/setup-envtest@{{.ENVTEST_VERSION}}
-
-  setup:mockery:
-    internal: true
-    cmds:
-      - test -s {{.LOCAL_BIN}}/mockery || GOBIN=$(pwd)/{{.LOCAL_BIN}} go install github.com/vektra/mockery/v2@latest
-
   ## Development
   manifests:
     desc: Generate CRD manifests
-    deps: [setup:controller-gen]
     cmds:
-      - "{{.LOCAL_BIN}}/controller-gen rbac:roleName=manager-role crd paths=./... output:crd:artifacts:config={{.CRD_DIRECTORY}}"
+      - task: tools:generate-crds
+        vars:
+          PATH: /migration/...
+          OUTPUT: '{{.CRD_DIRECTORY}}'
 
   generate:
     desc: Generate code (deepcopy, manifests)
-    deps: [setup:controller-gen]
     cmds:
       - task: manifests
-      - "{{.LOCAL_BIN}}/controller-gen object:headerFile=hack/boilerplate.go.txt paths=./..."
+      - task: tools:generate-deepcopy
+        vars:
+          PATH: /migration/...
 
   generate:mocks:
     desc: Generate mocks using mockery
-    deps: [setup:mockery]
+    deps: [tools:mockery]
     cmds:
-      - "{{.LOCAL_BIN}}/mockery"
+      - "{{.BIN}}/mockery"
 
   build:
     desc: Build the operator binary
     cmds:
-      - go build -o bin/manager main.go
+      - go build ./...
 
   docker-build:
     desc: Build the Docker image
@@ -71,30 +66,28 @@ tasks:
 
   lint:
     desc: Run linter
-    deps: [setup:golangci-lint]
     cmds:
       - task: fmt
-      - "{{.LOCAL_BIN}}/golangci-lint run --timeout 15m ./..."
-
-  envtest:
-    env:
-      KUBEBUILDER_ASSETS:
-        sh: $(pwd)/{{.LOCAL_BIN}}/setup-envtest use {{.ENVTEST_K8S_VERSION}} --bin-dir $(pwd)/{{.LOCAL_BIN}} -p path
-      GO111MODULE: on
-    cmds:
-      - go test ./... {{.ADDITIONAL_COMMAND_ARGS}}
+      - task: tools:lint
 
   test:
-    desc: Run tests
-    deps: [setup:envtest]
     cmds:
-      - task: envtest
-
+      - go test ./...
+  test-e2e:
+    deps: [tools:envtest]
+    cmds:
+      - |
+        set -ex
+        export KUBEBUILDER_ASSETS=$({{.BIN}}/setup-envtest use {{.ENVTEST_K8S_VERSION}} --bin-dir {{.BIN}} -p path)
+        go test -tags integration ./... {{.ADDITIONAL_COMMAND_ARGS}}
   cover:
-    desc: Run tests with coverage
-    deps: [setup:envtest]
     cmds:
-      - task: envtest
+      - task: test
+        vars:
+          ADDITIONAL_COMMAND_ARGS: -v -coverprofile=./cover.out -covermode=atomic -coverpkg=./...
+  cover-e2e:
+    cmds:
+      - task: test-e2e
         vars:
           ADDITIONAL_COMMAND_ARGS: -v -coverprofile=./cover.out -covermode=atomic -coverpkg=./...
 

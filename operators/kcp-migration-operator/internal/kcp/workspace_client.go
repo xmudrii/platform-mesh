@@ -1,3 +1,19 @@
+/*
+Copyright The Platform Mesh Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package kcp
 
 import (
@@ -11,12 +27,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// WorkspaceClientFactory creates Kubernetes clients for specific KCP workspaces
+// WorkspaceClientFactory creates Kubernetes clients for specific kcp workspaces
 //
 //go:generate mockery --name=WorkspaceClientFactory --output=../../pkg/mocks --filename=mock_workspace_client_factory.go
 type WorkspaceClientFactory interface {
 	// GetClient returns a Kubernetes client configured for the specified workspace path
-	// The workspace path should be in KCP format, e.g., "root:orgs:sap"
+	// The workspace path should be in kcp format, e.g., "root:orgs:sap"
 	GetClient(workspacePath string) (client.Client, error)
 }
 
@@ -31,7 +47,7 @@ type workspaceClientFactory struct {
 	clients map[string]client.Client
 }
 
-// NewWorkspaceClientFactory creates a new WorkspaceClientFactory from a KCP kubeconfig file
+// NewWorkspaceClientFactory creates a new WorkspaceClientFactory from a kcp kubeconfig file
 func NewWorkspaceClientFactory(kcpKubeconfigPath string, scheme *runtime.Scheme) (WorkspaceClientFactory, error) {
 	config, err := clientcmd.BuildConfigFromFlags("", kcpKubeconfigPath)
 	if err != nil {
