@@ -1,11 +1,27 @@
+/*
+Copyright The Platform Mesh Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package controller
 
 import (
 	"context"
 	"strings"
 
-	"github.com/platform-mesh/golang-commons/logger"
 	"github.com/rs/zerolog"
+	"go.platform-mesh.io/golang-commons/logger"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -16,9 +32,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/platform-mesh/kcp-migration-operator/internal/config"
-	"github.com/platform-mesh/kcp-migration-operator/internal/kcp"
-	"github.com/platform-mesh/kcp-migration-operator/internal/transform"
+	"go.platform-mesh.io/kcp-migration-operator/internal/config"
+	"go.platform-mesh.io/kcp-migration-operator/internal/kcp"
+	"go.platform-mesh.io/kcp-migration-operator/internal/transform"
 )
 
 // SyncController watches source resources and syncs them to KCP workspaces

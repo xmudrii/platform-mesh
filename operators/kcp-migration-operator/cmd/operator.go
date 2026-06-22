@@ -1,5 +1,5 @@
 /*
-Copyright 2025.
+Copyright The Platform Mesh Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,14 +19,14 @@ package cmd
 import (
 	"crypto/tls"
 
-	platformmeshcontext "github.com/platform-mesh/golang-commons/context"
 	"github.com/spf13/cobra"
+	platformmeshcontext "go.platform-mesh.io/golang-commons/context"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	"github.com/platform-mesh/kcp-migration-operator/internal/controller"
+	"go.platform-mesh.io/kcp-migration-operator/internal/controller"
 )
 
 var operatorCmd = &cobra.Command{

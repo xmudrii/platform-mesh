@@ -165,7 +165,7 @@ This operator uses the **golang-commons lifecycle framework** from platform-mesh
 
 ```go
 import (
-    "github.com/platform-mesh/golang-commons/pkg/lifecycle"
+    "go.platform-mesh.io/golang-commons/pkg/lifecycle"
 )
 ```
 
