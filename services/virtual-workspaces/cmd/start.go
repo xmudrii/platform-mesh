@@ -1,3 +1,19 @@
+/*
+Copyright The Platform Mesh Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package cmd
 
 import (
@@ -6,9 +22,9 @@ import (
 	"github.com/kcp-dev/virtual-workspace-framework/pkg/authorization"
 	"github.com/spf13/cobra"
 
-	"github.com/platform-mesh/virtual-workspaces/pkg/authentication"
-	"github.com/platform-mesh/virtual-workspaces/pkg/contentconfiguration"
-	"github.com/platform-mesh/virtual-workspaces/pkg/marketplace"
+	"go.platform-mesh.io/virtual-workspaces/pkg/authentication"
+	"go.platform-mesh.io/virtual-workspaces/pkg/contentconfiguration"
+	"go.platform-mesh.io/virtual-workspaces/pkg/marketplace"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -25,7 +41,7 @@ import (
 	kcpcorev1alpha1 "github.com/kcp-dev/sdk/apis/core/v1alpha1"
 	kcptenancyv1alpha1 "github.com/kcp-dev/sdk/apis/tenancy/v1alpha1"
 
-	extensionapiv1alpha1 "github.com/platform-mesh/extension-manager-operator/api/v1alpha1"
+	extensionapiv1alpha1 "go.platform-mesh.io/apis/ui/v1alpha1"
 
 	kcpclientset "github.com/kcp-dev/sdk/client/clientset/versioned/cluster"
 	virtualrootapiserver "github.com/kcp-dev/virtual-workspace-framework/pkg/rootapiserver"
