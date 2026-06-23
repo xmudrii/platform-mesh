@@ -1,11 +1,11 @@
 /*
-Copyright 2024.
+Copyright The Platform Mesh Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/platform-mesh/golang-commons/logger"
-	"github.com/platform-mesh/subroutines"
-	"github.com/platform-mesh/terminal-controller-manager/api/v1alpha1"
+	"go.platform-mesh.io/apis/terminal/v1alpha1"
+	"go.platform-mesh.io/golang-commons/logger"
+	"go.platform-mesh.io/subroutines"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -120,14 +120,14 @@ func (r *ServiceSubroutine) Process(ctx context.Context, obj client.Object) (sub
 
 func (r *ServiceSubroutine) mutateService(service *corev1.Service, terminal *v1alpha1.Terminal) {
 	service.Labels = map[string]string{
-		"app.kubernetes.io/name":                  "terminal",
-		"app.kubernetes.io/instance":              terminal.Name,
-		"app.kubernetes.io/managed-by":            "terminal-controller-manager",
-		"terminal.platform-mesh.io/terminal-name": terminal.Name,
+		nameLabel:         nameLabelValue,
+		instanceLabel:     terminal.Name,
+		managedByLabel:    managedBy,
+		terminalNameLabel: terminal.Name,
 	}
 	service.Spec.Type = corev1.ServiceTypeClusterIP
 	service.Spec.Selector = map[string]string{
-		"terminal.platform-mesh.io/terminal-name": terminal.Name,
+		terminalNameLabel: terminal.Name,
 	}
 	service.Spec.Ports = []corev1.ServicePort{
 		{

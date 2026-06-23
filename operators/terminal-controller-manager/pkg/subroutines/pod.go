@@ -1,11 +1,11 @@
 /*
-Copyright 2024.
+Copyright The Platform Mesh Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,10 +23,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	accountv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/golang-commons/logger"
-	"github.com/platform-mesh/subroutines"
-	"github.com/platform-mesh/terminal-controller-manager/api/v1alpha1"
+	corev1alpha1 "go.platform-mesh.io/apis/core/v1alpha1"
+	"go.platform-mesh.io/apis/terminal/v1alpha1"
+	"go.platform-mesh.io/golang-commons/logger"
+	"go.platform-mesh.io/subroutines"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	mccontext "sigs.k8s.io/multicluster-runtime/pkg/context"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
@@ -127,7 +127,7 @@ func (r *PodSubroutine) Process(ctx context.Context, obj client.Object) (subrout
 	clusterClient := cluster.GetClient()
 
 	// Look up AccountInfo to get workspace URL
-	accountInfo := &accountv1alpha1.AccountInfo{}
+	accountInfo := &corev1alpha1.AccountInfo{}
 	if err := clusterClient.Get(ctx, client.ObjectKey{Name: DefaultAccountInfoName}, accountInfo); err != nil {
 		if kerrors.IsNotFound(err) {
 			log.Warn().Msg("AccountInfo not found, waiting for it to be created")
@@ -158,9 +158,9 @@ func (r *PodSubroutine) Process(ctx context.Context, obj client.Object) (subrout
 		instance.Status.SessionID = uuid.New().String()
 	}
 
-	// Capture creator identity from annotations (set by KCP from OIDC token)
+	// Capture creator identity from annotations (set by kcp from OIDC token)
 	if instance.Status.CreatedBy == "" {
-		// KCP sets user identity in annotations like "kcp.io/user-info"
+		// kcp sets user identity in annotations like "kcp.io/user-info"
 		if userInfo, ok := instance.Annotations["kcp.io/user-info"]; ok {
 			instance.Status.CreatedBy = userInfo
 		} else if creator, ok := instance.Annotations["kcp.io/creator"]; ok {
@@ -241,10 +241,10 @@ func (r *PodSubroutine) buildTerminalPod(terminal *v1alpha1.Terminal, podName, w
 			Name:      podName,
 			Namespace: r.namespace,
 			Labels: map[string]string{
-				"app.kubernetes.io/name":                  "terminal",
-				"app.kubernetes.io/instance":              terminal.Name,
-				"app.kubernetes.io/managed-by":            "terminal-controller-manager",
-				"terminal.platform-mesh.io/terminal-name": terminal.Name,
+				nameLabel:         nameLabelValue,
+				instanceLabel:     terminal.Name,
+				managedByLabel:    managedBy,
+				terminalNameLabel: terminal.Name,
 			},
 		},
 		Spec: corev1.PodSpec{

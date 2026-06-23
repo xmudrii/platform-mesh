@@ -1,4 +1,19 @@
 #!/bin/bash
+
+# Copyright The Platform Mesh Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set -e
 
 # Token file path - kubeconfig reads from this file
@@ -134,7 +149,7 @@ export -f __update_token__
 # Ignore token update commands in history
 export HISTIGNORE="__update_token__*"
 
-echo "[setup] Connected to KCP workspace: ${KCP_WORKSPACE_URL}"
+echo "[setup] Connected to kcp workspace: ${KCP_WORKSPACE_URL}"
 echo "[setup] KUBECONFIG=${KUBECONFIG}"
 echo ""
 echo "Welcome to the Platform Mesh Terminal!"

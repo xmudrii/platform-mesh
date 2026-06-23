@@ -1,11 +1,11 @@
 /*
-Copyright 2024.
+Copyright The Platform Mesh Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,11 +21,11 @@ import (
 	"crypto/tls"
 	"net/http"
 
-	platformmeshcontext "github.com/platform-mesh/golang-commons/context"
-	"github.com/platform-mesh/golang-commons/traces"
-	"github.com/platform-mesh/terminal-controller-manager/internal/controller"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	platformmeshcontext "go.platform-mesh.io/golang-commons/context"
+	"go.platform-mesh.io/golang-commons/traces"
+	"go.platform-mesh.io/terminal-controller-manager/internal/controller"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -80,11 +80,11 @@ func RunController(_ *cobra.Command, _ []string) { // coverage-ignore
 		}
 	}()
 
-	// KCP config for watching Terminal CRs via APIExport
+	// kcp config for watching Terminal CRs via APIExport
 	// Uses --kcp-kubeconfig flag if set, otherwise falls back to in-cluster config
 	kcpCfg, err := loadKcpConfig(operatorCfg.Kcp.Kubeconfig)
 	if err != nil {
-		log.Fatal().Err(err).Msg("unable to load KCP kubeconfig")
+		log.Fatal().Err(err).Msg("unable to load kcp kubeconfig")
 	}
 	kcpCfg.Wrap(func(rt http.RoundTripper) http.RoundTripper {
 		return otelhttp.NewTransport(rt)
@@ -151,15 +151,15 @@ func RunController(_ *cobra.Command, _ []string) { // coverage-ignore
 	}
 }
 
-// loadKcpConfig loads the kubeconfig for KCP.
+// loadKcpConfig loads the kubeconfig for kcp.
 // If kubeconfigPath is provided, it loads from that file.
 // Otherwise, it falls back to in-cluster config.
 func loadKcpConfig(kubeconfigPath string) (*rest.Config, error) {
 	if kubeconfigPath != "" {
-		log.Info().Str("kubeconfig", kubeconfigPath).Msg("loading KCP config from file")
+		log.Info().Str("kubeconfig", kubeconfigPath).Msg("loading kcp config from file")
 		return clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	}
 
-	log.Info().Msg("loading KCP config from in-cluster")
+	log.Info().Msg("loading kcp config from in-cluster")
 	return rest.InClusterConfig()
 }
