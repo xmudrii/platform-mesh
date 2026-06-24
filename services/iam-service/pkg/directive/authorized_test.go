@@ -1,3 +1,19 @@
+/*
+Copyright The Platform Mesh Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package directive
 
 import (
@@ -8,13 +24,13 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	openfgav1 "github.com/openfga/api/proto/openfga/v1"
-	accountsv1alpha1 "github.com/platform-mesh/account-operator/api/v1alpha1"
-	"github.com/platform-mesh/golang-commons/context/keys"
-	"github.com/platform-mesh/golang-commons/jwt"
-	"github.com/platform-mesh/golang-commons/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	accountsv1alpha1 "go.platform-mesh.io/apis/core/v1alpha1"
+	"go.platform-mesh.io/golang-commons/context/keys"
+	"go.platform-mesh.io/golang-commons/jwt"
+	"go.platform-mesh.io/golang-commons/logger"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -22,18 +38,19 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
-	accountinfomocks "github.com/platform-mesh/iam-service/pkg/accountinfo/mocks"
-	appcontext "github.com/platform-mesh/iam-service/pkg/context"
-	fgamocks "github.com/platform-mesh/iam-service/pkg/fga/mocks"
-	"github.com/platform-mesh/iam-service/pkg/graph"
+	accountinfomocks "go.platform-mesh.io/iam-service/pkg/accountinfo/mocks"
+	appcontext "go.platform-mesh.io/iam-service/pkg/context"
+	fgamocks "go.platform-mesh.io/iam-service/pkg/fga/mocks"
+	"go.platform-mesh.io/iam-service/pkg/graph"
 )
 
 type mockWSClient struct {
 	client client.Client
 }
 
-func (m *mockWSClient) New(_ context.Context, _ string) (client.Client, error) {
+func (m *mockWSClient) New(_ context.Context, _ multicluster.ClusterName) (client.Client, error) {
 	return m.client, nil
 }
 
@@ -125,7 +142,7 @@ func TestAuthorized_HappyPath(t *testing.T) {
 	fgaClient.EXPECT().Check(mock.Anything, mock.Anything).Return(checkResponse, nil)
 
 	ai := createTestAccountInfo()
-	accountInfoRetriever.EXPECT().Get(mock.Anything, "root:orgs:test").Return(ai, nil)
+	accountInfoRetriever.EXPECT().Get(mock.Anything, multicluster.ClusterName("root:orgs:test")).Return(ai, nil)
 
 	// Setup fake workspace client
 	fakeClient := setupFakeClient(t, ai)
@@ -261,7 +278,7 @@ func TestAuthorized_ErrorCases(t *testing.T) {
 				return ctx
 			},
 			setupMocks: func(fgaClient *fgamocks.OpenFGAServiceClient, air *accountinfomocks.Retriever) {
-				air.EXPECT().Get(mock.Anything, "root:orgs:test").Return(nil, fmt.Errorf("account not found"))
+				air.EXPECT().Get(mock.Anything, multicluster.ClusterName("root:orgs:test")).Return(nil, fmt.Errorf("account not found"))
 			},
 			expectedError: "failed to get account info from kcp context",
 		},
@@ -296,7 +313,7 @@ func TestAuthorized_ErrorCases(t *testing.T) {
 			},
 			setupMocks: func(fgaClient *fgamocks.OpenFGAServiceClient, air *accountinfomocks.Retriever) {
 				ai := createTestAccountInfo()
-				air.EXPECT().Get(mock.Anything, "root:orgs:test").Return(ai, nil)
+				air.EXPECT().Get(mock.Anything, multicluster.ClusterName("root:orgs:test")).Return(ai, nil)
 			},
 			expectedError: "unauthorized",
 		},
@@ -345,7 +362,7 @@ func TestAuthorized_ResourceNotExists(t *testing.T) {
 	accountInfoRetriever := accountinfomocks.NewRetriever(t)
 
 	ai := createTestAccountInfo()
-	accountInfoRetriever.EXPECT().Get(mock.Anything, "root:orgs:test").Return(ai, nil)
+	accountInfoRetriever.EXPECT().Get(mock.Anything, multicluster.ClusterName("root:orgs:test")).Return(ai, nil)
 
 	// Setup fake workspace client without the resource
 	fakeClient := setupFakeClient(t) // Empty client, resource doesn't exist
@@ -415,7 +432,7 @@ func TestAuthorized_NotAllowed(t *testing.T) {
 	fgaClient.EXPECT().Check(mock.Anything, mock.Anything).Return(checkResponse, nil)
 
 	ai := createTestAccountInfo()
-	accountInfoRetriever.EXPECT().Get(mock.Anything, "root:orgs:test").Return(ai, nil)
+	accountInfoRetriever.EXPECT().Get(mock.Anything, multicluster.ClusterName("root:orgs:test")).Return(ai, nil)
 
 	// Setup fake workspace client with resource
 	fakeClient := setupFakeClient(t, ai)

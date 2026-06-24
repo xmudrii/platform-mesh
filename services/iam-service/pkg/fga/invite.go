@@ -1,3 +1,19 @@
+/*
+Copyright The Platform Mesh Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package fga
 
 import (
@@ -8,15 +24,16 @@ import (
 	"net/mail"
 
 	openfgav1 "github.com/openfga/api/proto/openfga/v1"
-	"github.com/platform-mesh/golang-commons/errors"
-	"github.com/platform-mesh/golang-commons/fga/util"
-	"github.com/platform-mesh/golang-commons/logger"
-	securityv1alpha1 "github.com/platform-mesh/security-operator/api/v1alpha1"
+	securityv1alpha1 "go.platform-mesh.io/apis/core/v1alpha1"
+	"go.platform-mesh.io/golang-commons/errors"
+	"go.platform-mesh.io/golang-commons/fga/util"
+	"go.platform-mesh.io/golang-commons/logger"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 
-	"github.com/platform-mesh/iam-service/pkg/graph"
-	"github.com/platform-mesh/iam-service/pkg/roles"
+	"go.platform-mesh.io/iam-service/pkg/graph"
+	"go.platform-mesh.io/iam-service/pkg/roles"
 )
 
 // emailToLabelValue converts an email address to a valid Kubernetes label value
@@ -51,7 +68,7 @@ func (s *Service) checkAndInviteUser(ctx context.Context, userEmail string, rctx
 	if rctx.Group == "core.platform-mesh.io" && rctx.Kind == "Account" {
 		path = fmt.Sprintf("%s:%s", path, rctx.Resource.Name)
 	}
-	wsClient, err := s.wsClientFactory.New(ctx, path)
+	wsClient, err := s.wsClientFactory.New(ctx, multicluster.ClusterName(path))
 	if err != nil {
 		return errors.Wrap(err, "failed to create workspace client for path %s", path)
 	}

@@ -1,3 +1,19 @@
+/*
+Copyright The Platform Mesh Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package workspace
 
 import (
@@ -5,24 +21,25 @@ import (
 	"fmt"
 	"testing"
 
-	accountmocks "github.com/platform-mesh/account-operator/pkg/subroutines/mocks"
-	"github.com/platform-mesh/golang-commons/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	accountmocks "go.platform-mesh.io/account-operator/pkg/subroutines/mocks"
+	"go.platform-mesh.io/golang-commons/logger"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	mcmanager "sigs.k8s.io/multicluster-runtime/pkg/manager"
+	"sigs.k8s.io/multicluster-runtime/pkg/multicluster"
 )
 
 // Provider is a test provider for the multicluster manager
 type Provider struct {
-	clusters map[string]cluster.Cluster
+	clusters map[multicluster.ClusterName]cluster.Cluster
 }
 
-func (p *Provider) Get(ctx context.Context, clusterName string) (cluster.Cluster, error) {
+func (p *Provider) Get(ctx context.Context, clusterName multicluster.ClusterName) (cluster.Cluster, error) {
 	cluster, ok := p.clusters[clusterName]
 	if !ok {
 		return nil, fmt.Errorf("cluster not found: %s", clusterName)
@@ -38,7 +55,7 @@ func TestNewClientFactory(t *testing.T) {
 	emptyConfig := &rest.Config{
 		Host: "https://test-host.example.com",
 	}
-	testProvider := &Provider{clusters: map[string]cluster.Cluster{}}
+	testProvider := &Provider{clusters: map[multicluster.ClusterName]cluster.Cluster{}}
 
 	mgr, err := mcmanager.New(emptyConfig, testProvider, mcmanager.Options{})
 	require.NoError(t, err)
@@ -73,8 +90,8 @@ func TestKCPClient_New_Success(t *testing.T) {
 			mockCluster.On("GetClient").Return(fakeClient)
 
 			testProvider := &Provider{
-				clusters: map[string]cluster.Cluster{
-					tt.accountPath: mockCluster,
+				clusters: map[multicluster.ClusterName]cluster.Cluster{
+					multicluster.ClusterName(tt.accountPath): mockCluster,
 				},
 			}
 			emptyConfig := &rest.Config{
@@ -90,7 +107,7 @@ func TestKCPClient_New_Success(t *testing.T) {
 
 			factory := NewClientFactory(mgr)
 
-			result, err := factory.New(ctx, tt.accountPath)
+			result, err := factory.New(ctx, multicluster.ClusterName(tt.accountPath))
 
 			assert.NoError(t, err)
 			assert.NotNil(t, result)
@@ -103,7 +120,7 @@ func TestKCPClient_New_Error(t *testing.T) {
 	accountPath := "root:nonexistent:account"
 
 	testProvider := &Provider{
-		clusters: map[string]cluster.Cluster{},
+		clusters: map[multicluster.ClusterName]cluster.Cluster{},
 	}
 	emptyConfig := &rest.Config{
 		Host: "https://test-host.example.com",
@@ -118,7 +135,7 @@ func TestKCPClient_New_Error(t *testing.T) {
 
 	factory := NewClientFactory(mgr)
 
-	result, err := factory.New(ctx, accountPath)
+	result, err := factory.New(ctx, multicluster.ClusterName(accountPath))
 
 	assert.Error(t, err)
 	assert.Nil(t, result)
@@ -137,9 +154,9 @@ func TestKCPClient_New_MultipleClients(t *testing.T) {
 	mockCluster2.On("GetClient").Return(fakeClient2)
 
 	testProvider := &Provider{
-		clusters: map[string]cluster.Cluster{
-			"root:org1:account1": mockCluster1,
-			"root:org2:account2": mockCluster2,
+		clusters: map[multicluster.ClusterName]cluster.Cluster{
+			multicluster.ClusterName("root:org1:account1"): mockCluster1,
+			multicluster.ClusterName("root:org2:account2"): mockCluster2,
 		},
 	}
 	emptyConfig := &rest.Config{
