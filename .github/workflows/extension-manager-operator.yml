@@ -202,7 +202,7 @@ jobs:
   trivy-image:
     if: github.ref == 'refs/heads/main'
     needs: [docker-build-latest]
-    uses: platform-mesh/.github/.github/workflows/job-trivy-image.yml@main
+    uses: ./.github/workflows/job-trivy-image.yml
     permissions:
       contents: read
       packages: read
