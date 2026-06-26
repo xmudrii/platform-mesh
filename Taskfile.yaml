@@ -50,7 +50,6 @@ vars:
     - backup-operator
     - extension-manager-operator
     - kcp-migration-operator
-    - resource-sharding-operator
     - search-operator
     - security-operator
     - terminal-controller-manager

@@ -40,9 +40,6 @@ limitations under the License.
 //	kcp-migration-operator   kcp-migration-operator/v<X.Y.Z>
 //	                                               kcp-migration-operator.yml: signed image,
 //	                                               GitHub release, chart bump, SBOM, OCM
-//	resource-sharding-operator   resource-sharding-operator/v<X.Y.Z>
-//	                                               resource-sharding-operator.yml: signed image,
-//	                                               GitHub release, chart bump, SBOM, OCM
 //	search-operator    search-operator/v<X.Y.Z>    search-operator.yml: signed image,
 //	                                               GitHub release, chart bump, SBOM, OCM
 //	search-service     search-service/v<X.Y.Z>     search-service.yml: signed image,
@@ -454,7 +451,6 @@ Components:
   extension-manager-operator   extension-manager-operator/v<X.Y.Z>   (signed image + release + chart + SBOM + OCM)
   kcp-migration-operator       kcp-migration-operator/v<X.Y.Z>       (signed image + release + chart + SBOM + OCM)
   kubernetes-graphql-gateway   kubernetes-graphql-gateway/v<X.Y.Z>   (signed image + release + chart + SBOM + OCM)
-  resource-sharding-operator   resource-sharding-operator/v<X.Y.Z>   (signed image + release + chart + SBOM + OCM)
   security-operator            security-operator/v<X.Y.Z>            (signed image + release + chart + SBOM + OCM)
   search-operator              search-operator/v<X.Y.Z>              (signed image + release + chart + SBOM + OCM)
   search-service               search-service/v<X.Y.Z>               (signed image + release + chart + SBOM + OCM)
