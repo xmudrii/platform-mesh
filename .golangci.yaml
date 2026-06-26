@@ -26,6 +26,8 @@ run:
 linters:
   default: none
   enable:
+    - asciicheck
+    - bidichk
     - copyloopvar
     - dupword
     - durationcheck
@@ -39,6 +41,7 @@ linters:
     - nakedret
     - nilerr
     - nolintlint
+    - nosprintfhostport
     - prealloc
     - predeclared
     - revive
@@ -46,6 +49,7 @@ linters:
     - unconvert
     - unused
     - usestdlibvars
+    - wastedassign
     - whitespace
   settings:
     importas:
