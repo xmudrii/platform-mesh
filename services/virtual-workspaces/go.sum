@@ -131,8 +131,8 @@ github.com/kcp-dev/apimachinery/v2 v2.32.2 h1:7DIoj1TqYNCAn9rX4yEyQybAnsQZMg8Csc
 github.com/kcp-dev/apimachinery/v2 v2.32.2/go.mod h1:1Rkhiwoq345wlUYtq1/P+3chL2eE1rdoIgBPwb6Y9x8=
 github.com/kcp-dev/client-go v0.32.2 h1:C4osjGEku2jgBAiqOtet6ZD0ewu37t+rYviRlp9ERrw=
 github.com/kcp-dev/client-go v0.32.2/go.mod h1:akwh/qqczVPlm5ws4tAU0su+t6mo4KRlJvK0+W2gwlQ=
-github.com/kcp-dev/kcp v0.31.2 h1:MN4Pyd/yDq0D4Qij6UjtpnzLBSl3qYayfpDa+iEbZaQ=
-github.com/kcp-dev/kcp v0.31.2/go.mod h1:PDs40/FvmJCck5BFz8VYvQXQ/yjqa7+y+nOG+nD1m68=
+github.com/kcp-dev/kcp v0.32.2 h1:zQl3tSUcNOYR1AL0zYuBVpGFDmSmsQASGiat6nba1DA=
+github.com/kcp-dev/kcp v0.32.2/go.mod h1:VVEYJp2CjYw+keGioZQeJbPlKsn4mmxWWYlI/ynoxZU=
 github.com/kcp-dev/kubernetes v0.0.0-20260602065202-e006560fc76a h1:jf7w9Kde83HpALUPzNj4GwbirdLr8oFTjguOfqDE52I=
 github.com/kcp-dev/kubernetes v0.0.0-20260602065202-e006560fc76a/go.mod h1:AFa3aeDT60XGwma3vwcqDzXJNx8csQ9u9r+/NmK7aHE=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/api v0.0.0-20260602065202-e006560fc76a h1:1k49zqcr+54UquOj46hY0yRurpRuEJI8TSHr8iyNKZg=
@@ -195,8 +195,8 @@ github.com/kcp-dev/multicluster-provider v0.8.0 h1:GpifvXjgUUy/V3BDwcPayBhcg85AN
 github.com/kcp-dev/multicluster-provider v0.8.0/go.mod h1:7LkQot2Ljmsv1w5ZjfHpjVEbQwtFQiA6LAWHbiHCGUI=
 github.com/kcp-dev/sdk v0.32.2 h1:EMDvad+qQEeY04/qlFjyBnAy8poqW/TSL8hRkJJEkU4=
 github.com/kcp-dev/sdk v0.32.2/go.mod h1:0+CqUIkahXm9+8RlkfX9aa7ieeUs7tImbX6ob+NLJNk=
-github.com/kcp-dev/virtual-workspace-framework v0.31.2 h1:AStPulh0Yylg9XwMh8lxrhFvZnixV9f2dZZzHuquhs4=
-github.com/kcp-dev/virtual-workspace-framework v0.31.2/go.mod h1:8MoHU9OrEEECbpgdCkhFieSzJRqJ9YFHLNUf3F8PGl0=
+github.com/kcp-dev/virtual-workspace-framework v0.32.2 h1:nHfM8IlySuAgeQfPtCwZBii1XdSSb0HB9r5MLV82pqk=
+github.com/kcp-dev/virtual-workspace-framework v0.32.2/go.mod h1:c/kHhxhjsaV8aa/jInuf0ZFs0HIeakGvSsfSWNeV/EU=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/klauspost/compress v1.18.5 h1:/h1gH5Ce+VWNLSWqPzOVn6XBO+vJbCNGvjoaGBFW2IE=
@@ -326,8 +326,8 @@ golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8U
 golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9/go.mod h1:LzIPMQfyMNhhGPhUkYOs5KpL4U8rLKemX1yGLhDgUto=
 golang.org/x/crypto v0.52.0 h1:RMs7fP2rXdep0CftQlK8Uf+kibLm7qkCcradZWYz988=
 golang.org/x/crypto v0.52.0/go.mod h1:1QgfPxDqh0T2M/elOJtp9RvuR95kVjir0e6/BvEmGbc=
-golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f h1:W3F4c+6OLc6H2lb//N1q4WpJkhzJCK5J6kUi1NTVXfM=
-golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f/go.mod h1:J1xhfL/vlindoeF/aINzNzt2Bket5bjo9sdOYzOsU80=
+golang.org/x/exp v0.0.0-20260508232706-74f9aab9d74a h1:+3jdDGGB8NGb1Zktc737jlt3/A5f6UlwSzmvqUuufxw=
+golang.org/x/exp v0.0.0-20260508232706-74f9aab9d74a/go.mod h1:d2fgXJLVs4dYDHUk5lwMIfzRzSrWCfGZb0ZqeLa/Vcw=
 golang.org/x/mod v0.2.0/go.mod h1:s0Qsj1ACt9ePp/hMypM3fl4fZqREWJwdYDEqhRiZZUA=
 golang.org/x/mod v0.3.0/go.mod h1:s0Qsj1ACt9ePp/hMypM3fl4fZqREWJwdYDEqhRiZZUA=
 golang.org/x/mod v0.36.0 h1:JJjpVx6myfUsUdAzZuOSTTmRE0PfZeNWzzvKrP7amb4=
