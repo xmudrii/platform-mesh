@@ -46,8 +46,8 @@ const (
 	migrationIDLabel    = "broker.platform-mesh.io/migration-id"
 )
 
-// MigrationOptions holds the options for the migration reconciler.
-type MigrationOptions struct {
+// Options holds the options for the migration reconciler.
+type Options struct {
 	ControllerNamePrefix      string
 	Compute                   ctrlruntimeclient.Client
 	GetCoordinationCluster    func(context.Context, multicluster.ClusterName) (ctrlcluster.Cluster, error)
@@ -56,11 +56,11 @@ type MigrationOptions struct {
 }
 
 type migrationReconciler struct {
-	opts MigrationOptions
+	opts Options
 }
 
 // SetupController creates a controller to handle MigrationConfiguration resources.
-func SetupController(mgr mctrl.Manager, opts MigrationOptions) error {
+func SetupController(mgr mctrl.Manager, opts Options) error {
 	r := &migrationReconciler{
 		opts: opts,
 	}

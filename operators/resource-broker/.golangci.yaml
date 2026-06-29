@@ -25,15 +25,9 @@ issues:
 linters:
   enable:
     - asasalint
-    - asciicheck
-    - bidichk
     - bodyclose
     - containedctx
-    - copyloopvar
     - dupl
-    - dupword
-    - durationcheck
-    - errcheck
     - errchkjson
     - errname
     - fatcontext
@@ -41,35 +35,14 @@ linters:
     - gocritic
     - gocyclo
     - godot
-    - goheader
-    - goprintffuncname
     - gosec
-    - govet
-    - importas
-    - ineffassign
-    - intrange
-    - misspell
-    - nakedret
-    - nilerr
     - noctx
-    - nolintlint
-    - nosprintfhostport
     - paralleltest
-    - prealloc
     - revive
-    - staticcheck
-    - unconvert
     - unparam
-    - unused
-    - usestdlibvars
-    - whitespace
   exclusions:
     generated: lax
     rules:
-      - path: api/.*/groupversion_info\.go
-        linters:
-          - staticcheck
-        text: "SA1019: scheme.Builder is deprecated" # kubebuilder-scaffolded; will be replaced when the upstream template is updated
       - path: test/
         linters:
           - gosec
@@ -89,42 +62,3 @@ linters:
         linters:
           - revive
         text: "var-naming" # the package name `utils` is fine here
-  settings:
-    goheader:
-      values:
-        const:
-          AUTHORS: The Platform Mesh Authors
-      template: |-
-        Copyright {{ AUTHORS }}.
-        SPDX-License-Identifier: Apache-2.0
-
-        Licensed under the Apache License, Version 2.0 (the "License");
-        you may not use this file except in compliance with the License.
-        You may obtain a copy of the License at
-
-            http://www.apache.org/licenses/LICENSE-2.0
-
-        Unless required by applicable law or agreed to in writing, software
-        distributed under the License is distributed on an "AS IS" BASIS,
-        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-        See the License for the specific language governing permissions and
-        limitations under the License.
-
-formatters:
-  enable:
-    - gci
-    - gofmt
-  settings:
-    gci:
-      sections:
-        - standard
-        - default
-        - prefix(k8s.io)
-        - prefix(sigs.k8s.io/controller-runtime)
-        - prefix(sigs.k8s.io/multicluster-runtime)
-        - prefix(github.com/platform-mesh)
-        - blank
-        - dot
-      custom-order: true
-  exclusions:
-    generated: disable

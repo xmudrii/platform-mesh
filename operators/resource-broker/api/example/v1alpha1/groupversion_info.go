@@ -26,13 +26,18 @@ import (
 )
 
 const (
-	GroupName    = "example.platform-mesh.io"
+	// GroupName is this API's Kubernetes API group.
+	GroupName = "example.platform-mesh.io"
+	// GroupVersion is this API's version.
 	GroupVersion = "v1alpha1"
 )
 
 var (
+	// SchemeBuilder allows to add this API's types to a scheme.
 	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
-	AddToScheme   = SchemeBuilder.AddToScheme
+
+	// AddToScheme is a shortcut.
+	AddToScheme = SchemeBuilder.AddToScheme
 
 	// SchemeGroupVersion is group version used to register these objects.
 	SchemeGroupVersion = schema.GroupVersion{Group: GroupName, Version: GroupVersion}

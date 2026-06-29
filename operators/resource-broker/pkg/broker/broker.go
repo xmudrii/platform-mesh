@@ -290,7 +290,7 @@ func New(opts Options) (*Broker, error) { //nolint:gocyclo
 	if err != nil {
 		return nil, fmt.Errorf("error creating compute client: %w", err)
 	}
-	migrationOptions := migration.MigrationOptions{
+	migrationOptions := migration.Options{
 		Compute:                computeClient,
 		ControllerNamePrefix:   b.opts.Name,
 		GetCoordinationCluster: migrationMgr.GetCluster,
