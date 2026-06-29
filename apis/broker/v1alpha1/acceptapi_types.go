@@ -204,7 +204,3 @@ type AcceptAPIList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []AcceptAPI `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&AcceptAPI{}, &AcceptAPIList{})
-}

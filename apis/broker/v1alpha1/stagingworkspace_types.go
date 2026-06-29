@@ -100,7 +100,3 @@ type StagingWorkspaceList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []StagingWorkspace `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&StagingWorkspace{}, &StagingWorkspaceList{})
-}

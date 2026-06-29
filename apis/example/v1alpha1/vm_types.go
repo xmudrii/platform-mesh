@@ -20,7 +20,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	brokerv1alpha1 "github.com/platform-mesh/resource-broker/api/broker/v1alpha1"
+	brokerv1alpha1 "go.platform-mesh.io/apis/broker/v1alpha1"
 )
 
 // +kubebuilder:rbac:groups=example.platform-mesh.io,resources=vms,verbs=get;list;watch;create;update;patch;delete
@@ -88,8 +88,4 @@ type VMList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []VM `json:"items"`
-}
-
-func init() {
-	SchemeBuilder.Register(&VM{}, &VMList{})
 }

@@ -93,7 +93,3 @@ type MigrationConfigurationList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []MigrationConfiguration `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&MigrationConfiguration{}, &MigrationConfigurationList{})
-}

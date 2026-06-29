@@ -17,4 +17,6 @@ limitations under the License.
 
 package v1alpha1
 
+// TODO: move these into a specific application
+
 // +kubebuilder:rbac:urls=/metrics,verbs=get

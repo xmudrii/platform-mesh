@@ -21,6 +21,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// TODO: move these into a specific application
+
 // +kubebuilder:rbac:groups=broker.platform-mesh.io,resources=migrations,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=broker.platform-mesh.io,resources=migrations/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=broker.platform-mesh.io,resources=migrations/finalizers,verbs=update
@@ -131,8 +133,4 @@ type MigrationList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Migration `json:"items"`
-}
-
-func init() {
-	SchemeBuilder.Register(&Migration{}, &MigrationList{})
 }
