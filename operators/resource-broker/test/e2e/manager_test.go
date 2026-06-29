@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	brokerv1alpha1 "go.platform-mesh.io/apis/broker/v1alpha1"
+	brokerv1alpha1 "go.platform-mesh.io/apis/operatorbroker/v1alpha1"
 	"go.platform-mesh.io/resource-broker/pkg/broker/generic"
 	"go.platform-mesh.io/resource-broker/test/e2e/internal/manager"
 )

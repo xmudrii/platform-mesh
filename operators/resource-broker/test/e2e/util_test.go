@@ -45,8 +45,8 @@ import (
 	"sigs.k8s.io/multicluster-runtime/providers/multi"
 	"sigs.k8s.io/multicluster-runtime/providers/single"
 
-	brokerv1alpha1 "go.platform-mesh.io/apis/broker/v1alpha1"
-	examplev1alpha1 "go.platform-mesh.io/apis/example/v1alpha1"
+	brokerv1alpha1 "go.platform-mesh.io/apis/operatorbroker/v1alpha1"
+	examplev1alpha1 "go.platform-mesh.io/resource-broker/api/example/v1alpha1"
 	"go.platform-mesh.io/resource-broker/test/e2e/internal/manager"
 	"go.platform-mesh.io/resource-broker/test/utils"
 )
