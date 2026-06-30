@@ -59,6 +59,7 @@ func NewWorkspaceAuthConfigurationSubroutine(runtimeClient ctrlruntimeclient.Cli
 var (
 	_ subroutines.Initializer = &workspaceAuthSubroutine{}
 	_ subroutines.Processor   = &workspaceAuthSubroutine{}
+	_ subroutines.Terminator  = &workspaceAuthSubroutine{}
 )
 
 func (r *workspaceAuthSubroutine) GetName() string { return "workspaceAuthConfiguration" }
@@ -173,6 +174,29 @@ func (r *workspaceAuthSubroutine) reconcile(ctx context.Context, obj ctrlruntime
 	if err != nil {
 		return subroutines.OK(), fmt.Errorf("failed to patch workspace types: %w", err)
 	}
+
+	return subroutines.OK(), nil
+}
+
+// Terminate deletes the WorkspaceAuthenticationConfiguration created during org init.
+func (r *workspaceAuthSubroutine) Terminate(ctx context.Context, obj ctrlruntimeclient.Object) (subroutines.Result, error) {
+	lc := obj.(*kcpcorev1alpha1.LogicalCluster)
+
+	workspaceName := getWorkspaceName(lc)
+	if workspaceName == "" {
+		return subroutines.OK(), fmt.Errorf("failed to get workspace path")
+	}
+
+	orgsClient, err := r.kcpClientGetter.NewClientForLogicalCluster(ctx, config.OrgsClusterPath)
+	if err != nil {
+		return subroutines.OK(), fmt.Errorf("getting orgs client: %w", err)
+	}
+
+	pending, err := deleteOrgResource(ctx, orgsClient, &kcptenancyv1alpha1.WorkspaceAuthenticationConfiguration{}, workspaceName)
+	if err != nil {
+		return subroutines.OK(), fmt.Errorf("deleting WorkspaceAuthenticationConfiguration %s: %w", workspaceName, err)
+	}
+	_ = pending // WAC has no finalizer; deletion is fire-and-forget during org termination.
 
 	return subroutines.OK(), nil
 }
